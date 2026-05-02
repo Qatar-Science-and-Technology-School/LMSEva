@@ -182,7 +182,7 @@ export default function TeachersPage({ currentUser, onViewTeacher }: Props) {
                 <div key={key}>
                   <label className="form-label">{label}</label>
                   <input type={type} className="form-input"
-                    value={(form as Record<string,string>)[key]}
+                    value={(form as any)[key]}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />
                 </div>
               ))}
