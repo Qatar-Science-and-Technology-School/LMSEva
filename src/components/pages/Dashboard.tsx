@@ -334,9 +334,9 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
         <div style={{ overflowX:'auto' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.8rem' }}>
             <thead>
-              <tr>
+              <tr style={{ background:'#0F2044' }}>
                 {['المعلم','القسم','الشهر','العام','الدرجة','مستوى الأداء','الإجراء'].map(h => (
-                  <th key={h} style={{ padding:'0.6rem 0.75rem', textAlign:'right', fontWeight:600, color:'#0F2044', borderBottom:'2px solid #E2E8F0' }}>{h}</th>
+                  <th key={h} style={{ padding:'0.6rem 0.75rem', textAlign:'right', fontWeight:600, color:'#fff', borderBottom:'1px solid rgba(255,255,255,0.1)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
