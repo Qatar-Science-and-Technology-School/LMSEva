@@ -232,9 +232,13 @@ const WINNERS_2425: Record<string, Record<string, string>> = {
 // Low-dept exceptions (good despite being in STEM/Physics/English)
 const LOW_EXCEPTIONS = new Set(['t16','t40','t44']); // كارش, نزار, اشرف فدعوس
 
+// Teachers needing follow-up (scores < 60)
+const FOLLOWUP_TEACHERS = new Set(['t2','t5','t9','t14']);
+
 // Dept base scores (target total out of 100)
 function deptBase(deptId:string, tid:string):number {
   if (tid in TOP_TEACHERS) return TOP_TEACHERS[tid].base;
+  if (FOLLOWUP_TEACHERS.has(tid)) return 52;
   if (LOW_EXCEPTIONS.has(tid)) return 84;
   if (['d_arabic','d_islamic'].includes(deptId)) return 88;
   if (['d_cs','d_math'].includes(deptId)) return 86;
@@ -369,7 +373,8 @@ function buildSampleEvaluations():Evaluation[] {
           const seed = parseInt(tid.replace('t','')) * 1000 + mIdx * 13 + yIdx * 97;
           const rng = seededRnd(seed);
           const noise = (rng() - 0.5) * 6;
-          let targetTotal = clamp(base * yearMult + monthBonus + noise, 70, 99);
+          const isFollowup = FOLLOWUP_TEACHERS.has(tid);
+          let targetTotal = clamp(base * yearMult + monthBonus + noise, isFollowup ? 40 : 70, 99);
           targetTotal = roundQ(targetTotal);
 
           const avgCrit = targetTotal / 10;
@@ -473,9 +478,9 @@ export const initialEvaluations:Evaluation[] = buildSampleEvaluations();
 
 // ── localStorage ──────────────────────────────────────────────────────────
 const KEYS = {
-  teachers:'qstss_v5_teachers', evaluations:'qstss_v7_evaluations',
+  teachers:'qstss_v5_teachers', evaluations:'qstss_v8_evaluations',
   departments:'qstss_v6_departments',
-  users:'qstss_v10_users',          // bumped to v10: full 24-25 rotation
+  users:'qstss_v11_users',          // bumped to v11: followup teachers
   currentUser:'qstss_current_user',
 };
 function getOrInit<T>(key:string,initial:T[]):T[] {
