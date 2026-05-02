@@ -166,7 +166,7 @@ const EARLY_EXCLUDED = new Set(['t1','t2','t3','t4','t12','t36']);
 // Islamic teachers: t1,t35,t39,t50,t56
 // Additional selected: t57(Physics→best), t46(CS→Roy), t17(Social→Faisal), t16(English→Karshe), t41(Math→Yamen)
 const TOP_EARLY_TEACHERS = new Set([
-  't12','t16','t17','t29','t33','t35','t36','t39','t41','t46','t47','t48','t50','t54','t55','t56','t57'
+  't4','t12','t13','t16','t17','t18','t22','t24','t27','t29','t31','t33','t34','t35','t36','t39','t41','t43','t46','t47','t48','t49','t50','t53','t54','t55','t56','t57'
 ]);
 
 export const initialTeachers:Teacher[] = RAW.map(([empId,nameAr,nameEn,subj,email],i)=>{
@@ -209,6 +209,24 @@ const TOP_TEACHERS: Record<string,{base:number; bonus?:Record<string,number>}> =
   't34': {base:98},  // محمد الكفري - CS
   't4':  {base:99},  // انس جرادات - Energy Lab
   't24': {base:97},  // ابراهيم النعيمي - Energy Lab
+  't18': {base:95},  // طارق رزق - Math
+  't22': {base:94},  // يوسف دحمان - English
+  't27': {base:94},  // محمود علم - Robot
+  't31': {base:94},  // احمد صلاح - Math
+  't43': {base:95},  // خالد بارودي - CS
+  't49': {base:94},  // محمد قاسم - Math
+};
+
+// ── 2024-2025 Winners Rotation Mapping ─────────────────────────────────────
+const WINNERS_2425: Record<string, Record<string, string>> = {
+  'سبتمبر': { 'd_arabic':'t48', 'd_islamic':'t39', 'd_math':'t13', 'd_cs':'t34', 'd_english':'t16', 'd_stem':'t57', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'أكتوبر': { 'd_arabic':'t48', 'd_islamic':'t39', 'd_math':'t13', 'd_cs':'t34', 'd_english':'t16', 'd_stem':'t57', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'نوفمبر': { 'd_arabic':'t54', 'd_islamic':'t35', 'd_math':'t41', 'd_cs':'t46', 'd_english':'t22', 'd_stem':'t55', 'd_energylab':'t24', 'd_social':'t17', 'd_robotlab':'t27' },
+  'يناير':  { 'd_arabic':'t33', 'd_islamic':'t56', 'd_math':'t18', 'd_cs':'t43', 'd_english':'t16', 'd_stem':'t36', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'فبراير': { 'd_arabic':'t33', 'd_islamic':'t56', 'd_math':'t18', 'd_cs':'t43', 'd_english':'t16', 'd_stem':'t36', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'مارس':   { 'd_arabic':'t47', 'd_islamic':'t50', 'd_math':'t31', 'd_cs':'t34', 'd_english':'t22', 'd_stem':'t57', 'd_energylab':'t24', 'd_social':'t17', 'd_robotlab':'t27' },
+  'أبريل':  { 'd_arabic':'t53', 'd_islamic':'t39', 'd_math':'t49', 'd_cs':'t46', 'd_english':'t16', 'd_stem':'t55', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'مايو':    { 'd_arabic':'t54', 'd_islamic':'t35', 'd_math':'t13', 'd_cs':'t43', 'd_english':'t22', 'd_stem':'t36', 'd_energylab':'t24', 'd_social':'t17', 'd_robotlab':'t27' },
 };
 
 // Low-dept exceptions (good despite being in STEM/Physics/English)
@@ -326,17 +344,22 @@ function buildSampleEvaluations():Evaluation[] {
         let clampedTotal: number;
         let criteria: EvaluationCriterion[];
 
-        if (TOP_EARLY_TEACHERS.has(tid)) {
-          // HIGH performers: 92-100 range with monthly variation
-          const baseTarget = TOP_MONTHLY_SCORES[mIdx] ?? 95;
-          // Slight teacher-specific offset so same dept teachers differ slightly
-          const tidNum = parseInt(tid.replace('t',''));
-          const teacherOffset = ((tidNum * 7 + yIdx * 13) % 5) * 0.25 - 0.5;
-          const rawTarget = clamp(baseTarget + teacherOffset, 92, 100);
-          clampedTotal = roundQ(rawTarget);
+        const isWinner2425 = year === '2024-2025' && WINNERS_2425[month]?.[teacher.departmentId] === tid;
 
-          // Generate criteria: each 9.0-10, summing to clampedTotal
+        if (TOP_EARLY_TEACHERS.has(tid) || isWinner2425) {
+          const tidNum = parseInt(tid.replace('t',''));
           const seed = tidNum * 500 + mIdx * 31 + yIdx * 79;
+          const rng = seededRnd(seed);
+
+          if (isWinner2425) {
+            // Designated winners for 2024-2025 get 95-100
+            clampedTotal = roundQ(95 + (rng() * 5));
+          } else {
+            // HIGH performers: 92-100 range with monthly variation
+            const baseTarget = TOP_MONTHLY_SCORES[mIdx] ?? 95;
+            const teacherOffset = ((tidNum * 7 + yIdx * 13) % 5) * 0.25 - 0.5;
+            clampedTotal = roundQ(clamp(baseTarget + teacherOffset, 92, 100));
+          }
           criteria = makeCriteriaHigh(clampedTotal, seed);
 
         } else {
@@ -382,7 +405,9 @@ function buildSampleEvaluations():Evaluation[] {
             : clampedTotal>=85 ? 'الاستمرار والمشاركة في ورش تطوير المعلمين' : 'حضور دورة تدريبية متخصصة على نظام قطر للتعليم',
           actionPlan: clampedTotal<75 ? 'خطة تطوير شهرية مع المنسق الإلكتروني' : '',
           evidenceLinks:[],
-          generalNotes: isTop ? 'يُعد المعلم من المعلمين المتميزين في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية، مع التزام واضح بنشر الدروس، رفع المصادر، متابعة الطلاب، وتوظيف الأدوات الرقمية بشكل فعّال.' : '',
+          generalNotes: isWinner2425 
+            ? 'يُعد المعلم من المعلمين المتميزين في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية خلال هذا الشهر، وقد أظهر التزامًا واضحًا في نشر الدروس، رفع المصادر، متابعة الطلاب، وتوظيف الأدوات الرقمية بشكل فعّال داخل القسم.'
+            : isTop ? 'يُعد المعلم من المعلمين المتميزين في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية، مع التزام واضح بنشر الدروس، رفع المصادر، متابعة الطلاب، وتوظيف الأدوات الرقمية بشكل فعّال.' : '',
           createdAt:dateStr, updatedAt:dateStr,
         });
       });
@@ -448,9 +473,9 @@ export const initialEvaluations:Evaluation[] = buildSampleEvaluations();
 
 // ── localStorage ──────────────────────────────────────────────────────────
 const KEYS = {
-  teachers:'qstss_v5_teachers', evaluations:'qstss_v5_evaluations',
+  teachers:'qstss_v5_teachers', evaluations:'qstss_v7_evaluations',
   departments:'qstss_v6_departments',
-  users:'qstss_v8_users',          // bumped to v8: global refresh for new scores
+  users:'qstss_v10_users',          // bumped to v10: full 24-25 rotation
   currentUser:'qstss_current_user',
 };
 function getOrInit<T>(key:string,initial:T[]):T[] {
