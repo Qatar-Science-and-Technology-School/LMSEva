@@ -218,8 +218,7 @@ function deptBase(deptId:string, tid:string):number {
   if (LOW_EXCEPTIONS.has(tid)) return 84;
   if (['d_arabic','d_islamic'].includes(deptId)) return 88;
   if (['d_cs','d_math'].includes(deptId)) return 86;
-  if (['d_bio','d_chem','d_social','d_energylab','d_fablab','d_robotlab'].includes(deptId)) return 81;
-  // STEM, Physics, English = lower
+  if (['d_stem','d_social','d_energylab','d_fablab','d_robotlab'].includes(deptId)) return 81;
   return 74;
 }
 
@@ -445,9 +444,9 @@ export const initialEvaluations:Evaluation[] = buildSampleEvaluations();
 
 // ── localStorage ──────────────────────────────────────────────────────────
 const KEYS = {
-  teachers:'qstss_v3_teachers', evaluations:'qstss_v3_evaluations',
-  departments:'qstss_v4_departments',
-  users:'qstss_v6_users',          // bumped to v6: refresh Ahmad Faris credentials
+  teachers:'qstss_v4_teachers', evaluations:'qstss_v4_evaluations',
+  departments:'qstss_v5_departments',
+  users:'qstss_v7_users',          // bumped to v7: global refresh
   currentUser:'qstss_current_user',
 };
 function getOrInit<T>(key:string,initial:T[]):T[] {
