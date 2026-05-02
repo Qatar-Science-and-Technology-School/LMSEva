@@ -66,12 +66,24 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
       if (!byTeacher[e.teacherId]) byTeacher[e.teacherId] = [];
       byTeacher[e.teacherId].push(e.totalScore);
     });
-    let best = { id: '', avg: 0 };
+    let best = { id: '', score: 0, ev: null as any };
     Object.entries(byTeacher).forEach(([id, scores]) => {
       const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-      if (avg > best.avg) best = { id, avg };
+      if (avg > best.score) {
+        best = { id, score: avg, ev: filtered.find(e => e.teacherId === id) };
+      } else if (avg === best.score && avg > 0) {
+        // Tie-break (simplified: use first eval's criteria count if available)
+        const evA = filtered.find(e => e.teacherId === id);
+        const evB = best.ev;
+        if (evA && evB) {
+          const a10 = evA.criteria.filter((c: any) => c.score === 10).length;
+          const b10 = evB.criteria.filter((c: any) => c.score === 10).length;
+          if (a10 > b10) best = { id, score: avg, ev: evA };
+        }
+      }
     });
-    return teachers.find(t => t.id === best.id);
+    const t = teachers.find(t => t.id === best.id);
+    return t ? { ...t, score: best.score } : null;
   }, [filtered, teachers]);
 
   // Best department
@@ -214,7 +226,7 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
           { label:'التقييمات المكتملة', value: filtered.length, icon:'✅', color:'#0096C7' },
           { label:'متوسط الأداء', value: `${avgScore}%`, icon:'📊', color: avgScore >= 80 ? '#065F46' : avgScore >= 60 ? '#92400E' : '#991B1B' },
           { label:'يحتاجون متابعة', value: teachersNeedingFollowup, icon:'⚠️', color:'#991B1B' },
-          { label:'أفضل معلم', value: bestTeacher?.nameAr || '-', icon:'🏆', color:'#065F46' },
+          { label:'أفضل معلم', value: bestTeacher ? `${bestTeacher.nameAr} (${bestTeacher.score}%)` : '-', icon:'🏆', color:'#065F46' },
           { label:'أفضل قسم', value: bestDept || '-', icon:'🥇', color:'#0096C7' },
           { label:'العام الحالي', value: selYear, icon:'📅', color:'#0F2044' },
           { label:'الأشهر المقيمة', value: selMonth || `${MONTHS.length} أشهر`, icon:'🗓️', color:'#0096C7' },
