@@ -53,7 +53,7 @@ export default function AnalyticsPage({ currentUser }: Props) {
   }, [yearEvals]);
 
   // Teachers needing followup
-  const needFollowup = teacherRanks.filter(r => r.avg < 80);
+  const needFollowup = teacherRanks.filter(r => r.avg < 75);
   // Top performers
   const topPerformers = teacherRanks.filter(r => r.avg >= 90).slice(0,10);
 
@@ -96,7 +96,7 @@ export default function AnalyticsPage({ currentUser }: Props) {
         <div style={{ ...cardStyle, borderRight:'4px solid #991B1B' }}>
           <p style={{ fontSize:'0.7rem', color:'#64748B', margin:0 }}>⚠️ يحتاجون متابعة</p>
           <p style={{ fontSize:'2rem', fontWeight:800, color:'#991B1B', margin:'0.25rem 0 0' }}>{needFollowup.length}</p>
-          <p style={{ fontSize:'0.7rem', color:'#94A3B8', margin:0 }}>متوسط أقل من 60%</p>
+          <p style={{ fontSize:'0.7rem', color:'#94A3B8', margin:0 }}>متوسط أقل من 75%</p>
         </div>
         <div style={{ ...cardStyle, borderRight:'4px solid #065F46' }}>
           <p style={{ fontSize:'0.7rem', color:'#64748B', margin:0 }}>🏆 معلمون متميزون</p>

@@ -487,12 +487,23 @@ const KEYS = {
 };
 function getOrInit<T>(key:string,initial:T[]):T[] {
   if(typeof window==='undefined') return initial;
-  const s=localStorage.getItem(key);
-  if(!s){localStorage.setItem(key,JSON.stringify(initial));return initial;}
-  return JSON.parse(s);
+  try {
+    const s=localStorage.getItem(key);
+    if(!s){localStorage.setItem(key,JSON.stringify(initial));return initial;}
+    return JSON.parse(s);
+  } catch(e) {
+    console.error('Storage error:', e);
+    return initial;
+  }
 }
 function saveData<T>(key:string,data:T[]) {
-  if(typeof window!=='undefined') localStorage.setItem(key,JSON.stringify(data));
+  if(typeof window!=='undefined') {
+    try {
+      localStorage.setItem(key,JSON.stringify(data));
+    } catch(e) {
+      console.error('Save error:', e);
+    }
+  }
 }
 export const db = {
   getUsers:        ()=>getOrInit(KEYS.users,initialUsers),

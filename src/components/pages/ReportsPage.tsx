@@ -137,7 +137,7 @@ export default function ReportsPage({ currentUser }: Props) {
       <div style={cardStyle} id="report-header">
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'1rem' }}>
           <div>
-            <p style={{ fontSize:'0.65rem', color:'#94A3B8', margin:0 }}>المملكة العربية السعودية - وزارة التعليم</p>
+            <p style={{ fontSize:'0.65rem', color:'#94A3B8', margin:0 }}>دولة قطر - وزارة التربية والتعليم والتعليم العالي</p>
             <h3 style={{ fontSize:'1rem', fontWeight:800, color:'#0F2044', margin:'0.1rem 0' }}>{SCHOOL_NAME}</h3>
             <p style={{ fontSize:'0.75rem', color:'#64748B', margin:0 }}>
               {REPORT_TYPES.find(r=>r.id===reportType)?.label} | العام الأكاديمي: {selYear}
