@@ -51,9 +51,6 @@ export const initialDepartments:Department[] = [
   {id:'d_islamic', nameAr:'التربية الإسلامية',      nameEn:'Islamic Education'},
   {id:'d_cs',      nameAr:'الحاسوب',               nameEn:'Computer Science'},
   {id:'d_math',    nameAr:'الرياضيات',             nameEn:'Mathematics'},
-  {id:'d_chem',    nameAr:'الكيمياء',              nameEn:'Chemistry'},
-  {id:'d_phys',    nameAr:'الفيزياء',              nameEn:'Physics'},
-  {id:'d_bio',     nameAr:'الأحياء',               nameEn:'Biology'},
   {id:'d_english', nameAr:'اللغة الإنجليزية',      nameEn:'English Language'},
   {id:'d_stem',    nameAr:'STEM',                  nameEn:'STEM'},
   {id:'d_energylab',nameAr:'مختبر الطاقة',         nameEn:'Energy Lab'},
@@ -449,7 +446,7 @@ export const initialEvaluations:Evaluation[] = buildSampleEvaluations();
 // ── localStorage ──────────────────────────────────────────────────────────
 const KEYS = {
   teachers:'qstss_v3_teachers', evaluations:'qstss_v3_evaluations',
-  departments:'qstss_v3_departments',
+  departments:'qstss_v4_departments',
   users:'qstss_v6_users',          // bumped to v6: refresh Ahmad Faris credentials
   currentUser:'qstss_current_user',
 };

@@ -26,13 +26,13 @@ export default function TakreemPage({ currentUser }: Props) {
   // Tab state
   const [activeTab, setActiveTab] = useState<'monthly'|'archive'|'annual'>('monthly');
 
-  // Merged departments logic
+  // Merged departments logic (legacy support for d_phys/chem/bio -> d_stem)
   function getMergedDeptId(deptId: string): string {
     if (['d_phys', 'd_chem', 'd_bio'].includes(deptId)) return 'd_stem';
     return deptId;
   }
 
-  const mergedDepartments = departments.filter(d => !['d_phys', 'd_chem', 'd_bio'].includes(d.id));
+  const mergedDepartments = departments;
 
   // Determine which merged departments this coordinator can see
   const availableMergedDepts = isCoord && coordDepts.length > 0

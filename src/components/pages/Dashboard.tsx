@@ -99,15 +99,14 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
     
     let evals = scopedEvals.filter(e => e.academicYear === selYear && e.month === targetMonth);
     
-    // Group by merged department
-    const getMergedDeptId = (dId: string) => ['d_phys', 'd_chem', 'd_bio'].includes(dId) ? 'd_stem' : dId;
+    // Group by department
     const byDept: Record<string, typeof evals> = {};
     evals.forEach(e => {
       const t = teachers.find(x => x.id === e.teacherId);
       if (!t) return;
-      const mId = getMergedDeptId(t.departmentId);
-      if (!byDept[mId]) byDept[mId] = [];
-      byDept[mId].push(e);
+      const dId = t.departmentId;
+      if (!byDept[dId]) byDept[dId] = [];
+      byDept[dId].push(e);
     });
 
     const honorees: any[] = [];
