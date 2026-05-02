@@ -247,16 +247,24 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
         </div>
         <div style={darkCardStyle}>
           <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>🏅 توزيع مستويات الأداء</h3>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={240}>
             <PieChart>
-              <Pie data={distData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={75} 
-                label={({ name, percent }) => `${name} ${((percent||0)*100).toFixed(0)}%`} 
-                labelLine={{ stroke:'rgba(255,255,255,0.3)' }}
-                style={{ fill:'#fff', fontSize:'10px' }}
+              <Pie 
+                data={distData} 
+                dataKey="count" 
+                nameKey="name" 
+                cx="50%" 
+                cy="50%" 
+                outerRadius={65}
+                labelLine={{ stroke:'rgba(255,255,255,0.5)' }}
+                label={{ fill: '#FFFFFF', fontSize: 11, fontWeight: 700 }}
               >
-                {distData.map((_, i) => <Cell key={i} fill={distColors[i % distColors.length]} />)}
+                {distData.map((_, i) => (
+                  <Cell key={i} fill={['#00B4D8','#0096C7','#0077B6','#023E8A','#03045E'][i % 5]} />
+                ))}
               </Pie>
               <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
+              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ color:'#fff', fontSize:'11px', paddingTop:'10px' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
