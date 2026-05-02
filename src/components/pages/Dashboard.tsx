@@ -55,7 +55,7 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
     });
     return Object.entries(byTeacher).filter(([, scores]) => {
       const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-      return avg < 60;
+      return avg < 75;
     }).length;
   }, [filtered]);
 
@@ -155,9 +155,8 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
   const distData = [
     { name:'متميز', count: filtered.filter(e => e.totalScore >= 90).length },
     { name:'متقدم جدًا', count: filtered.filter(e => e.totalScore >= 80 && e.totalScore < 90).length },
-    { name:'جيد جدًا', count: filtered.filter(e => e.totalScore >= 70 && e.totalScore < 80).length },
-    { name:'جيد', count: filtered.filter(e => e.totalScore >= 60 && e.totalScore < 70).length },
-    { name:'يحتاج متابعة', count: filtered.filter(e => e.totalScore < 60).length },
+    { name:'مستوى جيد', count: filtered.filter(e => e.totalScore >= 70 && e.totalScore < 80).length },
+    { name:'يحتاج متابعة', count: filtered.filter(e => e.totalScore < 70).length },
   ].filter(d => d.count > 0);
   const distColors = ['#065F46','#1E40AF','#0E7490','#92400E','#991B1B'];
 
@@ -292,45 +291,44 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
       </div>
 
       {/* Takreem Honorees Widget */}
-      <div style={{ ...kpiStyle, marginBottom:'1rem' }}>
+      <div style={{ ...darkCardStyle, marginBottom:'1rem' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem' }}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', margin:0 }}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', margin:0 }}>
             🏆 {isCoord && coordDepts.length === 1 ? 'المعلم المكرم في القسم لهذا الشهر' : 'المعلمون المكرمون لهذا الشهر'} ({takreemHonorees.month})
           </h3>
           <button onClick={() => {
-            // Find Takreem button in AppShell and click it (hacky but works for UI integration, or we just instruct user)
             const navBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('تكريم المعلمين'));
             if(navBtn) navBtn.click();
-          }} className="btn btn-ghost" style={{ fontSize:'0.7rem', padding:'0.25rem 0.6rem', color:'#0096C7' }}>
+          }} className="btn btn-ghost" style={{ fontSize:'0.7rem', padding:'0.25rem 0.6rem', color:'#fff' }}>
             عرض صفحة التكريم
           </button>
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'0.75rem' }}>
           {takreemHonorees.data.map((h: any) => (
-            <div key={h.t.id} style={{ padding:'0.75rem', background:'#F8FAFC', borderRadius:'8px', borderLeft:'3px solid #0096C7' }}>
-              <div style={{ fontSize:'0.7rem', color:'#64748B', fontWeight:700 }}>{h.deptName}</div>
-              <div style={{ fontSize:'0.85rem', fontWeight:800, color:'#0F2044', margin:'0.25rem 0' }}>{h.t.nameAr}</div>
+            <div key={h.t.id} style={{ padding:'0.75rem', background:'rgba(255,255,255,0.05)', borderRadius:'8px', borderLeft:'3px solid #0096C7' }}>
+              <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.7)', fontWeight:700 }}>{h.deptName}</div>
+              <div style={{ fontSize:'0.85rem', fontWeight:800, color:'#fff', margin:'0.25rem 0' }}>{h.t.nameAr}</div>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:'0.7rem', color:'#64748B' }}>الدرجة:</span>
-                <span style={{ fontSize:'0.85rem', fontWeight:800, color:'#065F46' }}>{h.ev.totalScore}%</span>
+                <span style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.7)' }}>الدرجة:</span>
+                <span style={{ fontSize:'0.85rem', fontWeight:800, color:'#00B4D8' }}>{h.ev.totalScore}%</span>
               </div>
             </div>
           ))}
           {takreemHonorees.data.length === 0 && (
-            <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'1rem', color:'#64748B', fontSize:'0.8rem' }}>لا يوجد بيانات لهذا الشهر</div>
+            <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'1rem', color:'rgba(255,255,255,0.5)', fontSize:'0.8rem' }}>لا يوجد بيانات لهذا الشهر</div>
           )}
         </div>
       </div>
 
       {/* Recent evaluations table */}
-      <div style={{ ...kpiStyle }}>
-        <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'1rem' }}>🕐 آخر التقييمات</h3>
+      <div style={darkCardStyle}>
+        <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>🕐 آخر التقييمات</h3>
         <div style={{ overflowX:'auto' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.8rem' }}>
             <thead>
               <tr>
                 {['المعلم','القسم','الشهر','العام','الدرجة','مستوى الأداء','الإجراء'].map(h => (
-                  <th key={h} style={{ padding:'0.6rem 0.75rem', textAlign:'right', fontWeight:600, borderBottom:'2px solid var(--gray-200)' }}>{h}</th>
+                  <th key={h} style={{ padding:'0.6rem 0.75rem', textAlign:'right', fontWeight:600, color:'#fff', borderBottom:'1px solid rgba(255,255,255,0.1)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -340,19 +338,19 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
                 const dept = t ? getDeptName(t.departmentId, departments) : '-';
                 const perf = getPerformanceLevel(ev.totalScore);
                 return (
-                  <tr key={ev.id} style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC', borderBottom:'1px solid #E2E8F0' }}>
-                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:600 }}>{t?.nameAr || '-'}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', color:'#64748B' }}>{dept}</td>
-                    <td style={{ padding:'0.6rem 0.75rem' }}>{ev.month}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', color:'#64748B' }}>{ev.academicYear}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:700 }}>{ev.totalScore}/100</td>
+                  <tr key={ev.id} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
+                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:600, color:'#fff' }}>{t?.nameAr || '-'}</td>
+                    <td style={{ padding:'0.6rem 0.75rem', color:'rgba(255,255,255,0.6)' }}>{dept}</td>
+                    <td style={{ padding:'0.6rem 0.75rem', color:'#fff' }}>{ev.month}</td>
+                    <td style={{ padding:'0.6rem 0.75rem', color:'rgba(255,255,255,0.6)' }}>{ev.academicYear}</td>
+                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:700, color:'#00B4D8' }}>{ev.totalScore}/100</td>
                     <td style={{ padding:'0.6rem 0.75rem' }}>
                       <span style={{ background:perf.bg, color:perf.color, padding:'0.2rem 0.6rem', borderRadius:'999px', fontSize:'0.7rem', fontWeight:700 }}>
                         {perf.label}
                       </span>
                     </td>
                     <td style={{ padding:'0.6rem 0.75rem' }}>
-                      {t && <button onClick={() => onViewTeacher(t.id)} className="btn btn-ghost" style={{ padding:'0.25rem 0.6rem', fontSize:'0.7rem' }}>عرض الملف</button>}
+                      {t && <button onClick={() => onViewTeacher(t.id)} className="btn btn-ghost" style={{ padding:'0.25rem 0.6rem', fontSize:'0.7rem', color:'#fff', border:'1px solid rgba(255,255,255,0.2)' }}>عرض الملف</button>}
                     </td>
                   </tr>
                 );

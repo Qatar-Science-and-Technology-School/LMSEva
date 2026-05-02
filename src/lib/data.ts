@@ -232,7 +232,7 @@ const WINNERS_2425: Record<string, Record<string, string>> = {
 // Low-dept exceptions (good despite being in STEM/Physics/English)
 const LOW_EXCEPTIONS = new Set(['t16','t40','t44']); // كارش, نزار, اشرف فدعوس
 
-// Teachers needing follow-up (scores < 60)
+// Teachers needing follow-up (scores < 70)
 const FOLLOWUP_TEACHERS = new Set(['t2','t3','t5','t7','t9','t11','t14','t15']);
 
 // Dept base scores (target total out of 100)
@@ -380,11 +380,11 @@ function buildSampleEvaluations():Evaluation[] {
           const avgCrit = targetTotal / 10;
           criteria = Array.from({length:10}, (_, ci) => {
             const r2 = seededRnd(seed + ci * 17 + 5);
-            const v = clamp(roundQ(avgCrit + (r2()-0.5)*1.5), 7.0, 9.9);
+            const v = clamp(roundQ(avgCrit + (r2()-0.5)*1.5), 4.0, 9.9);
             return {score:v, note:''};
           });
           const totalScore = roundQ(criteria.reduce((s,c)=>s+c.score, 0));
-          clampedTotal = clamp(totalScore, 70, 99);
+          clampedTotal = clamp(totalScore, 40, 99);
         }
 
         const averageScore = roundQ(clampedTotal / 10);
@@ -426,7 +426,7 @@ function buildSampleEvaluations():Evaluation[] {
       const tid = teacher.id;
       const annualScore = OFFICIAL_2526[teacher.employeeId];
       const isFollowup = FOLLOWUP_TEACHERS.has(tid);
-      const targetBase = annualScore !== undefined ? annualScore : (isFollowup ? 52 : 78);
+      const targetBase = annualScore !== undefined ? annualScore : (isFollowup ? 48 : 78);
 
       const offset = MONTH_OFFSETS[mIdx];
       // For score=100: keep 98.5-100; For low scores: stay near annual
@@ -435,7 +435,7 @@ function buildSampleEvaluations():Evaluation[] {
         rawTotal = clamp(100 + offset * 0.5, 98.5, 100);
       } else {
         const noise = (seededRnd(parseInt(tid.replace('t','')) * 100 + mIdx)() - 0.5) * 4;
-        rawTotal = clamp(targetBase + offset + noise, isFollowup ? 40 : 65, 100);
+        rawTotal = clamp(targetBase + offset + noise, isFollowup ? 35 : 65, 100);
       }
       const totalScore = roundQ(rawTotal);
       const averageScore = roundQ(totalScore / 10);
@@ -480,9 +480,9 @@ export const initialEvaluations:Evaluation[] = buildSampleEvaluations();
 
 // ── localStorage ──────────────────────────────────────────────────────────
 const KEYS = {
-  teachers:'qstss_v5_teachers', evaluations:'qstss_v9_evaluations',
+  teachers:'qstss_v5_teachers', evaluations:'qstss_v10_evaluations',
   departments:'qstss_v6_departments',
-  users:'qstss_v12_users',          // bumped to v12: all teachers 25-26
+  users:'qstss_v13_users',          // bumped to v13: force low scores
   currentUser:'qstss_current_user',
 };
 function getOrInit<T>(key:string,initial:T[]):T[] {
