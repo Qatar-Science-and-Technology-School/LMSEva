@@ -182,6 +182,10 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
     background:'#fff', borderRadius:'12px', padding:'1.25rem',
     boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:'1px solid #E2E8F0'
   };
+  const darkCardStyle = {
+    background:'#0F2044', borderRadius:'12px', padding:'1.25rem', color:'#fff',
+    boxShadow:'0 4px 12px rgba(0,0,0,0.15)', border:'1px solid rgba(255,255,255,0.1)'
+  };
 
   return (
     <div style={{ padding:'1.5rem', direction:'rtl' }}>
@@ -230,26 +234,30 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
 
       {/* Charts row 1 */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>
-        <div style={{ ...kpiStyle }}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'1rem' }}>📈 متوسط الأداء حسب الشهر</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>📈 متوسط الأداء حسب الشهر</h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={monthlyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="name" tick={{ fontSize:9 }} />
-              <YAxis domain={[0,100]} tick={{ fontSize:9 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="avg" stroke="#0096C7" strokeWidth={2} dot={{ r:3 }} name="المتوسط" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" tick={{ fontSize:9, fill:'#fff' }} axisLine={{ stroke:'rgba(255,255,255,0.2)' }} />
+              <YAxis domain={[0,100]} tick={{ fontSize:9, fill:'#fff' }} axisLine={{ stroke:'rgba(255,255,255,0.2)' }} />
+              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
+              <Line type="monotone" dataKey="avg" stroke="#00B4D8" strokeWidth={3} dot={{ r:4, fill:'#00B4D8' }} name="المتوسط" />
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ ...kpiStyle }}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'1rem' }}>🏅 توزيع مستويات الأداء</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>🏅 توزيع مستويات الأداء</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={distData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={75} label={({ name, percent }) => `${name} ${((percent||0)*100).toFixed(0)}%`} labelLine={false}>
+              <Pie data={distData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={75} 
+                label={({ name, percent }) => `${name} ${((percent||0)*100).toFixed(0)}%`} 
+                labelLine={{ stroke:'rgba(255,255,255,0.3)' }}
+                style={{ fill:'#fff', fontSize:'10px' }}
+              >
                 {distData.map((_, i) => <Cell key={i} fill={distColors[i % distColors.length]} />)}
               </Pie>
-              <Tooltip />
+              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -257,27 +265,27 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
 
       {/* Charts row 2 */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>
-        <div style={{ ...kpiStyle }}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'1rem' }}>🏫 مقارنة الأقسام</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>🏫 مقارنة الأقسام</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={deptData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis type="number" domain={[0,100]} tick={{ fontSize:9 }} />
-              <YAxis dataKey="name" type="category" tick={{ fontSize:9 }} width={90} />
-              <Tooltip />
-              <Bar dataKey="avg" fill="#0F2044" name="المتوسط" radius={[0,4,4,0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis type="number" domain={[0,100]} tick={{ fontSize:9, fill:'#fff' }} />
+              <YAxis dataKey="name" type="category" tick={{ fontSize:9, fill:'#fff' }} width={90} />
+              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
+              <Bar dataKey="avg" fill="#00B4D8" name="المتوسط" radius={[0,4,4,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={{ ...kpiStyle }}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'1rem' }}>📅 تطور الأداء عبر السنوات</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>📅 تطور الأداء عبر السنوات</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={yearTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="name" tick={{ fontSize:10 }} />
-              <YAxis domain={[0,100]} tick={{ fontSize:10 }} />
-              <Tooltip />
-              <Bar dataKey="avg" fill="#0096C7" name="المتوسط" radius={[4,4,0,0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" tick={{ fontSize:10, fill:'#fff' }} />
+              <YAxis domain={[0,100]} tick={{ fontSize:10, fill:'#fff' }} />
+              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
+              <Bar dataKey="avg" fill="#00B4D8" name="المتوسط" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -320,9 +328,9 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
         <div style={{ overflowX:'auto' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.8rem' }}>
             <thead>
-              <tr style={{ background:'#F8FAFC' }}>
+              <tr>
                 {['المعلم','القسم','الشهر','العام','الدرجة','مستوى الأداء','الإجراء'].map(h => (
-                  <th key={h} style={{ padding:'0.6rem 0.75rem', textAlign:'right', color:'#64748B', fontWeight:600, borderBottom:'2px solid #E2E8F0' }}>{h}</th>
+                  <th key={h} style={{ padding:'0.6rem 0.75rem', textAlign:'right', fontWeight:600, borderBottom:'2px solid var(--gray-200)' }}>{h}</th>
                 ))}
               </tr>
             </thead>

@@ -340,15 +340,15 @@ table {
 }
 
 thead {
-  background: var(--gray-50);
+  background: var(--navy);
 }
 
 th {
   padding: 0.875rem 1rem;
   text-align: right;
   font-weight: 600;
-  color: var(--gray-700);
-  border-bottom: 1px solid var(--gray-200);
+  color: white;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
   white-space: nowrap;
 }
 

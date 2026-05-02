@@ -305,9 +305,9 @@ export default function TakreemPage({ currentUser }: Props) {
             <div style={{ overflowX:'auto' }}>
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.85rem' }}>
                 <thead>
-                  <tr style={{ background:'#F8FAFC', borderBottom:'2px solid #E2E8F0' }}>
+                  <tr style={{ borderBottom:'2px solid var(--gray-200)' }}>
                     {['القسم','اسم المعلم','المادة','الدرجة النهائية','متوسط الدرجة','مستوى الأداء','سبب التكريم'].map(h => (
-                      <th key={h} style={{ padding:'0.75rem', textAlign:'right', color:'#64748B', fontWeight:700 }}>{h}</th>
+                      <th key={h} style={{ padding:'0.75rem', textAlign:'right', fontWeight:700 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>

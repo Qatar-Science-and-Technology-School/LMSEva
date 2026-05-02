@@ -52,6 +52,10 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack }: P
   });
 
   const cardStyle = { background:'#fff', borderRadius:'12px', padding:'1.25rem', boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:'1px solid #E2E8F0', marginBottom:'1rem' };
+  const darkCardStyle = {
+    background:'#0F2044', borderRadius:'12px', padding:'1.25rem', color:'#fff',
+    boxShadow:'0 4px 12px rgba(0,0,0,0.15)', border:'1px solid rgba(255,255,255,0.1)', marginBottom:'1rem'
+  };
   const statBox = (label:string, value:string|number, sub?:string, color='#0F2044') => (
     <div style={{ ...cardStyle, marginBottom:0, textAlign:'center' }}>
       <p style={{ fontSize:'0.7rem', color:'#64748B', margin:'0 0 0.25rem' }}>{label}</p>
@@ -102,43 +106,43 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack }: P
 
       {/* Charts */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>
-        <div style={cardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'0.75rem' }}>📈 الأداء الشهري (مقارنة بالقسم)</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'0.75rem' }}>📈 الأداء الشهري (مقارنة بالقسم)</h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={monthlyTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="name" tick={{ fontSize:8 }} />
-              <YAxis domain={[0,100]} tick={{ fontSize:9 }} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="المعلم" stroke="#0F2044" strokeWidth={2} dot={{ r:3 }} connectNulls />
-              <Line type="monotone" dataKey="القسم" stroke="#0096C7" strokeWidth={1} strokeDasharray="4 2" dot={false} connectNulls />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" tick={{ fontSize:8, fill:'#fff' }} />
+              <YAxis domain={[0,100]} tick={{ fontSize:9, fill:'#fff' }} />
+              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
+              <Legend wrapperStyle={{ color:'#fff' }} />
+              <Line type="monotone" dataKey="المعلم" stroke="#fff" strokeWidth={3} dot={{ r:4, fill:'#fff' }} connectNulls />
+              <Line type="monotone" dataKey="القسم" stroke="#00B4D8" strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls />
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div style={cardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'0.75rem' }}>🕸️ تحليل بنود التقييم (آخر تقييم)</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'0.75rem' }}>🕸️ تحليل بنود التقييم (آخر تقييم)</h3>
           {radarData.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <RadarChart data={radarData}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize:9 }} />
-                <Radar name="الدرجة" dataKey="value" stroke="#0F2044" fill="#0F2044" fillOpacity={0.3} />
+                <PolarGrid stroke="rgba(255,255,255,0.2)" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize:9, fill:'#fff' }} />
+                <Radar name="الدرجة" dataKey="value" stroke="#00B4D8" fill="#00B4D8" fillOpacity={0.4} />
               </RadarChart>
             </ResponsiveContainer>
-          ) : <p style={{ textAlign:'center', color:'#94A3B8', fontSize:'0.8rem' }}>لا توجد بيانات</p>}
+          ) : <p style={{ textAlign:'center', color:'rgba(255,255,255,0.5)', fontSize:'0.8rem' }}>لا توجد بيانات</p>}
         </div>
       </div>
 
-      <div style={cardStyle}>
-        <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'0.75rem' }}>📅 تطور الأداء عبر السنوات</h3>
+      <div style={darkCardStyle}>
+        <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'0.75rem' }}>📅 تطور الأداء عبر السنوات</h3>
         <ResponsiveContainer width="100%" height={150}>
           <BarChart data={yearTrend}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-            <XAxis dataKey="name" tick={{ fontSize:10 }} />
-            <YAxis domain={[0,100]} tick={{ fontSize:10 }} />
-            <Tooltip />
-            <Bar dataKey="avg" fill="#0096C7" name="المتوسط" radius={[4,4,0,0]} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+            <XAxis dataKey="name" tick={{ fontSize:10, fill:'#fff' }} />
+            <YAxis domain={[0,100]} tick={{ fontSize:10, fill:'#fff' }} />
+            <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
+            <Bar dataKey="avg" fill="#00B4D8" name="المتوسط" radius={[4,4,0,0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -149,9 +153,9 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack }: P
         <div style={{ overflowX:'auto' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.78rem' }}>
             <thead>
-              <tr style={{ background:'#F8FAFC' }}>
+              <tr style={{ borderBottom:'2px solid var(--gray-200)' }}>
                 {['الشهر','العام الأكاديمي','المجموع','المتوسط','مستوى الأداء','نقاط القوة','التوصيات'].map(h => (
-                  <th key={h} style={{ padding:'0.5rem 0.75rem', textAlign:'right', color:'#64748B', borderBottom:'2px solid #E2E8F0', whiteSpace:'nowrap' }}>{h}</th>
+                  <th key={h} style={{ padding:'0.5rem 0.75rem', textAlign:'right', fontWeight:700, whiteSpace:'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>

@@ -75,7 +75,11 @@ export default function AnalyticsPage({ currentUser }: Props) {
   });
 
   const cardStyle = { background:'#fff', borderRadius:'12px', padding:'1.25rem', boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:'1px solid #E2E8F0' };
-  const COLORS4 = ['#0F2044','#0096C7','#00B4D8','#48CAE4'];
+  const darkCardStyle = {
+    background:'#0F2044', borderRadius:'12px', padding:'1.25rem', color:'#fff',
+    boxShadow:'0 4px 12px rgba(0,0,0,0.15)', border:'1px solid rgba(255,255,255,0.1)'
+  };
+  const COLORS4 = ['#00B4D8','#90E0EF','#0096C7','#48CAE4'];
 
   return (
     <div style={{ padding:'1.5rem', direction:'rtl' }}>
@@ -108,25 +112,25 @@ export default function AnalyticsPage({ currentUser }: Props) {
 
       {/* Dept ranking + Criteria */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>
-        <div style={cardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'0.75rem' }}>🏫 ترتيب الأقسام</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'0.75rem' }}>🏫 ترتيب الأقسام</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={deptRanks.slice(0,8)} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis type="number" domain={[0,100]} tick={{ fontSize:9 }} />
-              <YAxis dataKey="dept.nameAr" type="category" tick={{ fontSize:9 }} width={100} />
-              <Tooltip formatter={(v) => `${v}%`} />
-              <Bar dataKey="avg" fill="#0F2044" name="المتوسط" radius={[0,4,4,0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis type="number" domain={[0,100]} tick={{ fontSize:9, fill:'#fff' }} />
+              <YAxis dataKey="dept.nameAr" type="category" tick={{ fontSize:9, fill:'#fff' }} width={100} />
+              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
+              <Bar dataKey="avg" fill="#00B4D8" name="المتوسط" radius={[0,4,4,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div style={cardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'0.75rem' }}>🕸️ تحليل بنود التقييم</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'0.75rem' }}>🕸️ تحليل بنود التقييم</h3>
           <ResponsiveContainer width="100%" height={220}>
             <RadarChart data={criteriaAvg} cx="50%" cy="50%" outerRadius="70%">
-              <PolarGrid />
-              <PolarAngleAxis dataKey="subject" tick={{ fontSize:10 }} />
-              <Radar name="المتوسط" dataKey="avg" stroke="#0096C7" fill="#0096C7" fillOpacity={0.3} />
+              <PolarGrid stroke="rgba(255,255,255,0.2)" />
+              <PolarAngleAxis dataKey="subject" tick={{ fontSize:10, fill:'#fff' }} />
+              <Radar name="المتوسط" dataKey="avg" stroke="#00B4D8" fill="#00B4D8" fillOpacity={0.4} />
             </RadarChart>
           </ResponsiveContainer>
         </div>
@@ -134,30 +138,30 @@ export default function AnalyticsPage({ currentUser }: Props) {
 
       {/* High perf depts monthly + Year comparison */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>
-        <div style={cardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'0.75rem' }}>⭐ أداء الأقسام المتميزة (شهري)</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'0.75rem' }}>⭐ أداء الأقسام المتميزة (شهري)</h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={highPerfData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="name" tick={{ fontSize:8 }} />
-              <YAxis domain={[0,100]} tick={{ fontSize:9 }} />
-              <Tooltip />
-              <Legend iconSize={8} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" tick={{ fontSize:8, fill:'#fff' }} />
+              <YAxis domain={[0,100]} tick={{ fontSize:9, fill:'#fff' }} />
+              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
+              <Legend iconSize={8} wrapperStyle={{ color:'#fff' }} />
               {['اللغة العربية','التربية الإسلامية','الحاسوب','الرياضيات'].map((name, i) => (
                 <Line key={name} type="monotone" dataKey={name} stroke={COLORS4[i]} strokeWidth={2} dot={{ r:2 }} connectNulls />
               ))}
             </LineChart>
           </ResponsiveContainer>
         </div>
-        <div style={cardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'0.75rem' }}>📅 مقارنة الأداء بين الأعوام</h3>
+        <div style={darkCardStyle}>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'0.75rem' }}>📅 مقارنة الأداء بين الأعوام</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={yearComp}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-              <XAxis dataKey="name" tick={{ fontSize:9 }} />
-              <YAxis domain={[0,100]} tick={{ fontSize:10 }} />
-              <Tooltip formatter={(v) => `${v}%`} />
-              <Bar dataKey="avg" fill="#0096C7" name="المتوسط" radius={[4,4,0,0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" tick={{ fontSize:9, fill:'#fff' }} />
+              <YAxis domain={[0,100]} tick={{ fontSize:10, fill:'#fff' }} />
+              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
+              <Bar dataKey="avg" fill="#00B4D8" name="المتوسط" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -170,14 +174,14 @@ export default function AnalyticsPage({ currentUser }: Props) {
         <div style={{ ...cardStyle, borderTop:'3px solid #991B1B', marginTop:'1rem' }}>
           <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#991B1B', marginBottom:'0.75rem' }}>⚠️ المعلمون الذين يحتاجون متابعة ({selYear})</h3>
           <div style={{ overflowX:'auto' }}>
-            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.78rem' }}>
-              <thead>
-                <tr style={{ background:'#FEF2F2' }}>
-                  {['الرقم الوظيفي','اسم المعلم','القسم','متوسط الأداء','عدد التقييمات'].map(h => (
-                    <th key={h} style={{ padding:'0.5rem', textAlign:'right', color:'#991B1B', borderBottom:'1px solid #FECACA' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.78rem' }}>
+            <thead>
+              <tr>
+                {['الرقم الوظيفي','اسم المعلم','القسم','متوسط الأداء','عدد التقييمات'].map(h => (
+                  <th key={h} style={{ padding:'0.5rem', textAlign:'right', fontWeight:700 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
               <tbody>
                 {needFollowup.map(r => (
                   <tr key={r.teacher.id} style={{ borderBottom:'1px solid #FEE2E2' }}>
