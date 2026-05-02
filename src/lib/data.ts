@@ -233,7 +233,7 @@ const WINNERS_2425: Record<string, Record<string, string>> = {
 const LOW_EXCEPTIONS = new Set(['t16','t40','t44']); // كارش, نزار, اشرف فدعوس
 
 // Teachers needing follow-up (scores < 60)
-const FOLLOWUP_TEACHERS = new Set(['t2','t5','t9','t14']);
+const FOLLOWUP_TEACHERS = new Set(['t2','t3','t5','t7','t9','t11','t14','t15']);
 
 // Dept base scores (target total out of 100)
 function deptBase(deptId:string, tid:string):number {
@@ -425,15 +425,17 @@ function buildSampleEvaluations():Evaluation[] {
     initialTeachers.forEach((teacher) => {
       const tid = teacher.id;
       const annualScore = OFFICIAL_2526[teacher.employeeId];
-      if (annualScore === undefined) return; // skip if not in official table
+      const isFollowup = FOLLOWUP_TEACHERS.has(tid);
+      const targetBase = annualScore !== undefined ? annualScore : (isFollowup ? 52 : 78);
 
       const offset = MONTH_OFFSETS[mIdx];
       // For score=100: keep 98.5-100; For low scores: stay near annual
       let rawTotal: number;
-      if (annualScore === 100) {
+      if (targetBase === 100) {
         rawTotal = clamp(100 + offset * 0.5, 98.5, 100);
       } else {
-        rawTotal = clamp(annualScore + offset, 1, 100);
+        const noise = (seededRnd(parseInt(tid.replace('t','')) * 100 + mIdx)() - 0.5) * 4;
+        rawTotal = clamp(targetBase + offset + noise, isFollowup ? 40 : 65, 100);
       }
       const totalScore = roundQ(rawTotal);
       const averageScore = roundQ(totalScore / 10);
@@ -447,7 +449,7 @@ function buildSampleEvaluations():Evaluation[] {
 
       const isSpecialist = false; // no text-note teachers in official table
       const isStrong = totalScore >= 90;
-      const needsFollowup = totalScore < 80;
+      const needsFollowup = totalScore < 65;
 
       out.push({
         id:`e${idx++}`, teacherId:tid, evaluatorId:'u1',
@@ -478,9 +480,9 @@ export const initialEvaluations:Evaluation[] = buildSampleEvaluations();
 
 // ── localStorage ──────────────────────────────────────────────────────────
 const KEYS = {
-  teachers:'qstss_v5_teachers', evaluations:'qstss_v8_evaluations',
+  teachers:'qstss_v5_teachers', evaluations:'qstss_v9_evaluations',
   departments:'qstss_v6_departments',
-  users:'qstss_v11_users',          // bumped to v11: followup teachers
+  users:'qstss_v12_users',          // bumped to v12: all teachers 25-26
   currentUser:'qstss_current_user',
 };
 function getOrInit<T>(key:string,initial:T[]):T[] {
