@@ -329,14 +329,14 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
       </div>
 
       {/* Recent evaluations table */}
-      <div style={darkCardStyle}>
-        <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>🕐 آخر التقييمات</h3>
+      <div style={kpiStyle}>
+        <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'1rem' }}>🕐 آخر التقييمات</h3>
         <div style={{ overflowX:'auto' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.8rem' }}>
             <thead>
               <tr>
                 {['المعلم','القسم','الشهر','العام','الدرجة','مستوى الأداء','الإجراء'].map(h => (
-                  <th key={h} style={{ padding:'0.6rem 0.75rem', textAlign:'right', fontWeight:600, color:'#fff', borderBottom:'1px solid rgba(255,255,255,0.1)' }}>{h}</th>
+                  <th key={h} style={{ padding:'0.6rem 0.75rem', textAlign:'right', fontWeight:600, color:'#0F2044', borderBottom:'2px solid #E2E8F0' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -346,19 +346,19 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
                 const dept = t ? getDeptName(t.departmentId, departments) : '-';
                 const perf = getPerformanceLevel(ev.totalScore);
                 return (
-                  <tr key={ev.id} style={{ background: i % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.05)', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:600, color:'#fff' }}>{t?.nameAr || '-'}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', color:'rgba(255,255,255,0.6)' }}>{dept}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', color:'#fff' }}>{ev.month}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', color:'rgba(255,255,255,0.6)' }}>{ev.academicYear}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:700, color:'#00B4D8' }}>{ev.totalScore}/100</td>
+                  <tr key={ev.id} style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC', borderBottom:'1px solid #E2E8F0' }}>
+                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:600, color:'#0F2044' }}>{t?.nameAr || '-'}</td>
+                    <td style={{ padding:'0.6rem 0.75rem', color:'#64748B' }}>{dept}</td>
+                    <td style={{ padding:'0.6rem 0.75rem', color:'#0F2044' }}>{ev.month}</td>
+                    <td style={{ padding:'0.6rem 0.75rem', color:'#64748B' }}>{ev.academicYear}</td>
+                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:700, color:'#0096C7' }}>{ev.totalScore}/100</td>
                     <td style={{ padding:'0.6rem 0.75rem' }}>
                       <span style={{ background:perf.bg, color:perf.color, padding:'0.2rem 0.6rem', borderRadius:'999px', fontSize:'0.7rem', fontWeight:700 }}>
                         {perf.label}
                       </span>
                     </td>
                     <td style={{ padding:'0.6rem 0.75rem' }}>
-                      {t && <button onClick={() => onViewTeacher(t.id)} className="btn btn-ghost" style={{ padding:'0.25rem 0.6rem', fontSize:'0.7rem', color:'#fff', border:'1px solid rgba(255,255,255,0.2)' }}>عرض الملف</button>}
+                      {t && <button onClick={() => onViewTeacher(t.id)} className="btn btn-ghost" style={{ padding:'0.25rem 0.6rem', fontSize:'0.7rem', color:'#0F2044', border:'1px solid #E2E8F0' }}>عرض الملف</button>}
                     </td>
                   </tr>
                 );
