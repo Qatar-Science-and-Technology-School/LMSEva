@@ -1,8 +1,9 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, SCHOOL_NAME, getUserDeptIds } from '@/lib/data';
+import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, SCHOOL_NAME, getUserDeptIds, getMonthlyDepartmentHonorees } from '@/lib/data';
 import type { User, Evaluation, Teacher } from '@/lib/data';
 import * as XLSX from 'xlsx';
+import PrintHeader from '@/components/PrintHeader';
 
 interface Props { currentUser: User; }
 
@@ -26,92 +27,28 @@ export default function TakreemPage({ currentUser }: Props) {
   // Tab state
   const [activeTab, setActiveTab] = useState<'monthly'|'archive'|'annual'>('monthly');
 
-  // Merged departments logic (legacy support for d_phys/chem/bio -> d_stem)
-  function getMergedDeptId(deptId: string): string {
-    if (['d_phys', 'd_chem', 'd_bio'].includes(deptId)) return 'd_stem';
-    return deptId;
-  }
-
-  const mergedDepartments = departments;
-
-  // Determine which merged departments this coordinator can see
   const availableMergedDepts = isCoord && coordDepts.length > 0
-    ? mergedDepartments.filter(d => coordDepts.some(cd => getMergedDeptId(cd) === d.id))
-    : mergedDepartments;
+    ? departments.filter(d => coordDepts.includes(d.id))
+    : departments;
 
-  // Monthly Honorees Logic
-  const getHonorees = (year: string, month: string) => {
-    let evals = evaluations.filter(e => e.academicYear === year && e.month === month);
-
-    // Filter to coordinator's departments
+  const currentHonorees = useMemo(() => {
+    let list = getMonthlyDepartmentHonorees(evaluations, teachers, departments, selYear, selMonth);
     if (isCoord && coordDepts.length > 0) {
-      const allowedDeptIds = new Set(coordDepts.map(getMergedDeptId));
-      evals = evals.filter(e => {
-        const t = teachers.find(x => x.id === e.teacherId);
-        return t && allowedDeptIds.has(getMergedDeptId(t.departmentId));
-      });
+      list = list.filter(h => coordDepts.includes(h.departmentId));
     }
-
-    // Group by merged department + subject (specifically for STEM to allow multiple subject honorees)
-    const byDept: Record<string, Evaluation[]> = {};
-    evals.forEach(e => {
-      const t = teachers.find(x => x.id === e.teacherId);
-      if (!t) return;
-      const mDeptId = getMergedDeptId(t.departmentId);
-      // If STEM, group by subject to allow best in Physics, Chemistry, etc.
-      const groupKey = mDeptId === 'd_stem' ? `d_stem_${t.subject}` : mDeptId;
-      if (!byDept[groupKey]) byDept[groupKey] = [];
-      byDept[groupKey].push(e);
-    });
-
-    const honorees: { ev: Evaluation; t: Teacher; deptName: string; perf: any }[] = [];
-
-    Object.entries(byDept).forEach(([groupKey, deptEvals]) => {
-      // Extract original mDeptId (e.g. 'd_stem' from 'd_stem_Physics')
-      const mDeptId = groupKey.startsWith('d_stem_') ? 'd_stem' : groupKey;
-
-      deptEvals.sort((a, b) => {
-        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-        // ... (sorting logic)
-        if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
-        const a10s = a.criteria.filter(c => c.score === 10).length;
-        const b10s = b.criteria.filter(c => c.score === 10).length;
-        if (b10s !== a10s) return b10s - a10s;
-        
-        const a1 = a.criteria[0]?.score || 0; const b1 = b.criteria[0]?.score || 0;
-        if (b1 !== a1) return b1 - a1;
-        const a2 = a.criteria[1]?.score || 0; const b2 = b.criteria[1]?.score || 0;
-        if (b2 !== a2) return b2 - a2;
-        const a4 = a.criteria[3]?.score || 0; const b4 = b.criteria[3]?.score || 0;
-        if (b4 !== a4) return b4 - a4;
-
-        const ta = teachers.find(x => x.id === a.teacherId);
-        const tb = teachers.find(x => x.id === b.teacherId);
-        return (ta?.nameAr || '').localeCompare(tb?.nameAr || '', 'ar');
-      });
-
-      const bestEv = deptEvals[0];
-      const t = teachers.find(x => x.id === bestEv.teacherId);
-      if (t) {
-        honorees.push({
-          ev: bestEv,
-          t,
-          deptName: mergedDepartments.find(d => d.id === mDeptId)?.nameAr || mDeptId,
-          perf: getPerformanceLevel(bestEv.totalScore)
-        });
-      }
-    });
-
-    return honorees;
-  };
-
-  const currentHonorees = useMemo(() => getHonorees(selYear, selMonth), [evaluations, selYear, selMonth, isCoord, coordDepts, teachers]);
+    return list;
+  }, [evaluations, teachers, departments, selYear, selMonth, isCoord, coordDepts]);
 
   const filteredHonorees = useMemo(() => {
     let list = currentHonorees;
-    if (selDept) list = list.filter(h => getMergedDeptId(h.t.departmentId) === selDept);
-    if (selPerf) list = list.filter(h => h.perf.label === selPerf);
-    if (search) list = list.filter(h => h.t.nameAr.includes(search) || (h.t.nameEn && h.t.nameEn.toLowerCase().includes(search.toLowerCase())));
+    if (selDept) list = list.filter(h => h.departmentId === selDept);
+    if (selPerf) list = list.filter(h => h.performanceLevel === selPerf);
+    if (search) {
+      list = list.filter(h => 
+        h.teacherNameAr.includes(search) || 
+        (h.teacherNameEn && h.teacherNameEn.toLowerCase().includes(search.toLowerCase()))
+      );
+    }
     return list;
   }, [currentHonorees, selDept, selPerf, search]);
 
@@ -121,7 +58,7 @@ export default function TakreemPage({ currentUser }: Props) {
     printWindow.document.write(`
       <html dir="rtl">
         <head>
-          <title>شهادة تكريم - ${h.t.nameAr}</title>
+          <title>شهادة تكريم - ${h.teacherNameAr}</title>
           <style>
             body { font-family: 'Arial', sans-serif; text-align: center; margin: 0; padding: 40px; background: #f9fafb; }
             .cert { border: 10px solid #0F2044; padding: 40px; background: #fff; max-width: 800px; margin: 0 auto; box-shadow: 0 10px 25px rgba(0,0,0,0.1); position: relative; }
@@ -140,11 +77,11 @@ export default function TakreemPage({ currentUser }: Props) {
             <h1>مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</h1>
             <h2>شهادة شكر وتقدير</h2>
             <p>
-              تتقدم إدارة المدرسة بجزيل الشكر والتقدير للمعلم الفاضل
+              تتقدم إدارة مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين بجزيل الشكر والتقدير للمعلم الفاضل
             </p>
-            <div class="name">${h.t.nameAr}</div>
+            <div class="name">${h.teacherNameAr}</div>
             <p>
-              وذلك لتميزه في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية خلال شهر <b>${h.ev.month}</b> للعام الأكاديمي <b>${h.ev.academicYear}</b> على مستوى قسم <b>${h.deptName}</b> بحصوله على درجة ${h.ev.totalScore}%.
+              وذلك لتميزه وكونه الأعلى تقييمًا في قسم <b>${h.departmentName}</b> خلال شهر <b>${h.month}</b> للعام الأكاديمي <b>${h.academicYear}</b> في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية بحصوله على درجة ${h.totalScore}%.
             </p>
             <div class="signatures">
               <div class="sig">منسق المشاريع الإلكترونية</div>
@@ -161,16 +98,16 @@ export default function TakreemPage({ currentUser }: Props) {
 
   const exportExcel = () => {
     const rows = filteredHonorees.map(h => ({
-      'القسم': h.deptName,
-      'الاسم بالعربي': h.t.nameAr,
-      'الاسم بالإنجليزي': h.t.nameEn,
-      'المادة': h.t.subject,
-      'الشهر': h.ev.month,
-      'العام الأكاديمي': h.ev.academicYear,
-      'الدرجة النهائية': h.ev.totalScore,
-      'متوسط الدرجة': h.ev.averageScore,
-      'مستوى الأداء': h.perf.label,
-      'سبب التكريم': 'تميز المعلم في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية خلال هذا الشهر على مستوى القسم.'
+      'القسم': h.departmentName,
+      'الاسم بالعربي': h.teacherNameAr,
+      'الاسم بالإنجليزي': h.teacherNameEn,
+      'المادة': h.subject,
+      'الشهر': h.month,
+      'العام الأكاديمي': h.academicYear,
+      'الدرجة النهائية': h.totalScore,
+      'متوسط الدرجة': h.averageScore,
+      'مستوى الأداء': h.performanceLevel,
+      'سبب التكريم': h.recognitionReason
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
@@ -182,18 +119,13 @@ export default function TakreemPage({ currentUser }: Props) {
 
   // Annual Summary Logic
   const annualSummary = useMemo(() => {
-    let evals = evaluations.filter(e => e.academicYear === selYear);
-    if (isCoord && coordDepts.length > 0) {
-      const allowedDeptIds = new Set(coordDepts.map(getMergedDeptId));
-      evals = evals.filter(e => {
-        const t = teachers.find(x => x.id === e.teacherId);
-        return t && allowedDeptIds.has(getMergedDeptId(t.departmentId));
-      });
-    }
-
     const allHonorees: any[] = [];
     APPROVED_MONTHS.forEach(m => {
-      allHonorees.push(...getHonorees(selYear, m));
+      let monthList = getMonthlyDepartmentHonorees(evaluations, teachers, departments, selYear, m);
+      if (isCoord && coordDepts.length > 0) {
+        monthList = monthList.filter(h => coordDepts.includes(h.departmentId));
+      }
+      allHonorees.push(...monthList);
     });
 
     const teacherCounts: Record<string, number> = {};
@@ -201,27 +133,31 @@ export default function TakreemPage({ currentUser }: Props) {
     const deptScores: Record<string, number[]> = {};
 
     allHonorees.forEach(h => {
-      teacherCounts[h.t.id] = (teacherCounts[h.t.id] || 0) + 1;
-      deptConsistency[h.deptName] = (deptConsistency[h.deptName] || 0) + 1;
-      if (!deptScores[h.deptName]) deptScores[h.deptName] = [];
-      deptScores[h.deptName].push(h.ev.totalScore);
+      teacherCounts[h.teacherId] = (teacherCounts[h.teacherId] || 0) + 1;
+      deptConsistency[h.departmentName] = (deptConsistency[h.departmentName] || 0) + 1;
+      if (!deptScores[h.departmentName]) deptScores[h.departmentName] = [];
+      deptScores[h.departmentName].push(h.totalScore);
     });
 
     return { allHonorees, teacherCounts, deptConsistency, deptScores };
-  }, [selYear, evaluations, isCoord, coordDepts, teachers]);
+  }, [selYear, evaluations, isCoord, coordDepts, teachers, departments]);
 
   const cardStyle = { background:'#fff', borderRadius:'12px', padding:'1.25rem', boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:'1px solid #E2E8F0' };
 
   return (
     <div style={{ padding:'1.5rem', direction:'rtl' }}>
-      <div style={{ marginBottom:'2rem', textAlign:'center' }}>
+      <PrintHeader 
+        title="تقرير تكريم المعلمين" 
+        subtitle={activeTab === 'annual' ? `ملخص التكريم السنوي - العام ${selYear}` : `تكريم شهر ${selMonth} - العام ${selYear}`} 
+      />
+      <div className="no-print" style={{ marginBottom:'2rem', textAlign:'center' }}>
         <h1 style={{ fontSize:'1.8rem', fontWeight:800, color:'#0F2044', margin:'0 0 0.5rem 0' }}>
           {isCoord ? 'تكريم معلمي القسم' : 'تكريم المعلمين'}
         </h1>
         <p style={{ color:'#64748B', margin:0, fontSize:'1rem' }}>تكريم أفضل معلم من كل قسم شهريًا في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية</p>
       </div>
 
-      <div style={{ display:'flex', gap:'1rem', borderBottom:'1px solid #E2E8F0', marginBottom:'1.5rem' }}>
+      <div className="no-print" style={{ display:'flex', gap:'1rem', borderBottom:'1px solid #E2E8F0', marginBottom:'1.5rem' }}>
         {[
           { id:'monthly', label:'التكريم الشهري' },
           { id:'archive', label:'أرشيف التكريم الشهري' },
@@ -242,7 +178,7 @@ export default function TakreemPage({ currentUser }: Props) {
 
       {/* Filters (only for monthly) */}
       {activeTab === 'monthly' && (
-        <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap', marginBottom:'1.5rem', alignItems:'center', background:'#fff', padding:'1rem', borderRadius:'12px', border:'1px solid #E2E8F0' }}>
+        <div className="no-print" style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap', marginBottom:'1.5rem', alignItems:'center', background:'#fff', padding:'1rem', borderRadius:'12px', border:'1px solid #E2E8F0' }}>
           <select className="form-input" style={{ width:'auto' }} value={selYear} onChange={e => setSelYear(e.target.value)}>
             {ACADEMIC_YEARS.map(y => <option key={y}>{y}</option>)}
           </select>
@@ -262,7 +198,7 @@ export default function TakreemPage({ currentUser }: Props) {
           
           <div style={{ flex:1 }} />
           <button onClick={exportExcel} className="btn btn-ghost">📥 تصدير Excel</button>
-          <button onClick={printReport} className="btn btn-primary" style={{ background:'#0F2044', color:'#fff' }}>📋 تقرير التكريم الشهري</button>
+          <button onClick={printReport} className="btn btn-primary" style={{ background:'#0F2044', color:'#fff' }}>📋 طباعة التقرير</button>
         </div>
       )}
 
@@ -270,31 +206,34 @@ export default function TakreemPage({ currentUser }: Props) {
       {activeTab === 'monthly' && (
         <>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(300px, 1fr))', gap:'1.25rem', marginBottom:'2rem' }}>
-            {filteredHonorees.map(h => (
-              <div key={h.t.id} style={{ ...cardStyle, position:'relative', overflow:'hidden', borderTop:`4px solid ${h.perf.color}` }}>
-                <div style={{ position:'absolute', top:'10px', left:'10px', fontSize:'2rem', opacity:0.1 }}>🏆</div>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1rem' }}>
-                  <div>
-                    <div style={{ fontSize:'0.75rem', color:'#64748B', fontWeight:700 }}>{h.deptName}</div>
-                    <h3 style={{ fontSize:'1.1rem', color:'#0F2044', fontWeight:800, margin:'0.25rem 0' }}>{h.t.nameAr}</h3>
-                    <div style={{ fontSize:'0.75rem', color:'#94A3B8' }}>{h.t.subject}</div>
+            {filteredHonorees.map(h => {
+              const perf = getPerformanceLevel(h.totalScore);
+              return (
+                <div key={h.teacherId} style={{ ...cardStyle, position:'relative', overflow:'hidden', borderTop:`4px solid ${perf.color}` }}>
+                  <div style={{ position:'absolute', top:'10px', left:'10px', fontSize:'2rem', opacity:0.1 }}>🏆</div>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'1rem' }}>
+                    <div>
+                      <div style={{ fontSize:'0.75rem', color:'#64748B', fontWeight:700 }}>{h.departmentName}</div>
+                      <h3 style={{ fontSize:'1.1rem', color:'#0F2044', fontWeight:800, margin:'0.25rem 0' }}>{h.teacherNameAr}</h3>
+                      <div style={{ fontSize:'0.75rem', color:'#94A3B8' }}>{h.subject}</div>
+                    </div>
+                    <div style={{ textAlign:'center' }}>
+                      <div style={{ fontSize:'1.4rem', fontWeight:800, color:perf.color }}>{h.totalScore}%</div>
+                      <div style={{ fontSize:'0.65rem', color:'#64748B' }}>الدرجة النهائية</div>
+                    </div>
                   </div>
-                  <div style={{ textAlign:'center' }}>
-                    <div style={{ fontSize:'1.4rem', fontWeight:800, color:h.perf.color }}>{h.ev.totalScore}%</div>
-                    <div style={{ fontSize:'0.65rem', color:'#64748B' }}>الدرجة النهائية</div>
+                  <p style={{ fontSize:'0.8rem', color:'#374151', lineHeight:1.5, marginBottom:'1rem', background:'#F8FAFC', padding:'0.75rem', borderRadius:'8px' }}>
+                    {h.recognitionReason}
+                  </p>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                    <span style={{ background:perf.bg, color:perf.color, padding:'0.25rem 0.75rem', borderRadius:'999px', fontSize:'0.7rem', fontWeight:700 }}>{perf.label}</span>
+                    <button onClick={() => printCertificate(h)} className="btn btn-ghost" style={{ fontSize:'0.75rem', padding:'0.4rem 0.8rem', color:'#0096C7', border:'1px solid #0096C7' }}>
+                      🏅 إنشاء شهادة تكريم
+                    </button>
                   </div>
                 </div>
-                <p style={{ fontSize:'0.8rem', color:'#374151', lineHeight:1.5, marginBottom:'1rem', background:'#F8FAFC', padding:'0.75rem', borderRadius:'8px' }}>
-                  تميز المعلم في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية خلال هذا الشهر على مستوى القسم.
-                </p>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                  <span style={{ background:h.perf.bg, color:h.perf.color, padding:'0.25rem 0.75rem', borderRadius:'999px', fontSize:'0.7rem', fontWeight:700 }}>{h.perf.label}</span>
-                  <button onClick={() => printCertificate(h)} className="btn btn-ghost" style={{ fontSize:'0.75rem', padding:'0.4rem 0.8rem', color:'#0096C7', border:'1px solid #0096C7' }}>
-                    🏅 إنشاء شهادة تكريم
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {filteredHonorees.length === 0 && (
               <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'3rem', color:'#64748B' }}>لا يوجد بيانات تكريم مطابقة للبحث.</div>
             )}
@@ -312,17 +251,20 @@ export default function TakreemPage({ currentUser }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredHonorees.map((h, i) => (
-                    <tr key={i} style={{ borderBottom:'1px solid #E2E8F0' }}>
-                      <td style={{ padding:'0.75rem', fontWeight:700, color:'#0F2044' }}>{h.deptName}</td>
-                      <td style={{ padding:'0.75rem', fontWeight:600 }}>{h.t.nameAr}<br/><span style={{ fontSize:'0.7rem', color:'#94A3B8' }}>{h.t.nameEn}</span></td>
-                      <td style={{ padding:'0.75rem', color:'#64748B' }}>{h.t.subject}</td>
-                      <td style={{ padding:'0.75rem', fontWeight:800, color:h.perf.color }}>{h.ev.totalScore}</td>
-                      <td style={{ padding:'0.75rem' }}>{h.ev.averageScore}</td>
-                      <td style={{ padding:'0.75rem' }}><span style={{ background:h.perf.bg, color:h.perf.color, padding:'0.2rem 0.5rem', borderRadius:'4px', fontSize:'0.7rem' }}>{h.perf.label}</span></td>
-                      <td style={{ padding:'0.75rem', color:'#64748B', fontSize:'0.75rem' }}>تميز على مستوى القسم</td>
-                    </tr>
-                  ))}
+                  {filteredHonorees.map((h, i) => {
+                    const perf = getPerformanceLevel(h.totalScore);
+                    return (
+                      <tr key={i} style={{ borderBottom:'1px solid #E2E8F0' }}>
+                        <td style={{ padding:'0.75rem', fontWeight:700, color:'#0F2044' }}>{h.departmentName}</td>
+                        <td style={{ padding:'0.75rem', fontWeight:600 }}>{h.teacherNameAr}<br/><span style={{ fontSize:'0.7rem', color:'#94A3B8' }}>{h.teacherNameEn}</span></td>
+                        <td style={{ padding:'0.75rem', color:'#64748B' }}>{h.subject}</td>
+                        <td style={{ padding:'0.75rem', fontWeight:800, color:perf.color }}>{h.totalScore}</td>
+                        <td style={{ padding:'0.75rem' }}>{h.averageScore}</td>
+                        <td style={{ padding:'0.75rem' }}><span style={{ background:perf.bg, color:perf.color, padding:'0.2rem 0.5rem', borderRadius:'4px', fontSize:'0.7rem' }}>{perf.label}</span></td>
+                        <td style={{ padding:'0.75rem', color:'#64748B', fontSize:'0.75rem' }}>{h.recognitionReason}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -333,18 +275,21 @@ export default function TakreemPage({ currentUser }: Props) {
       {/* Archive Content */}
       {activeTab === 'archive' && (
         <div>
-          <div style={{ marginBottom:'1rem' }}>
+          <div className="no-print" style={{ marginBottom:'1rem' }}>
             <select className="form-input" style={{ width:'auto' }} value={selYear} onChange={e => setSelYear(e.target.value)}>
               {ACADEMIC_YEARS.map(y => <option key={y}>{y}</option>)}
             </select>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'1rem' }}>
             {APPROVED_MONTHS.map(m => {
-              const monthHonorees = getHonorees(selYear, m);
+              const monthHonorees = getMonthlyDepartmentHonorees(evaluations, teachers, departments, selYear, m);
+              const allowedHonorees = isCoord && coordDepts.length > 0 
+                ? monthHonorees.filter(h => coordDepts.includes(h.departmentId))
+                : monthHonorees;
               return (
-                <div key={m} style={{ ...cardStyle, cursor:'pointer', borderLeft: monthHonorees.length ? '4px solid #0096C7' : '4px solid #E2E8F0' }} onClick={() => { setActiveTab('monthly'); setSelMonth(m); }}>
+                <div key={m} style={{ ...cardStyle, cursor:'pointer', borderLeft: allowedHonorees.length ? '4px solid #0096C7' : '4px solid #E2E8F0' }} onClick={() => { setActiveTab('monthly'); setSelMonth(m); }}>
                   <h3 style={{ margin:'0 0 0.5rem 0', fontSize:'1.1rem', color:'#0F2044' }}>{m}</h3>
-                  <p style={{ margin:0, fontSize:'0.8rem', color:'#64748B' }}>{monthHonorees.length} معلم مكرم</p>
+                  <p style={{ margin:0, fontSize:'0.8rem', color:'#64748B' }}>{allowedHonorees.length} معلم مكرم</p>
                 </div>
               );
             })}
@@ -355,10 +300,11 @@ export default function TakreemPage({ currentUser }: Props) {
       {/* Annual Summary Content */}
       {activeTab === 'annual' && (
         <div>
-          <div style={{ marginBottom:'1rem' }}>
+          <div className="no-print" style={{ marginBottom:'1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <select className="form-input" style={{ width:'auto' }} value={selYear} onChange={e => setSelYear(e.target.value)}>
               {ACADEMIC_YEARS.map(y => <option key={y}>{y}</option>)}
             </select>
+            <button onClick={printReport} className="btn btn-primary">🖨️ طباعة الملخص السنوي</button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'1rem', marginBottom:'2rem' }}>
             <div style={cardStyle}>

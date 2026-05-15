@@ -6,15 +6,16 @@ import type { User } from '@/lib/data';
 interface Props { onLogin: (user: User) => void; }
 
 const QUICK_LOGINS = [
-  { label: '👤 مدير النظام',           email: 'a.tubaishat1704@education.qa', password: 'admin123'    },
-  { label: '🏫 النائب الأكاديمي',      email: 'r.altoum1512@education.qa',    password: 'leader123'   },
-  { label: '📐 يامن فرح - رياضيات',   email: 'y.farah2507@education.qa',     password: 'QSTSS@2026'  },
-  { label: '📖 أسعد ناعس - عربي',     email: 'n.asaad0108@education.qa',     password: 'QSTSS@2026'  },
-  { label: '☪️ ماهر علوان - إسلامية', email: 'm.elwan2704@education.qa',     password: 'QSTSS@2026'  },
-  { label: '💻 عيسى سويدان - حاسوب', email: 'e.sweidan0601@education.qa',    password: 'QSTSS@2026'  },
-  { label: '🔬 المختبرات التخصصية',   email: 'm.salameh1301@education.qa',   password: 'QSTSS@2026'  },
-  { label: '🤖 أحمد فارس - STEM',    email: 'a.faris1404@education.qa',     password: 'QSTSS@2026'  },
-  { label: '🇬🇧 يوسف دحمان - إنجليزي', email: 'y.dahman0209@education.qa',    password: 'QSTSS@2026'  },
+  { label: '👤 مدير النظام',           email: 'a.tubaishat1704@education.qa', password: 'Admin@QSTSS2026' },
+  { label: '🏫 النائب الأكاديمي',      email: 'r.altoum1512@education.qa',    password: 'Leader@QSTSS26'  },
+  { label: '👁️ أخصائي التعليم الإلكتروني', email: 'elearning@school.qa',       password: 'ELearn@View2026' },
+  { label: '📐 يامن فرح - رياضيات',   email: 'y.farah2507@education.qa',     password: 'Yamen@QSTSS26'   },
+  { label: '📖 أسعد ناعس - عربي',     email: 'n.asaad0108@education.qa',     password: 'Asaad@QSTSS26'   },
+  { label: '☪️ ماهر علوان - إسلامية', email: 'm.elwan2704@education.qa',     password: 'Maher@QSTSS26'   },
+  { label: '💻 عيسى سويدان - حاسوب', email: 'e.sweidan0601@education.qa',    password: 'Essa@QSTSS26'    },
+  { label: '🔬 المختبرات التخصصية',   email: 'm.salameh1301@education.qa',   password: 'Salameh@QSTSS26' },
+  { label: '🤖 أحمد فارس - STEM',    email: 'a.faris1404@education.qa',     password: 'Ahmad@QSTSS26'   },
+  { label: '🇬🇧 يوسف دحمان - إنجليزي', email: 'y.dahman0209@education.qa',    password: 'Youssef@QSTSS26' },
 ];
 
 export default function LoginPage({ onLogin }: Props) {
@@ -54,7 +55,7 @@ export default function LoginPage({ onLogin }: Props) {
       <div className="login-card fade-in">
         <div style={{ textAlign:'center', marginBottom:'1.5rem' }}>
           <h1 style={{ fontSize:'1.1rem', fontWeight:800, color:'#0F2044', margin:'0 0 0.25rem', lineHeight:1.3 }}>
-            متابعة المعلمين لنظام قطر للتعليم
+            التعليم الالكتروني والحلول الرقمية
           </h1>
           <p style={{ fontSize:'0.72rem', color:'#64748B', margin:0, lineHeight:1.5 }}>
             {SCHOOL_NAME}

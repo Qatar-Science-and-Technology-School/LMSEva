@@ -1,8 +1,9 @@
 'use client';
 import { useMemo } from 'react';
-import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, EVALUATION_CRITERIA, SCHOOL_NAME } from '@/lib/data';
+import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, EVALUATION_CRITERIA, SCHOOL_NAME, getTeacherRecognitionHistory } from '@/lib/data';
 import type { User } from '@/lib/data';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from 'recharts';
+import PrintHeader from '@/components/PrintHeader';
 
 interface Props { teacherId: string; currentUser: User; onBack: () => void; }
 
@@ -13,6 +14,10 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack }: P
 
   const teacher = teachers.find(t => t.id === teacherId);
   if (!teacher) return <div style={{ padding:'2rem', textAlign:'center' }}>معلم غير موجود</div>;
+
+  const recognitionHistory = useMemo(() => {
+    return getTeacherRecognitionHistory(evaluations, teachers, departments, teacherId);
+  }, [evaluations, teachers, departments, teacherId]);
 
   const teacherEvals = evaluations.filter(e => e.teacherId === teacherId);
   const deptEvals    = evaluations.filter(e => teachers.find(t => t.id === e.teacherId)?.departmentId === teacher.departmentId);
@@ -66,14 +71,19 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack }: P
 
   return (
     <div style={{ padding:'1.5rem', direction:'rtl', maxWidth:'1000px', margin:'0 auto' }}>
+      <PrintHeader 
+        title="ملف المعلم المهني" 
+        subtitle={`${teacher.nameAr} | ${deptName}`} 
+      />
       {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', gap:'1rem', marginBottom:'1.25rem' }}>
+      <div className="no-print" style={{ display:'flex', alignItems:'center', gap:'1rem', marginBottom:'1.25rem' }}>
         <button onClick={onBack} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'1.2rem' }}>→</button>
         <div>
           <h2 style={{ fontSize:'1.2rem', fontWeight:800, color:'#0F2044', margin:0 }}>{teacher.nameAr}</h2>
           <p style={{ fontSize:'0.75rem', color:'#64748B', margin:'0.1rem 0 0' }}>{teacher.nameEn} · {deptName} · {teacher.employeeId}</p>
         </div>
-        <span style={{ marginRight:'auto', background:perf.bg, color:perf.color, padding:'0.3rem 1rem', borderRadius:'999px', fontSize:'0.8rem', fontWeight:700 }}>
+        <button onClick={() => window.print()} className="btn btn-primary" style={{ marginRight: 'auto' }}>🖨️ طباعة الملف</button>
+        <span style={{ background:perf.bg, color:perf.color, padding:'0.3rem 1rem', borderRadius:'999px', fontSize:'0.8rem', fontWeight:700 }}>
           {perf.label}
         </span>
       </div>
@@ -103,6 +113,27 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack }: P
         {statBox('أقل شهر', `${worst}%`, worstMonth?.month, '#991B1B')}
         {statBox('إجمالي التقييمات', teacherEvals.length)}
       </div>
+
+      {/* Recognition History Card */}
+      {recognitionHistory.length > 0 && (
+        <div style={{ ...cardStyle, background:'#F0F9FF', border:'1px solid #B9E6FE', display:'flex', alignItems:'center', gap:'1.5rem' }}>
+          <div style={{ fontSize:'2.5rem' }}>🏆</div>
+          <div style={{ flex:1 }}>
+            <h3 style={{ fontSize:'1rem', fontWeight:800, color:'#0369A1', margin:'0 0 0.5rem 0' }}>🏅 سجل التميز والتكريم</h3>
+            <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
+              {recognitionHistory.map((h, i) => (
+                <div key={i} style={{ background:'#fff', padding:'0.4rem 0.75rem', borderRadius:'89px', border:'1px solid #B9E6FE', fontSize:'0.75rem', fontWeight:700, color:'#0369A1' }}>
+                  {h.month} {h.academicYear}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ textAlign:'center', padding:'0 1rem', borderRight:'1px solid #B9E6FE' }}>
+            <div style={{ fontSize:'1.5rem', fontWeight:800, color:'#0369A1' }}>{recognitionHistory.length}</div>
+            <div style={{ fontSize:'0.65rem', color:'#64748B' }}>مرات التكريم</div>
+          </div>
+        </div>
+      )}
 
       {/* Charts */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>

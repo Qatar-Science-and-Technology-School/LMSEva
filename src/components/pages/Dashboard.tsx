@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, getUserDeptIds, getUserDeptLabel } from '@/lib/data';
+import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, getUserDeptIds, getUserDeptLabel, getMonthlyDepartmentHonorees } from '@/lib/data';
 import type { User } from '@/lib/data';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -55,11 +55,11 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
     });
     return Object.entries(byTeacher).filter(([, scores]) => {
       const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-      return avg < 75;
+      return avg < 80;
     }).length;
   }, [filtered]);
 
-  // Best teacher
+  // Best teacher (overall or within filtered scope)
   const bestTeacher = useMemo(() => {
     const byTeacher: Record<string, number[]> = {};
     filtered.forEach(e => {
@@ -72,7 +72,6 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
       if (avg > best.score) {
         best = { id, score: avg, ev: filtered.find(e => e.teacherId === id) };
       } else if (avg === best.score && avg > 0) {
-        // Tie-break (simplified: use first eval's criteria count if available)
         const evA = filtered.find(e => e.teacherId === id);
         const evB = best.ev;
         if (evA && evB) {
@@ -105,51 +104,18 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
 
   // Takreem Honorees Logic for Dashboard
   const takreemHonorees = useMemo(() => {
-    // If no specific month selected, default to the latest approved month that has data, or just the first month if none.
     const APPROVED_MONTHS = ['سبتمبر', 'أكتوبر', 'نوفمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو'];
-    const targetMonth = selMonth || APPROVED_MONTHS[APPROVED_MONTHS.length - 1]; // or find latest
+    const targetMonth = selMonth || APPROVED_MONTHS[APPROVED_MONTHS.length - 1];
     
-    let evals = scopedEvals.filter(e => e.academicYear === selYear && e.month === targetMonth);
+    let honorees = getMonthlyDepartmentHonorees(evaluations, teachers, departments, selYear, targetMonth);
     
-    // Group by department
-    const byDept: Record<string, typeof evals> = {};
-    evals.forEach(e => {
-      const t = teachers.find(x => x.id === e.teacherId);
-      if (!t) return;
-      const dId = t.departmentId;
-      if (!byDept[dId]) byDept[dId] = [];
-      byDept[dId].push(e);
-    });
-
-    const honorees: any[] = [];
-    Object.entries(byDept).forEach(([mId, deptEvals]) => {
-      deptEvals.sort((a, b) => {
-        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-        if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
-        const a10 = a.criteria.filter(c => c.score === 10).length;
-        const b10 = b.criteria.filter(c => c.score === 10).length;
-        if (b10 !== a10) return b10 - a10;
-        const a1 = a.criteria[0]?.score||0; const b1 = b.criteria[0]?.score||0;
-        if (b1 !== a1) return b1 - a1;
-        const a2 = a.criteria[1]?.score||0; const b2 = b.criteria[1]?.score||0;
-        if (b2 !== a2) return b2 - a2;
-        const a4 = a.criteria[3]?.score||0; const b4 = b.criteria[3]?.score||0;
-        if (b4 !== a4) return b4 - a4;
-        const ta = teachers.find(x => x.id === a.teacherId);
-        const tb = teachers.find(x => x.id === b.teacherId);
-        return (ta?.nameAr || '').localeCompare(tb?.nameAr || '', 'ar');
-      });
-      const bestEv = deptEvals[0];
-      const t = teachers.find(x => x.id === bestEv.teacherId);
-      if (t) {
-        const d = departments.find(x => x.id === mId);
-        honorees.push({ ev: bestEv, t, deptName: d ? d.nameAr : mId });
-      }
-    });
+    // Filter by coordinator depts if needed
+    if (isCoord && coordDepts.length > 0) {
+      honorees = honorees.filter(h => coordDepts.includes(h.departmentId));
+    }
     
-    // If coordinator with multiple depts, return multiple; if single, return single.
     return { month: targetMonth, data: honorees };
-  }, [scopedEvals, selYear, selMonth, teachers, departments]);
+  }, [evaluations, teachers, departments, selYear, selMonth, isCoord, coordDepts]);
 
   // Monthly chart
   const monthlyData = MONTHS.map(m => {
@@ -172,11 +138,14 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
   ].filter(d => d.count > 0);
   const distColors = ['#065F46','#1E40AF','#0E7490','#92400E','#991B1B'];
 
-  // Year trend
+  // Year trend — enhanced with multiple metrics
   const yearTrend = ACADEMIC_YEARS.map(yr => {
     const ye = evaluations.filter(e => e.academicYear === yr);
-    return { name: yr, avg: ye.length ? Math.round(ye.reduce((s, e) => s + e.totalScore, 0) / ye.length * 10) / 10 : 0 };
-  });
+    const avg = ye.length ? Math.round(ye.reduce((s, e) => s + e.totalScore, 0) / ye.length * 10) / 10 : 0;
+    const distinguished = ye.filter(e => e.totalScore >= 90).length;
+    const needsFollowup = ye.filter(e => e.totalScore < 80).length;
+    return { name: yr, avg, total: ye.length, متميز: distinguished, 'يحتاج متابعة': needsFollowup };
+  }).filter(d => d.total > 0);
 
   // Recent evals
   // Recent evals — sorted by dept then teacher name
@@ -297,14 +266,24 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
           </ResponsiveContainer>
         </div>
         <div style={darkCardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>📅 تطور الأداء عبر السنوات</h3>
+          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'0.5rem' }}>📅 تطور الأداء عبر السنوات</h3>
+          <div style={{ display:'flex', gap:'1rem', marginBottom:'0.75rem', flexWrap:'wrap' }}>
+            {yearTrend.map((yr, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
+                <span style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.6)' }}>{yr.name}:</span>
+                <span style={{ fontSize:'0.75rem', fontWeight:800, color: yr.avg >= 90 ? '#00B4D8' : yr.avg >= 80 ? '#48CAE4' : '#F59E0B' }}>{yr.avg}%</span>
+                <span style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.4)' }}>({yr.total} تقييم)</span>
+              </div>
+            ))}
+          </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={yearTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="name" tick={{ fontSize:10, fill:'#fff' }} />
-              <YAxis domain={[0,100]} tick={{ fontSize:10, fill:'#fff' }} />
+              <XAxis dataKey="name" tick={{ fontSize:9, fill:'#fff' }} />
+              <YAxis domain={[0,100]} tick={{ fontSize:9, fill:'#fff' }} />
               <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
-              <Bar dataKey="avg" fill="#00B4D8" name="المتوسط" radius={[4,4,0,0]} />
+              <Legend wrapperStyle={{ color:'#fff', fontSize:'10px' }} />
+              <Bar dataKey="avg" fill="#00B4D8" name="المتوسط %" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -325,18 +304,72 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
         </div>
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'0.75rem' }}>
           {takreemHonorees.data.map((h: any) => (
-            <div key={h.t.id} style={{ padding:'0.75rem', background:'rgba(255,255,255,0.05)', borderRadius:'8px', borderLeft:'3px solid #0096C7' }}>
-              <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.7)', fontWeight:700 }}>{h.deptName}</div>
-              <div style={{ fontSize:'0.85rem', fontWeight:800, color:'#fff', margin:'0.25rem 0' }}>{h.t.nameAr}</div>
+            <div key={h.teacherId} style={{ padding:'0.75rem', background:'rgba(255,255,255,0.05)', borderRadius:'8px', borderLeft:'3px solid #0096C7' }}>
+              <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.7)', fontWeight:700 }}>{h.departmentName}</div>
+              <div style={{ fontSize:'0.85rem', fontWeight:800, color:'#fff', margin:'0.25rem 0' }}>{h.teacherNameAr}</div>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                 <span style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.7)' }}>الدرجة:</span>
-                <span style={{ fontSize:'0.85rem', fontWeight:800, color:'#00B4D8' }}>{h.ev.totalScore}%</span>
+                <span style={{ fontSize:'0.85rem', fontWeight:800, color:'#00B4D8' }}>{h.totalScore}%</span>
               </div>
             </div>
           ))}
           {takreemHonorees.data.length === 0 && (
             <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'1rem', color:'rgba(255,255,255,0.5)', fontSize:'0.8rem' }}>لا يوجد بيانات لهذا الشهر</div>
           )}
+        </div>
+      </div>
+
+      {/* Teachers Needing Follow-up Table */}
+      <div style={{ ...kpiStyle, background: '#fff', marginBottom: '1rem' }}>
+        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F2044', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          ⚠️ معلمون يحتاجون إلى متابعة وخطة تحسين (أقل من 80%)
+        </h3>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+            <thead>
+              <tr style={{ background: '#0F2044' }}>
+                {['المعلم', 'القسم', 'المتوسط', 'عدد التقييمات', 'الإجراء'].map(h => (
+                  <th key={h} style={{ padding: '0.6rem 0.75rem', textAlign: 'right', fontWeight: 600, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(filtered.reduce((acc, e) => {
+                if (!acc[e.teacherId]) acc[e.teacherId] = [];
+                acc[e.teacherId].push(e.totalScore);
+                return acc;
+              }, {} as Record<string, number[]>))
+                .map(([id, scores]) => {
+                  const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 10) / 10;
+                  const t = teachers.find(x => x.id === id);
+                  return { t, avg, count: scores.length };
+                })
+                .filter(x => x.avg < 80 && x.t)
+                .sort((a, b) => a.avg - b.avg)
+                .map((item, i) => (
+                  <tr key={item.t?.id} style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                    <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600, color: '#0F2044' }}>{item.t?.nameAr}</td>
+                    <td style={{ padding: '0.6rem 0.75rem', color: '#64748B' }}>{getDeptName(item.t?.departmentId || '', departments)}</td>
+                    <td style={{ padding: '0.6rem 0.75rem', fontWeight: 700, color: '#991B1B' }}>{item.avg}%</td>
+                    <td style={{ padding: '0.6rem 0.75rem', color: '#64748B' }}>{item.count}</td>
+                    <td style={{ padding: '0.6rem 0.75rem' }}>
+                      <button onClick={() => onViewTeacher(item.t?.id || '')} className="btn btn-ghost" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', color: '#0F2044', border: '1px solid #E2E8F0' }}>عرض الملف</button>
+                    </td>
+                  </tr>
+                ))}
+              {filtered.length > 0 && !Object.entries(filtered.reduce((acc, e) => {
+                if (!acc[e.teacherId]) acc[e.teacherId] = [];
+                acc[e.teacherId].push(e.totalScore);
+                return acc;
+              }, {} as Record<string, number[]>)).some(([id, scores]) => (scores.reduce((a, b) => a + b, 0) / scores.length) < 80) && (
+                <tr>
+                  <td colSpan={5} style={{ padding: '1.5rem', textAlign: 'center', color: '#64748B', fontSize: '0.8rem' }}>
+                    ✅ جميع المعلمين في هذا النطاق لديهم أداء مرضي (فوق 80%)
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 

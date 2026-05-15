@@ -1,8 +1,9 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, EVALUATION_CRITERIA, HIGH_PERF_DEPTS, getUserDeptIds, getUserDeptLabel } from '@/lib/data';
+import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, EVALUATION_CRITERIA, HIGH_PERF_DEPTS, getUserDeptIds, getUserDeptLabel, getMonthlyDepartmentHonorees } from '@/lib/data';
 import type { User } from '@/lib/data';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis } from 'recharts';
+import PrintHeader from '@/components/PrintHeader';
 
 interface Props { currentUser: User; }
 
@@ -44,6 +45,28 @@ export default function AnalyticsPage({ currentUser }: Props) {
     }).filter(x => x.count > 0).sort((a,b) => b.avg - a.avg);
   }, [departments, yearEvals, teachers]);
 
+  // Recognition Analytics
+  const recognitionStats = useMemo(() => {
+    const allHonorees: any[] = [];
+    MONTHS.forEach(m => {
+      let monthList = getMonthlyDepartmentHonorees(evaluations, teachers, departments, selYear, m);
+      if (isCoord && coordDepts.length > 0) {
+        monthList = monthList.filter(h => coordDepts.includes(h.departmentId));
+      }
+      allHonorees.push(...monthList);
+    });
+    const tCounts: Record<string, {name:string, dept:string, count:number}> = {};
+    const dCounts: Record<string, number> = {};
+    allHonorees.forEach(h => {
+      if (!tCounts[h.teacherId]) tCounts[h.teacherId] = { name: h.teacherNameAr, dept: h.departmentName, count: 0 };
+      tCounts[h.teacherId].count++;
+      dCounts[h.departmentName] = (dCounts[h.departmentName] || 0) + 1;
+    });
+    const mostHonored = Object.values(tCounts).sort((a,b) => b.count - a.count).slice(0,5);
+    const deptStats = Object.entries(dCounts).map(([name, count]) => ({ name, count }));
+    return { mostHonored, deptStats, total: allHonorees.length };
+  }, [evaluations, teachers, departments, selYear, isCoord, coordDepts]);
+
   // Criteria analysis
   const criteriaAvg = useMemo(() => {
     return EVALUATION_CRITERIA.map((label, i) => {
@@ -83,12 +106,17 @@ export default function AnalyticsPage({ currentUser }: Props) {
 
   return (
     <div style={{ padding:'1.5rem', direction:'rtl' }}>
+      <PrintHeader 
+        title="التحليلات والإحصائيات المتقدمة" 
+        subtitle={`العام الأكاديمي: ${selYear}`} 
+      />
       {/* Filter */}
-      <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.5rem', alignItems:'center' }}>
+      <div className="no-print" style={{ display:'flex', gap:'0.75rem', marginBottom:'1.5rem', alignItems:'center' }}>
         <h2 style={{ fontSize:'1.1rem', fontWeight:800, color:'#0F2044', margin:0 }}>📈 التحليلات المتقدمة</h2>
         <select className="form-input" style={{ width:'auto' }} value={selYear} onChange={e => setSelYear(e.target.value)}>
           {ACADEMIC_YEARS.map(y => <option key={y}>{y}</option>)}
         </select>
+        <button onClick={() => window.print()} className="btn btn-primary" style={{ marginRight: 'auto' }}>🖨️ طباعة التحليلات</button>
       </div>
 
       {/* Alert cards */}
@@ -210,6 +238,39 @@ export default function AnalyticsPage({ currentUser }: Props) {
             <span style={{ fontSize:'0.75rem', fontWeight:700, color:'#0F2044', minWidth:'40px' }}>{c.avg}/10</span>
           </div>
         ))}
+      </div>
+      {/* Recognition Analysis */}
+      <div style={{ marginBottom:'1rem' }}>
+        <div style={cardStyle}>
+          <h3 style={{ fontSize:'1rem', fontWeight:800, color:'#0F2044', marginBottom:'1rem' }}>🥇 تحليل التكريم المتميز ({selYear})</h3>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.5rem' }}>
+            <div>
+              <p style={{ fontSize:'0.8rem', color:'#64748B', marginBottom:'0.5rem' }}>المعلمون الأكثر تكريماً</p>
+              {recognitionStats.mostHonored.map((r, i) => (
+                <div key={i} style={{ display:'flex', justifyContent:'space-between', padding:'0.5rem 0', borderBottom:'1px solid #F1F5F9' }}>
+                  <div>
+                    <span style={{ fontSize:'0.9rem', fontWeight:700, color:'#0F2044' }}>{r.name}</span>
+                    <span style={{ fontSize:'0.7rem', color:'#64748B', display:'block' }}>{r.dept}</span>
+                  </div>
+                  <span style={{ background:'#E0F2FE', color:'#0284C7', padding:'0.2rem 0.5rem', borderRadius:'999px', fontSize:'0.75rem', fontWeight:700 }}>{r.count} مرات</span>
+                </div>
+              ))}
+              {recognitionStats.mostHonored.length === 0 && <p style={{ fontSize:'0.8rem', color:'#94A3B8' }}>لا يوجد بيانات تكريم حالياً.</p>}
+            </div>
+            <div>
+              <p style={{ fontSize:'0.8rem', color:'#64748B', marginBottom:'0.5rem' }}>عدد المكرمين حسب القسم</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={recognitionStats.deptStats}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize:8 }} />
+                  <YAxis tick={{ fontSize:9 }} />
+                  <Tooltip cursor={{fill:'transparent'}} />
+                  <Bar dataKey="count" fill="#0096C7" radius={[4,4,0,0]} name="عدد المرات" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

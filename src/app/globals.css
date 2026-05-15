@@ -557,9 +557,96 @@ tr:hover td { background: var(--gray-50); }
 
 /* Print styles */
 @media print {
-  .sidebar, .topbar, .no-print { display: none !important; }
-  .main-content { margin-right: 0; }
-  .page-content { padding: 0; }
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 10pt;
+  }
+
+  /* Hide navigation and UI elements */
+  aside, 
+  header, 
+  footer, 
+  .no-print, 
+  button, 
+  select, 
+  input,
+  .topbar,
+  .sidebar { 
+    display: none !important; 
+  }
+
+  /* Expand content to full width */
+  .main-content, 
+  .page-content,
+  .main-content-area,
+  .app-shell,
+  main { 
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    background: white !important;
+  }
+
+  /* Professional Table Styling */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    margin-bottom: 1rem !important;
+    border: 1px solid #000 !important;
+  }
+
+  th, td {
+    border: 1px solid #ddd !important;
+    padding: 6px 8px !important;
+    text-align: right !important;
+    color: black !important;
+  }
+
+  th {
+    background-color: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Keep colors in print */
+  .badge, .score-circle, .progress-fill {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Hide interactive shadows and transforms */
+  .card, .kpi-card {
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+    transform: none !important;
+  }
+
+  /* Ensure text is black for clarity */
+  h1, h2, h3, h4, h5, p, span, td {
+    color: #000 !important;
+  }
+}
+
+.print-only {
+  display: none;
 }
 
 /* Animations */

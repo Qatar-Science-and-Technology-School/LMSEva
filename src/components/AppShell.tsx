@@ -10,8 +10,11 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import TakreemPage from './pages/TakreemPage';
+import DailyTasksPage from './pages/DailyTasksPage';
+import AchievementsPage from './pages/AchievementsPage';
+import ProfessionalDevelopmentPage from './pages/ProfessionalDevelopmentPage';
 
-type Page = 'dashboard'|'teachers'|'evaluation'|'profile'|'analytics'|'reports'|'settings'|'takreem';
+type Page = 'dashboard'|'teachers'|'evaluation'|'profile'|'analytics'|'reports'|'settings'|'takreem'|'daily_tasks'|'achievements'|'professional_development';
 
 interface Props { user: User; onLogout: () => void; }
 
@@ -24,12 +27,16 @@ export default function AppShell({ user, onLogout }: Props) {
   const isEvaluator = user.role === 'evaluator' || user.role === 'admin';
   const isLeader    = user.role === 'leader' || user.role === 'admin';
   const isCoord     = user.role === 'coordinator' || user.role === 'admin' || user.role === 'evaluator';
+  const isViewer    = user.role === 'viewer';
 
   const nav: { id: Page; label: string; icon: string; show: boolean }[] = [
     { id:'dashboard',  label:'لوحة المؤشرات',  icon:'📊', show:true },
-    { id:'teachers',   label:'إدارة المعلمين',  icon:'👨‍🏫', show:isAdmin||isEvaluator||isCoord },
-    { id:'evaluation', label:'التقييم الشهري',  icon:'📝', show:isEvaluator||isCoord },
+    { id:'teachers',   label:'إدارة المعلمين',  icon:'👨‍🏫', show:isAdmin||isEvaluator||isCoord||isViewer },
+    { id:'evaluation', label:'التقييم الشهري',  icon:'📝', show:isEvaluator||isCoord||isViewer },
     { id:'takreem',    label:'تكريم المعلمين',  icon:'🏆', show:true },
+    { id:'achievements',label:'الإنجازات',      icon:'🌟', show:true },
+    { id:'professional_development', label:'التطوير المهني', icon:'🎓', show:true },
+    { id:'daily_tasks',label:'المهام اليومية',  icon:'📅', show:isLeader||isViewer }, 
     { id:'analytics',  label:'التحليلات',       icon:'📈', show:true },
     { id:'reports',    label:'التقارير',        icon:'📋', show:true },
     { id:'settings',   label:'الإعدادات',       icon:'⚙️', show:isAdmin },
@@ -39,13 +46,14 @@ export default function AppShell({ user, onLogout }: Props) {
 
   const roleLabel: Record<string, string> = {
     admin:'مدير النظام', evaluator:'منسق إلكتروني',
-    leader:'قيادة المدرسة', coordinator:'منسق قسم'
+    leader:'قيادة المدرسة', coordinator:'منسق قسم',
+    viewer:'أخصائي التعليم الإلكتروني'
   };
 
   return (
-    <div style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl' }}>
+    <div className="app-shell" style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl' }}>
       {/* Sidebar */}
-      <aside style={{
+      <aside className="no-print" style={{
         width: sidebarOpen ? '240px' : '60px',
         background:'linear-gradient(180deg,#0F2044 0%,#1a3a6b 100%)',
         display:'flex', flexDirection:'column',
@@ -112,9 +120,9 @@ export default function AppShell({ user, onLogout }: Props) {
       </aside>
 
       {/* Main content */}
-      <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:'#F1F5F9' }}>
+      <div className="main-content-area" style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', background:'#F1F5F9' }}>
         {/* Topbar */}
-        <header style={{
+        <header className="no-print" style={{
           background:'#fff', padding:'0 1.25rem', height:'56px',
           display:'flex', alignItems:'center', justifyContent:'space-between',
           borderBottom:'1px solid #E2E8F0', flexShrink:0,
@@ -150,11 +158,14 @@ export default function AppShell({ user, onLogout }: Props) {
           {page === 'takreem'    && <TakreemPage currentUser={user} />}
           {page === 'analytics'  && <AnalyticsPage currentUser={user} />}
           {page === 'reports'    && <ReportsPage currentUser={user} />}
+          {page === 'daily_tasks' && <DailyTasksPage currentUser={user} onNavigate={setPage} />}
+          {page === 'achievements' && <AchievementsPage currentUser={user} onNavigate={setPage} />}
+          {page === 'professional_development' && <ProfessionalDevelopmentPage currentUser={user} />}
           {page === 'settings'   && isAdmin && <SettingsPage currentUser={user} />}
         </main>
 
         {/* Footer */}
-        <footer style={{
+        <footer className="no-print" style={{
           background:'#fff', borderTop:'1px solid #E2E8F0',
           padding:'0.4rem 1rem', display:'flex', justifyContent:'center',
           fontSize:'0.62rem', color:'#94A3B8'

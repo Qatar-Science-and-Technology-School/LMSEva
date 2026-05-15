@@ -1,10 +1,12 @@
+import { SEED_TASKS, SEED_NOTES, SEED_ACHIEVEMENTS } from './seedData';
+
 // مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
 export const SCHOOL_NAME = 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين';
-export const SYSTEM_TITLE = 'متابعة المعلمين لنظام قطر للتعليم';
+export const SYSTEM_TITLE = 'التعليم الالكتروني والحلول الرقمية';
 export const SYSTEM_SUBTITLE = 'نظام إلكتروني لمتابعة وتقييم تفعيل المعلمين لنظام قطر للتعليم والمنصات التعليمية الرقمية';
 export const DESIGNER_CREDIT = 'تصميم وتطوير: م.أحمد طبيشات - منسق المشاريع الإلكترونية';
 
-export type Role = 'admin' | 'evaluator' | 'leader' | 'coordinator';
+export type Role = 'admin' | 'evaluator' | 'leader' | 'coordinator' | 'viewer';
 export interface User {
   id:string; name:string; nameEn?:string;
   email:string; username?:string;
@@ -21,8 +23,167 @@ export interface Teacher { id:string; employeeId:string; nameAr:string; nameEn:s
 export interface EvaluationCriterion { score:number; note:string; }
 export interface Evaluation { id:string; teacherId:string; evaluatorId:string; month:string; academicYear:string; evaluationDate:string; criteria:EvaluationCriterion[]; totalScore:number; averageScore:number; percentage:number; performanceLevel:string; strengths:string; improvementAreas:string; recommendations:string; actionPlan:string; evidenceLinks:string[]; generalNotes:string; createdAt:string; updatedAt:string; }
 
+// --- Daily Tasks ---
+export type TaskStatus = 'مكتملة' | 'قيد التنفيذ' | 'مؤجلة' | 'تحتاج متابعة' | 'ملغاة' | 'يوجد دليل إنجاز';
+export type TaskPriority = 'عالية' | 'متوسطة' | 'منخفضة';
+export type TaskType = 'يومية' | 'أسبوعية' | 'شهرية' | 'مشروع';
+
+export interface DailyTask {
+  id: string;
+  title: string;
+  description: string;
+  taskDate: string;
+  month: string;
+  academicYear: string;
+  category: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  completionPercentage: number;
+  hasEvidence?: boolean;
+  evidenceLabel?: string;
+  evidenceStatus?: string;
+  evidenceUrl?: string;
+  evidenceFileUrl?: string;
+  notes?: string;
+  relatedEntityType?: string; 
+  relatedEntityId?: string;
+  taskType: TaskType;
+  source: string;
+  sourceSheet?: string;
+  sourceRow?: number;
+  executorName?: string;
+  isApprovedByDeputy?: boolean;
+  createdBy: string;
+  approvedBy?: string;
+  lastUpdatedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MonthlyTaskNote {
+  id: string;
+  month: string;
+  academicYear: string;
+  note: string;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskCategory {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  color: string;
+  icon: string;
+}
+
+export interface CoordinatorFollowUpItem {
+  criterion: string;
+  score: number;
+  notes?: string;
+}
+
+export interface CoordinatorFollowUpForm {
+  id: string;
+  employeeName: string;
+  month: string;
+  academicYear: string;
+  formDate: string;
+  totalScore: number;
+  recommendations: string;
+  notes: string;
+  items: CoordinatorFollowUpItem[];
+  evaluatorName?: string;
+  evaluatorRole?: string;
+  employeeSignature?: string;
+  academicDeputySignature?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Achievement {
+  id: string;
+  serialNumber: number;
+  academicYear: string;
+  organizer: string;
+  level: 'عالمي' | 'إقليمي' | 'محلي';
+  participationType: string;
+  result: string;
+  achievementName: string;
+  smartCategory?: string;
+  description?: string;
+  achievementDate?: string;
+  supervisorName?: string;
+  supportingEntity?: string;
+  evidenceLabel?: string;
+  evidenceUrl?: string;
+  evidenceFileUrl?: string;
+  documentationStatus?: 'موثق' | 'يحتاج دليل' | 'قيد المراجعة';
+  notes?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const MONTHS = ['سبتمبر','أكتوبر','نوفمبر','يناير','فبراير','مارس','أبريل','مايو'];
-export const ACADEMIC_YEARS = ['2023-2024','2024-2025','2025-2026'];
+export const ACADEMIC_YEARS = ['2021-2022', '2022-2023', '2023-2024', '2024-2025', '2025-2026'];
+
+export const ACHIEVEMENT_NAMES = [
+  'مسابقة البحث العلمي والابتكار',
+  'مسابقة البحث العلمي GYSTB – هونغ كونغ',
+  'بطل مسابقة تحدي علوم المستقبل',
+  'بطولة قطر للروبوت',
+  'المؤتمر الدولي للذكاء الاصطناعي في كازاخستان',
+  'المعرض الدولي للاختراعات في الشرق الأوسط - الكويت',
+  'البطولة العربية للروبوت - ذراع الروبوت',
+  'المسابقة الوطنية للذكاء الاصطناعي',
+  'الأولمبياد الوطني للذكاء الاصطناعي والبرمجة',
+  'مسابقة البحث العلمي للوكالة الوطنية لحظر أسلحة الدمار الشامل',
+  'مسابقة قطر المستقبل للاستدامة',
+  'باحث 5',
+  'باحث 6',
+  'باحث 7',
+  'الأولمبياد الوطني للروبوت',
+  'مسابقة جيل الإبداع الرقمي',
+  'التأهل لنهائيات مسابقة البحث العلمي العالمية ISEF - USA',
+  'The Earth Prize',
+  'SDG Gamechanger Award',
+  'الأولمبياد العربي للذكاء الاصطناعي والبرمجة والأمن السيبراني',
+  'جائزة أفضل مهندس - مسابقة تحدي علوم المستقبل',
+  'البطولة العربية للذكاء الاصطناعي',
+  'هاكثون الذكاء الاصطناعي للمدارس التخصصية والتقنية',
+  'مسابقة ترشيد كهرماء',
+  'مسابقة USDT - Skills Day جامعة الدوحة للعلوم والتكنولوجيا',
+  'مسابقة ابتكار',
+  'بطولة قطر للذكاء الاصطناعي',
+  'التأهل لمسابقة World Skills الآسيوية',
+  'نشر بحث علمي في مجلة IEEE',
+  'مسابقة البحث العلمي والتأهل إلى ITEX العالمية',
+  'نشر بحث علمي في مجلة SmartNet',
+  'نشر بحث علمي في موقع Google Scholar',
+  'التأهل لمسابقة البحث العلمي والابتكار',
+  'مسابقة التميز العلمي',
+];
+
+export const ACHIEVEMENT_RESULTS = [
+  'المركز الأول',
+  'المركز الثاني',
+  'المركز الثالث',
+  'المركز الأول والمركز الثاني',
+  'الميدالية الذهبية',
+  'الميدالية الفضية',
+  'الميدالية البرونزية',
+  'جائزة خاصة',
+  'بحث علمي منشور',
+  'تمثيل دولة قطر',
+  'تأهل للمرحلة النهائية',
+  'التأهل للمعرض',
+  'المركز الثاني + التأهل العالمي',
+  'أفضل خمس مشاريع في الشرق الأوسط',
+  'شهادة تقدير',
+  'مشاركة متميزة',
+];
 export const EVALUATION_CRITERIA = [
   'استخدام المعلم لنظام قطر للتعليم بشكل منتظم',
   'نشر الدروس والوحدات التعليمية على نظام قطر للتعليم',
@@ -31,7 +192,7 @@ export const EVALUATION_CRITERIA = [
   'تصحيح التقييمات وتقديم تغذية راجعة للطلاب',
   'متابعة دخول الطلاب وتفاعلهم مع الدروس والأنشطة',
   'استخدام منصات تعليمية مساندة مثل ClassPoint, Edpuzzle, Teams, Forms, ClassDojo',
-  'توظيف التكنولوجيا داخل الحصة بطريقة تفاعلية وجاذبة',
+  'توظيف التكنولوجيا والسبورة التفاعلية داخل الحصة بطريقة تفاعلية وجاذبة',
   'استخدام أدوات الذكاء الاصطناعي أو الأدوات الرقمية بطريقة مناسبة وآمنة',
   'تنظيم المحتوى الرقمي والالتزام بتعليمات قسم التعليم الإلكتروني',
 ];
@@ -58,26 +219,140 @@ export const initialDepartments:Department[] = [
   {id:'d_robotlab',nameAr:'مختبر الروبوت',         nameEn:'Robotic Lab'},
   {id:'d_social',  nameAr:'الدراسات الاجتماعية',   nameEn:'Social Studies'},
 ];
+
+export function classifyAchievement(name: string, organizer: string, result: string): string {
+  const n = (name || '').toUpperCase();
+  const o = (organizer || '').toUpperCase();
+  const r = (result || '').toUpperCase();
+
+  if (n.includes('نشر بحث علمي') || o.includes('IEEE') || o.includes('SMARTNET') || o.includes('GOOGLE SCHOLAR')) {
+    return 'بحث علمي منشور';
+  }
+  if (r.includes('جائزة خاصة')) return 'جائزة خاصة';
+  if (r.includes('المركز الأول')) return 'مركز أول';
+  if (r.includes('المركز الثاني')) return 'مركز ثاني';
+  if (r.includes('المركز الثالث')) return 'مركز ثالث';
+  if (r.includes('الميدالية الذهبية')) return 'ميدالية ذهبية';
+  if (r.includes('تأهل') || r.includes('تمثيل')) return 'تأهل وتمثيل';
+  
+  return 'إنجاز متنوع';
+}
+
+export const TASK_CATEGORIES: TaskCategory[] = [
+  { id: 'meetings', nameAr: 'الاجتماعات', nameEn: 'Meetings', color: '#3B82F6', icon: 'Users' },
+  { id: 'pd', nameAr: 'التطوير المهني', nameEn: 'Professional Development', color: '#10B981', icon: 'GraduationCap' },
+  { id: 'planning', nameAr: 'التخطيط والمتابعة', nameEn: 'Planning and Follow-up', color: '#F59E0B', icon: 'Calendar' },
+  { id: 'achievements', nameAr: 'المشاركات والإنجازات', nameEn: 'Participations and Achievements', color: '#8B5CF6', icon: 'Trophy' },
+  { id: 'monthly_reports', nameAr: 'التقارير الشهرية', nameEn: 'Monthly Reports', color: '#6B7280', icon: 'FileText' },
+  { id: 'elearning', nameAr: 'التعليم الإلكتروني', nameEn: 'E-Learning', color: '#EF4444', icon: 'Laptop' },
+  { id: 'qes', nameAr: 'نظام قطر للتعليم', nameEn: 'Qatar Education System', color: '#047857', icon: 'BookOpen' },
+  { id: 'ai', nameAr: 'الذكاء الاصطناعي', nameEn: 'Artificial Intelligence', color: '#7C3AED', icon: 'Cpu' },
+  { id: 'platforms', nameAr: 'المنصات التعليمية', nameEn: 'Educational Platforms', color: '#EC4899', icon: 'Globe' },
+  { id: 'cybersecurity', nameAr: 'الأمن السيبراني', nameEn: 'Cybersecurity', color: '#1F2937', icon: 'ShieldCheck' },
+  { id: 'competitions', nameAr: 'المسابقات والبحث العلمي', nameEn: 'Competitions and Research', color: '#F43F5E', icon: 'Search' },
+  { id: 'community', nameAr: 'الشراكات المجتمعية', nameEn: 'Community Partnerships', color: '#06B6D4', icon: 'Handshake' },
+  { id: 'parents', nameAr: 'أولياء الأمور', nameEn: 'Parents', color: '#D97706', icon: 'UserGroup' },
+  { id: 'students', nameAr: 'الطلاب', nameEn: 'Students', color: '#10B981', icon: 'User' },
+  { id: 'support', nameAr: 'الدعم الفني', nameEn: 'Technical Support', color: '#3B82F6', icon: 'Settings' },
+  { id: 'quality', nameAr: 'الاعتماد والجودة', nameEn: 'Accreditation and Quality', color: '#F59E0B', icon: 'CheckBadge' },
+  { id: 'files', nameAr: 'ملفات منسق المشاريع', nameEn: 'Coordinator Files', color: '#6B7280', icon: 'Folder' },
+  { id: 'other', nameAr: 'أخرى', nameEn: 'Other', color: '#9CA3AF', icon: 'MoreHorizontal' },
+];
 export const HIGH_PERF_DEPTS = new Set(['d_arabic','d_islamic','d_cs','d_math']);
 export function getDeptName(id:string,depts:Department[]):string { return depts.find(d=>d.id===id)?.nameAr||id; }
 
+// ── Centralized Recognition Logic ──────────────────────────────────────────
+export function getMonthlyDepartmentHonorees(
+  evaluations: Evaluation[],
+  teachers: Teacher[],
+  departments: Department[],
+  year: string,
+  month: string
+) {
+  const honorees: any[] = [];
+  const evals = evaluations.filter(e => e.academicYear === year && e.month === month);
+  
+  departments.forEach(dept => {
+    const deptTeachers = teachers.filter(t => t.departmentId === dept.id);
+    const teacherIds = new Set(deptTeachers.map(t => t.id));
+    const deptEvals = evals.filter(e => teacherIds.has(e.teacherId));
+    
+    if (deptEvals.length > 0) {
+      deptEvals.sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+        if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
+        const a10 = a.criteria.filter(c => c.score === 10).length;
+        const b10 = b.criteria.filter(c => c.score === 10).length;
+        if (b10 !== a10) return b10 - a10;
+        if ((b.criteria[0]?.score||0) !== (a.criteria[0]?.score||0)) return (b.criteria[0]?.score||0) - (a.criteria[0]?.score||0);
+        if ((b.criteria[1]?.score||0) !== (a.criteria[1]?.score||0)) return (b.criteria[1]?.score||0) - (a.criteria[1]?.score||0);
+        if ((b.criteria[3]?.score||0) !== (a.criteria[3]?.score||0)) return (b.criteria[3]?.score||0) - (a.criteria[3]?.score||0);
+        if ((b.criteria[4]?.score||0) !== (a.criteria[4]?.score||0)) return (b.criteria[4]?.score||0) - (a.criteria[4]?.score||0);
+        const tA = teachers.find(x => x.id === a.teacherId);
+        const tB = teachers.find(x => x.id === b.teacherId);
+        return (tA?.nameAr || '').localeCompare(tB?.nameAr || '', 'ar');
+      });
+      const winnerEv = deptEvals[0];
+      const teacher = teachers.find(t => t.id === winnerEv.teacherId);
+      if (teacher) {
+        honorees.push({
+          academicYear: year,
+          month,
+          departmentId: dept.id,
+          departmentName: dept.nameAr,
+          teacherId: teacher.id,
+          teacherNameAr: teacher.nameAr,
+          teacherNameEn: teacher.nameEn,
+          subject: teacher.subject,
+          totalScore: winnerEv.totalScore,
+          averageScore: winnerEv.averageScore,
+          performanceLevel: winnerEv.performanceLevel,
+          recognitionReason: `تم تكريم المعلم لكونه الأعلى تقييمًا في قسم ${dept.nameAr} خلال شهر ${month} للعام الأكاديمي ${year}، وذلك وفق نتائج تقييم تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية.`,
+          isHonored: true,
+          evaluation: winnerEv
+        });
+      }
+    }
+  });
+  return honorees;
+}
+
+export function getTeacherRecognitionHistory(
+  evaluations: Evaluation[],
+  teachers: Teacher[],
+  departments: Department[],
+  teacherId: string
+) {
+  const history: any[] = [];
+  ACADEMIC_YEARS.forEach(year => {
+    MONTHS.forEach(month => {
+      const honorees = getMonthlyDepartmentHonorees(evaluations, teachers, departments, year, month);
+      const record = honorees.find(h => h.teacherId === teacherId);
+      if (record) history.push(record);
+    });
+  });
+  return history;
+}
+
 export const initialUsers:User[] = [
   // ─ Admins ─────────────────────────────────────────────────────────────────
-  {id:'u1',  name:'م.أحمد طبيشات',  nameEn:'Ahmad Tubaishat',      email:'a.tubaishat1704@education.qa', password:'admin123',  role:'admin',   status:'active'},
-  {id:'u10', name:'م.أحمد طبيشات',  nameEn:'Ahmad Tubaishat',      email:'admin@school.qa',              password:'admin123',  role:'admin',   status:'active'},
+  {id:'u1',  name:'م.أحمد طبيشات',  nameEn:'Ahmad Tubaishat',      email:'a.tubaishat1704@education.qa', password:'Admin@QSTSS2026',  role:'admin',   status:'active'},
+  {id:'u10', name:'م.أحمد طبيشات',  nameEn:'Ahmad Tubaishat',      email:'admin@school.qa',              password:'SysAdmin#2026!',  role:'admin',   status:'active'},
   // ─ School Leadership ──────────────────────────────────────────────────
-  {id:'u2',  name:'د.راني التوم',   nameEn:'Dr. Rani Al-Toum',     email:'r.altoum1512@education.qa',    password:'leader123', role:'leader',  status:'active'},
-  {id:'u12', name:'قيادة المدرسة', nameEn:'School Leader',        email:'leader@school.qa',             password:'leader123', role:'leader',  status:'active'},
+  {id:'u2',  name:'د.راني التوم',   nameEn:'Dr. Rani Al-Toum',     email:'r.altoum1512@education.qa',    password:'Leader@QSTSS26', role:'leader',  status:'active'},
+  {id:'u12', name:'قيادة المدرسة', nameEn:'School Leader',        email:'leader@school.qa',             password:'SchoolLead#2026', role:'leader',  status:'active'},
   // ─ Evaluator ──────────────────────────────────────────────────────────
-  {id:'u11', name:'منسق إلكتروني', nameEn:'Evaluator',            email:'evaluator@school.qa',          password:'eval123',   role:'evaluator', status:'active'},
+  {id:'u11', name:'منسق إلكتروني', nameEn:'Evaluator',            email:'evaluator@school.qa',          password:'EvalCoord@2026',   role:'evaluator', status:'active'},
+  // ─ E-Learning Specialist (View-Only) ──────────────────────────────────
+  {id:'u13', name:'أخصائي التعليم الإلكتروني', nameEn:'E-Learning Specialist', email:'elearning@school.qa', password:'ELearn@View2026', role:'viewer', status:'active'},
   // ─ Official Coordinators ────────────────────────────────────────────
-  {id:'uc1', name:'يامن فرح',          nameEn:'YAMEN FARAH FARAH',    email:'y.farah2507@education.qa', username:'y.farah2507',    password:'QSTSS@2026', role:'coordinator', employeeId:'27976002886', departmentId:'d_math',    departmentIds:['d_math'],    status:'active'},
-  {id:'uc2', name:'يوسف دحمان',        nameEn:'YOUSSEF DAHMAN',       email:'y.dahman0209@education.qa', username:'y.dahman0209',   password:'QSTSS@2026', role:'coordinator', employeeId:'28852800073', departmentId:'d_english', departmentIds:['d_english'], status:'active'},
-  {id:'uc3', name:'د. محمد عمر سلامة',  nameEn:'MOHAMMED OMAR MOHD SALAMEH', email:'m.salameh1301@education.qa', username:'m.salameh1301', password:'QSTSS@2026', role:'coordinator', employeeId:'28240001674', departmentIds:['d_energylab','d_fablab','d_robotlab'], status:'active'},
-  {id:'uc4', name:'د. ماهر علوان',      nameEn:'MAHER ISSA HASAN ELWAN', email:'m.elwan2704@education.qa', username:'m.elwan2704',   password:'QSTSS@2026', role:'coordinator', employeeId:'27440001203', departmentId:'d_islamic', departmentIds:['d_islamic'], status:'active'},
-  {id:'uc5', name:'أ. أسعد ناعس',       nameEn:'ASAAD MAHMOUD NAIS',   email:'n.asaad0108@education.qa', username:'n.asaad0108',   password:'QSTSS@2026', role:'coordinator', employeeId:'27376001799', departmentId:'d_arabic',  departmentIds:['d_arabic'],  status:'active'},
-  {id:'uc6', name:'عيسى سويدان',        nameEn:'ESSA IBRAHEM MOUSA SWEIDAN', email:'e.sweidan0601@education.qa', username:'e.sweidan0601', password:'QSTSS@2026', role:'coordinator', employeeId:'28440000737', departmentId:'d_cs',      departmentIds:['d_cs'],      status:'active'},
-  {id:'uc7', name:'أحمد عقله فارس',    nameEn:'AHMAD OQLAH FARIS',    email:'a.faris1404@education.qa', username:'a.faris1404', password:'QSTSS@2026', role:'coordinator', departmentId:'d_stem',    departmentIds:['d_stem'],    status:'active'},
+  {id:'uc1', name:'يامن فرح',          nameEn:'YAMEN FARAH FARAH',    email:'y.farah2507@education.qa', username:'y.farah2507',    password:'Yamen@QSTSS26', role:'coordinator', employeeId:'27976002886', departmentId:'d_math',    departmentIds:['d_math'],    status:'active'},
+  {id:'uc2', name:'يوسف دحمان',        nameEn:'YOUSSEF DAHMAN',       email:'y.dahman0209@education.qa', username:'y.dahman0209',   password:'Youssef@QSTSS26', role:'coordinator', employeeId:'28852800073', departmentId:'d_english', departmentIds:['d_english'], status:'active'},
+  {id:'uc3', name:'د. محمد عمر سلامة',  nameEn:'MOHAMMED OMAR MOHD SALAMEH', email:'m.salameh1301@education.qa', username:'m.salameh1301', password:'Salameh@QSTSS26', role:'coordinator', employeeId:'28240001674', departmentIds:['d_energylab','d_fablab','d_robotlab'], status:'active'},
+  {id:'uc4', name:'د. ماهر علوان',      nameEn:'MAHER ISSA HASAN ELWAN', email:'m.elwan2704@education.qa', username:'m.elwan2704',   password:'Maher@QSTSS26', role:'coordinator', employeeId:'27440001203', departmentId:'d_islamic', departmentIds:['d_islamic'], status:'active'},
+  {id:'uc5', name:'أ. أسعد ناعس',       nameEn:'ASAAD MAHMOUD NAIS',   email:'n.asaad0108@education.qa', username:'n.asaad0108',   password:'Asaad@QSTSS26', role:'coordinator', employeeId:'27376001799', departmentId:'d_arabic',  departmentIds:['d_arabic'],  status:'active'},
+  {id:'uc6', name:'عيسى سويدان',        nameEn:'ESSA IBRAHEM MOUSA SWEIDAN', email:'e.sweidan0601@education.qa', username:'e.sweidan0601', password:'Essa@QSTSS26', role:'coordinator', employeeId:'28440000737', departmentId:'d_cs',      departmentIds:['d_cs'],      status:'active'},
+  {id:'uc7', name:'أحمد عقله فارس',    nameEn:'AHMAD OQLAH FARIS',    email:'a.faris1404@education.qa', username:'a.faris1404', password:'Ahmad@QSTSS26', role:'coordinator', departmentId:'d_stem',    departmentIds:['d_stem'],    status:'active'},
 ];
 
 // ── Helper: get coordinator’s department IDs as array ──────────────────────────
@@ -169,6 +444,25 @@ const TOP_EARLY_TEACHERS = new Set([
   't4','t12','t13','t16','t17','t18','t22','t24','t27','t29','t31','t33','t34','t35','t36','t39','t41','t43','t46','t47','t48','t49','t50','t53','t54','t55','t56','t57'
 ]);
 
+// ── STEM Specific 2025-2026 ────────────────────────────────────────────────
+const STEM_TOP_2526 = ['t58','t36','t55','t12','t8','t32','t30'];
+const STEM_FOLLOWUP_2526 = new Set(['t21','t10','t30','t19']);
+// ── Follow-up Distribution 2025-2026 (10 per month) ────────────────────────
+const FOLLOWUP_DIST_2526: Record<string, string[]> = {
+  'سبتمبر': ['t51','t2','t3','t10','t25','t21','t27','t31','t37','t52'],
+  'أكتوبر': ['t2','t3','t10','t25','t30','t31','t37','t38','t40','t52'],
+  'نوفمبر': ['t51','t2','t10','t21','t27','t30','t31','t38','t40','t52'],
+  'يناير':  ['t51','t3','t10','t25','t21','t27','t30','t37','t38','t40'],
+  'فبراير': ['t51','t2','t3','t25','t21','t31','t37','t38','t40','t52'],
+  'مارس':   ['t2','t3','t10','t25','t27','t30','t31','t37','t38','t52'],
+  'أبريل':  ['t51','t2','t10','t21','t27','t30','t31','t37','t40','t52'],
+  'مايو':    ['t51','t3','t10','t25','t21','t27','t30','t37','t38','t40'],
+};
+const FOLLOWUP_TARGET_TEACHERS = new Set(['t51','t2','t3','t10','t25','t21','t27','t30','t31','t37','t38','t40','t52']);
+
+const ARABIC_TEACHERS = ['t33','t47','t48','t54','t55'];
+const ISLAMIC_TEACHERS = ['t35','t39','t50','t56','t1','t12','t36']; // Removed t2, t3, t4 as they are target follow-up or early excluded
+
 export const initialTeachers:Teacher[] = RAW.map(([empId,nameAr,nameEn,subj,email],i)=>{
   const id = `t${i+1}`;
   return {
@@ -218,8 +512,6 @@ const TOP_TEACHERS: Record<string,{base:number; bonus?:Record<string,number>}> =
 };
 
 // ── 2024-2025 Winners Rotation Mapping ─────────────────────────────────────
-const ARABIC_TEACHERS = ['t33', 't47', 't48', 't53', 't54'];
-const ISLAMIC_TEACHERS = ['t1', 't35', 't39', 't50', 't56'];
 
 const WINNERS_2425: Record<string, Record<string, string>> = {
   'سبتمبر': { 'd_math':'t13', 'd_cs':'t34', 'd_english':'t16', 'd_stem':'t57', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
@@ -249,8 +541,9 @@ function deptBase(deptId:string, tid:string):number {
   return 74;
 }
 
-// Year progression multipliers: 2025-2026 is best
 const YEAR_MULT: Record<string,number> = {
+  '2021-2022': 0.78,
+  '2022-2023': 0.82,
   '2023-2024': 0.86,
   '2024-2025': 0.93,
   '2025-2026': 1.00,
@@ -268,7 +561,7 @@ const MONTH_DATES:Record<string,string> = {
   'يناير':'01','فبراير':'02','مارس':'03','أبريل':'04','مايو':'05',
 };
 const EARLY_MONTHS = new Set(['يناير','فبراير','مارس','أبريل','مايو']);
-const YEAR_START:Record<string,string> = {'2023-2024':'2023','2024-2025':'2024','2025-2026':'2025'};
+const YEAR_START:Record<string,string> = {'2021-2022':'2021','2022-2023':'2022','2023-2024':'2023','2024-2025':'2024','2025-2026':'2025'};
 
 // ── Official 2025-2026 annual scores by employee_id ────────────────────────
 const OFFICIAL_2526: Record<string,number> = {
@@ -340,8 +633,8 @@ function buildSampleEvaluations():Evaluation[] {
   // Monthly target scores for top early performers
   const TOP_MONTHLY = [94, 95.5, 96.25, 97, 93, 98.5, 92.5, 99];
 
-  // ── 2023-2024 and 2024-2025 ────────────────────────────────────────────────
-  [0,1].forEach(yIdx => {
+  // ── 2021-2022 through 2024-2025 ────────────────────────────────────────────────
+  [0,1,2,3].forEach(yIdx => {
     const year = ACADEMIC_YEARS[yIdx];
     const yearStartVal = parseInt(YEAR_START[year]);
     MONTHS.forEach((month, mIdx) => {
@@ -433,23 +726,48 @@ function buildSampleEvaluations():Evaluation[] {
   const year26 = '2025-2026';
   MONTHS.forEach((month, mIdx) => {
     const yearSeed = 2025;
-    const arabicWinner = ARABIC_TEACHERS[Math.floor(seededRnd(yearSeed + mIdx * 7)() * ARABIC_TEACHERS.length)];
-    const islamicWinner = ISLAMIC_TEACHERS[Math.floor(seededRnd(yearSeed + mIdx * 11)() * ISLAMIC_TEACHERS.length)];
+    const currentFollowupList = FOLLOWUP_DIST_2526[month] || [];
+    const followupSet = new Set(currentFollowupList);
+
+    // Winners must NOT be in the follow-up list for this month
+    const validArabic = ARABIC_TEACHERS.filter(id => !followupSet.has(id));
+    const validIslamic = ISLAMIC_TEACHERS.filter(id => !followupSet.has(id));
+    const validStem = STEM_TOP_2526.filter(id => !followupSet.has(id));
+
+    const arabicWinner = validArabic[Math.floor(seededRnd(yearSeed + mIdx * 7)() * validArabic.length)];
+    const islamicWinner = validIslamic[Math.floor(seededRnd(yearSeed + mIdx * 11)() * validIslamic.length)];
+    const stemWinner = validStem[Math.floor(seededRnd(yearSeed + mIdx * 13)() * validStem.length)];
 
     initialTeachers.forEach((teacher) => {
       const tid = teacher.id;
+      const isStem = teacher.departmentId === 'd_stem';
       const annualScore = OFFICIAL_2526[teacher.employeeId];
-      const isFollowup = FOLLOWUP_TEACHERS.has(tid);
-      const isDepWinner = (tid === arabicWinner || tid === islamicWinner);
+      const isFollowup = followupSet.has(tid);
+      const isDepWinner = (tid === arabicWinner || tid === islamicWinner || (isStem && tid === stemWinner));
       
-      let targetBase = isDepWinner ? 100 : (annualScore !== undefined ? annualScore : (isFollowup ? 48 : 78));
+      let targetBase: number;
+      if (isDepWinner) {
+        targetBase = 100;
+      } else if (isFollowup) {
+        // Force score between 65-79 for follow-up list
+        const fNoise = (seededRnd(parseInt(tid.replace('t','')) * 200 + mIdx)() * 14); // 0-14
+        targetBase = 65 + fNoise;
+      } else {
+        targetBase = (annualScore !== undefined ? annualScore : (isStem ? 82 : 78));
+      }
+
       const offset = MONTH_OFFSETS[mIdx];
       let rawTotal: number;
-      if (targetBase === 100) {
+      if (isDepWinner) {
         rawTotal = clamp(100 + offset * 0.5, 98.5, 100);
+      } else if (isFollowup) {
+        rawTotal = clamp(targetBase, 65, 79);
+      } else if (isStem && !isDepWinner) {
+        const stemNoise = (seededRnd(parseInt(tid.replace('t','')) * 100 + mIdx)() - 0.5) * 10;
+        rawTotal = clamp(83 + stemNoise, 80, 88);
       } else {
         const noise = (seededRnd(parseInt(tid.replace('t','')) * 100 + mIdx)() - 0.5) * 4;
-        rawTotal = clamp(targetBase + offset + noise, isFollowup ? 35 : 65, 100);
+        rawTotal = clamp(targetBase + offset + noise, 80, 100);
       }
       const totalScore = roundQ(rawTotal);
       const averageScore = roundQ(totalScore / 10);
@@ -463,13 +781,23 @@ function buildSampleEvaluations():Evaluation[] {
         id:`e${idx++}`, teacherId:tid, evaluatorId:'u1',
         month, academicYear:year26, evaluationDate:dateStr,
         criteria, totalScore, averageScore, percentage:totalScore,
-        performanceLevel:perf.label,
-        strengths: totalScore >= 90 ? 'التزام ممتاز بالمنصات الرقمية وتوظيفها بفاعلية عالية' : 'حضور منتظم واستخدام أساسي للمنصات التعليمية',
-        improvementAreas: totalScore < 65 ? 'تفعيل نظام قطر للتعليم بصورة منتظمة' : 'تطوير استخدام أدوات الذكاء الاصطناعي',
-        recommendations: totalScore < 65 ? 'حضور دورة تدريبية متخصصة' : 'الاستمرار والمشاركة في ورش تطوير المعلمين',
-        actionPlan: totalScore < 65 ? 'خطة تطوير شهرية مع المنسق الإلكتروني' : '',
+        performanceLevel: isFollowup ? 'يحتاج إلى متابعة وخطة تحسين' : perf.label,
+        strengths: isFollowup 
+          ? 'تفاعل محدود مع المنصات الرقمية' 
+          : totalScore >= 90 ? 'التزام ممتاز بالمنصات الرقمية وتوظيفها بفاعلية عالية' : 'حضور منتظم واستخدام أساسي للمنصات التعليمية',
+        improvementAreas: isFollowup
+          ? 'رفع مستوى التفعيل الشهري لنظام قطر للتعليم وتحسين توظيف المنصات التعليمية في الحصص والأنشطة.'
+          : totalScore < 65 ? 'تفعيل نظام قطر للتعليم بصورة منتظمة' : 'تطوير استخدام أدوات الذكاء الاصطناعي',
+        recommendations: isFollowup
+          ? 'إعداد خطة تحسين قصيرة للمعلم خلال الشهر التالي، تتضمن متابعة منسق القسم، تقديم دعم فني وتربوي، ومراجعة تقارير استخدام نظام قطر للتعليم.'
+          : totalScore < 65 ? 'حضور دورة تدريبية متخصصة' : 'الاستمرار والمشاركة في ورش تطوير المعلمين',
+        actionPlan: isFollowup
+          ? '1. عقد جلسة متابعة فردية مع المعلم.\n2. مراجعة الدروس والمصادر المنشورة على نظام قطر للتعليم.\n3. تقديم دعم في إنشاء التقييمات والواجبات الإلكترونية.\n4. متابعة التحسن في الشهر التالي.\n5. توثيق الشواهد الرقمية بعد تنفيذ خطة التحسين.'
+          : totalScore < 65 ? 'خطة تطوير شهرية مع المنسق الإلكتروني' : '',
         evidenceLinks:[],
-        generalNotes: '',
+        generalNotes: isFollowup
+          ? 'يحتاج المعلم إلى متابعة إضافية في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية خلال هذا الشهر، مع ضرورة تحسين انتظام نشر الدروس، رفع المصادر، متابعة تفاعل الطلاب، وتوثيق الشواهد الرقمية.'
+          : '',
         createdAt:dateStr, updatedAt:dateStr,
       });
     });
@@ -480,12 +808,280 @@ function buildSampleEvaluations():Evaluation[] {
 
 export const initialEvaluations:Evaluation[] = buildSampleEvaluations();
 
-// ── localStorage ──────────────────────────────────────────────────────────
+// --- Daily Tasks Data Seeding ---
+const createDailyTask = (data: Partial<DailyTask>): DailyTask => ({
+  id: generateId(),
+  title: '',
+  description: '',
+  taskDate: '',
+  month: '',
+  academicYear: '2025-2026',
+  category: 'other',
+  status: 'قيد التنفيذ',
+  priority: 'متوسطة',
+  completionPercentage: 0,
+  taskType: 'يومية',
+  source: 'إدخال يدوي',
+  executorName: 'أحمد عادل طبيشات',
+  createdBy: 'u1',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  ...data
+});
+
+export const initialDailyTasks: DailyTask[] = [
+  ...SEED_TASKS.map(t => createDailyTask({
+    ...t,
+    id: generateId(),
+    description: t.title, // Use title as description if empty
+    taskDate: t.taskDate || (t.month === 'أغسطس' ? '2025-08-01' : 
+                            t.month === 'سبتمبر' ? '2025-09-01' : 
+                            t.month === 'أكتوبر' ? '2025-10-01' : 
+                            t.month === 'نوفمبر' ? '2025-11-01' : 
+                            t.month === 'يناير' ? '2026-01-01' : 
+                            t.month === 'فبراير' ? '2026-02-01' : 
+                            t.month === 'مارس' ? '2026-03-01' : 
+                            t.month === 'أبريل' ? '2026-04-01' : '2025-08-01'),
+    status: (t.evidenceLabel === 'Click Here' || t.evidenceLabel === 'Here Click' || t.evidenceLabel === 'click Here') ? 'يوجد دليل إنجاز' : 
+            (t.evidenceLabel === 'DONE' || t.evidenceLabel === 'Done') ? 'مكتملة' : 
+            (t.evidenceUrl ? 'يوجد دليل إنجاز' : (t.status as any || 'قيد التنفيذ')),
+    hasEvidence: !!t.evidenceUrl || t.evidenceLabel?.toLowerCase().includes('click'),
+    completionPercentage: (t.evidenceLabel === 'Click Here' || t.evidenceLabel === 'DONE' || t.evidenceLabel === 'Done') ? 100 : (t.completionPercentage || 50),
+    evidenceStatus: t.evidenceUrl ? 'يوجد دليل إنجاز' : '',
+    source: t.source || 'تقرير المهام الشهرية.xlsx',
+    priority: (t.priority as any) || 'متوسطة'
+  } as any)),
+
+  // September 2025
+  createDailyTask({ title: 'اجتماع التحصيل الأكاديمي الثاني', category: 'الاجتماعات', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حضور اجتماع إتقان خطتي خطوة نحو ارتقاء مدرستي لإعداد خطة التدريب الداخلي', category: 'الاجتماعات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حضور اجتماع قسم تقنية المعلومات مع إدارة المدرسة', category: 'الاجتماعات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حضور اجتماعات مسابقة World Skills مع إدارة التعليم المهني والتقني', category: 'الاجتماعات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'الملتقى الأول لمنسقي المشاريع الإلكترونية للعام الأكاديمي 2025-2026', category: 'الاجتماعات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'Cognia Meeting', category: 'الاجتماعات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حضور اجتماع البرنامج التدريبي على منصة أعناب', category: 'الاجتماعات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حضور اجتماع لجنة الأنشطة المدرسية الأول', category: 'الاجتماعات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حضور اجتماع لجنة الأمن والسلامة مع إدارة المدرسة', category: 'الاجتماعات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'عقد ورش فردية لمعلمي المدرسة في نظام قطر للتعليم والذكاء الاصطناعي وكانفا وغيرها', category: 'التطوير المهني', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'ورش تدريبية متعددة للإداريين الجدد في أدوات Microsoft ونظام قطر للتعليم وكانفا وأدوات الذكاء الاصطناعي', category: 'التطوير المهني', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'عقد ورشة ClassPoint لجميع معلمي المدرسة', category: 'التطوير المهني', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حصول المدرسة على Microsoft Showcase School وإعداد ملف التقديم', category: 'التطوير المهني', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'عقد دورتين للطلاب في برمجة Minecraft وأساسيات الذكاء الاصطناعي ضمن الحصص اللامنهجية', category: 'التطوير المهني', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'ترشيح 7 معلمين للمشاركة في برنامج التعلم الذاتي بالتعاون مع WISE Qatar وMIT', category: 'التطوير المهني', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حضور الملتقى الأول لإدارة التعليم الإلكتروني والحلول الرقمية', category: 'التطوير المهني', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'الحصول على شهادة القائد المؤثر من منصة أعناب', category: 'التطوير المهني', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حصول المعلمين على شهادة ClassPoint Certified Educator ورفع الشهادات على الملف المشترك', category: 'التطوير المهني', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'الحصول على Canva Pro Education Version for all teachers', category: 'التطوير المهني', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'متابعة حصص التعليم الإلكتروني للمعلمين ونشر الجدول وكتابة التقارير ومشاركة التقرير', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إنشاء كتيب الأنظمة والمنصات التعليمية الإلكترونية ونشره لكافة موظفي المدرسة', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إنشاء التوقيع الإلكتروني الرسمي المعتمد ونشره لكافة موظفي المدرسة', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إنشاء مجموعات ClassDojo للصفوف وإضافة المعلمين لها', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'متابعة حصص التعلم عن بعد للطالب صالح علي المري مع جميع معلمي الصف 10-2', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'مشاركة الكتب الإلكترونية مع طلاب المدرسة', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'مشاركة الكتب الإلكترونية مع أولياء أمور المدرسة', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'تحديث وتفعيل حسابات المعلمين على ClassPoint مع الشركة', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'التنسيق مع شركة ClassPoint لتجديد الاشتراك والحصول على اعتماد مدرسي وShowcase School', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إنشاء فيديوهات التعليم الإلكتروني للحصص النموذجية', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'تجهيز الصفوف والمعلمين والطلاب على نظام قطر للتعليم واعتماد الإضافات والوحدات والدروس', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'متابعة الطلاب لتفعيل حساباتهم على نظام قطر للتعليم وحل مشاكل الحسابات وأجهزة اللابتوب', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إرسال تقارير حصص التعليم الإلكتروني لمنسقي المواد للاطلاع والمتابعة', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إرسال رسالة لأولياء الأمور عن الدليل الإرشادي للخدمات التكنولوجية', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إرسال رسالة لأولياء الأمور عن الكتب الإلكترونية', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إرسال رسالة لأولياء الأمور عن تغيير كلمة مرور الطالب', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إرسال إيميل للمعلمين للتذكير برفع الواجبات والدروس على منصة قطر للتعليم', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'نشر الميثاق الأخلاقي للطلاب وأولياء الأمور للاطلاع والتوقيع عليه', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'استخراج تقارير ClassDojo وطباعة الشهادات', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'الاشتراك في موقع Worldwall وتنظيم العمل للمعلمين عليه', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'المشاركة مع م. علي الصيعري في مسابقة مبدعون في التعليم بالتعاون مع جامعة قطر', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'تكريم الطلاب المشاركين في مسابقة ترشيد كهرماء', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حصول 40 معلم على شهادة ClassPoint للمعلم المعتمد', category: 'المشاركات والإنجازات', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حصول 47 معلم على شهادة Microsoft للمعلم المعتمد', category: 'المشاركات والإنجازات', status: 'يوجد دليل إنجاز', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إنشاء مسابقة أبطال نظام قطر للتعليم وتكريم ثلاثة طلاب حاصلين على أعلى العلامات', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حصول المدرسة على اعتماد وجهة مدارس Microsoft 2025-2026', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'مساعدة 3 معلمين في إنشاء مشاريعهم البحثية لمسابقة البحث العلمي 2025-2026', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'المشاركة في مسابقة حمدان الألكسو للابتكارات الرقمية في التعليم', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'سبتمبر', taskDate: '2025-09-01', source: 'تقرير شهري سابق' }),
+
+  // October 2025
+  createDailyTask({ title: 'اجتماع أولياء الأمور الأول مع إدارة المدرسة', category: 'الاجتماعات', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع مجلس آباء الطلبة الأول', category: 'الاجتماعات', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع رواد التعليم الإلكتروني الثاني', category: 'الاجتماعات', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع المدارس الجديدة', category: 'الاجتماعات', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع شركة iHorizon', category: 'الاجتماعات', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع مع لجنة تقييم جائزة قطر للتميز الحكومي', category: 'الاجتماعات', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع التحصيل الأكاديمي', category: 'الاجتماعات', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع لجنة الشراكة المجتمعية', category: 'الاجتماعات', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع مع منصة اقرأ بالعربية', category: 'الاجتماعات', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حضور ورشة البحث العلمي المقامة في المدرسة', category: 'التطوير المهني', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'عقد ورش فردية لبرنامج Teams لبعض معلمي المدرسة', category: 'التطوير المهني', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'استخراج تقارير ClassDojo وتكريم الطلاب لشهر سبتمبر 2025', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إعلان نتائج مسابقة أبطال نظام قطر للتعليم والتنسيق لتكريمهم في الطابور الصباحي', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إنشاء جدول حصص التعليم الإلكتروني وإرساله للمنسقين للتعبئة', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'متابعة حصص التعليم الإلكتروني وتوثيقها بالتقارير والأدلة وإرسال تقارير التقييم', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'تكريم الطلاب الفائزين في مسابقة أبطال نظام قطر للتعليم', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'تكريم طلاب ClassDojo', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'متابعة المعلمين لاستكمال وإرسال الشهادات للتعليم الإلكتروني Survey Second Study AI MIT', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'التخطيط والمتابعة الأكاديمية للمنصات الرقمية', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'كونترول منتصف الفصل الدراسي الأول', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'نشر جداول الاختبارات', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'النشرة الإلكترونية للربع الأول 2025', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إنشاء فيديو حصة VR', category: 'التخطيط والمتابعة', status: 'يوجد دليل إنجاز', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'استخراج تقارير وشهادات ClassDojo', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'التأهل لمسابقة ITEX العالمية', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'مساعدة المعلمين في إنشاء مشاريع البحث العلمي والاشتراك في المسابقات: فوزي، يامن، طارق', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'أكتوبر', taskDate: '2025-10-01', source: 'تقرير شهري سابق' }),
+
+  // January 2026
+  createDailyTask({ title: 'الاجتماع العام للمدرسة لبداية الفصل الأول', category: 'الاجتماعات', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع التحصيل الأكاديمي الأول للفصل الثاني', category: 'الاجتماعات', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'الاجتماع الثالث لمنسقي المشاريع الإلكترونية عن بعد', category: 'الاجتماعات', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع لجنة مدارس قطر للعلوم والتكنولوجيا الجديدة', category: 'الاجتماعات', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'اجتماع لجنة يوم التعلم عن بعد', category: 'الاجتماعات', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'إعداد خطة التطوير المهني للمعلمين الجدد عدد 3 لتدريبهم على الأنظمة التكنولوجية والبدء بالتدريب ضمن الخطة', category: 'التطوير المهني', status: 'يوجد دليل إنجاز', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'حضور ورش داخلية: Arduino و ESP', category: 'التطوير المهني', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'التقارير الشهرية للمنصات الإلكترونية', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'الأعمال الشهرية لمنسق المشاريع', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'استمارة تقييم منسق المشاريع', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'دعوة المعلمين الجدد لكافة الأنظمة والمنصات التعليمية', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'تكريم المعلمين المتميزين في استخدام الأدوات التكنولوجية', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'تكريم الطلاب للسلوك الإيجابي لشهر يناير', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'مساعدة المعلمين في الأبحاث العلمية والمسابقات المختصة بالذكاء الاصطناعي', category: 'التخطيط والمتابعة', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'المشاركة في الأولمبياد الوطني للذكاء الاصطناعي لفئة الرؤية الحاسوبية والذكاء الاصطناعي', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'المشاركة المجتمعية مع مدرسة المشاف الثانوية للبنات', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+  createDailyTask({ title: 'المشاركة في مؤتمر ICSEI 2026 التابع لوزارة التعليم', category: 'المشاركات والإنجازات', status: 'مكتملة', month: 'يناير', taskDate: '2026-01-01', source: 'تقرير شهري سابق' }),
+];
+
+export const initialFollowUpForms: CoordinatorFollowUpForm[] = [
+  {
+    id: 'f1', employeeName: 'أحمد عادل طبيشات', month: 'أغسطس - سبتمبر', academicYear: '2025-2026', formDate: '2025-09-30',
+    totalScore: 90.90909091,
+    recommendations: 'إنشاء سياسة استخدام الذكاء الاصطناعي وتعميمها، والتأكد من تحديث الأنظمة التعليمية واختبارها قبل بداية العام الأكاديمي، وتنظيم جلسات تدريبية لتعريف المستخدمين الجدد بالأنظمة المتاحة.',
+    notes: '',
+    items: [
+      { criterion: 'تفعيل الأنظمة الإلكترونية في المدرسة ومتابعتها باستمرار', score: 9 },
+      { criterion: 'تنمية مهارات أطراف العملية التعليمية في توظيف التكنولوجيا', score: 10 },
+      { criterion: 'الرفع على OneDrive', score: 10 },
+      { criterion: 'تقارير المتابعة', score: 10 },
+      { criterion: 'عقد اجتماعات دورية', score: 7 },
+      { criterion: 'متابعة تنفيذ توصيات اللجنة الدائمة للتعليم الإلكتروني', score: 10 },
+      { criterion: 'تطوير الذات وتبادل الخبرات', score: 8 },
+      { criterion: 'التوعية بالحلول الإلكترونية المعتمدة من الوزارة', score: 10 },
+      { criterion: 'المشاركة في المسابقات', score: 9 },
+      { criterion: 'عقد الشراكات المجتمعية', score: 10 },
+      { criterion: 'التواصل مع أولياء الأمور', score: 7 },
+    ],
+    createdAt: '2025-09-30T10:00:00Z', updatedAt: '2025-09-30T10:00:00Z'
+  },
+  {
+    id: 'f2', employeeName: 'أحمد عادل طبيشات', month: 'أكتوبر', academicYear: '2025-2026', formDate: '2025-10-31',
+    totalScore: 92.72727273,
+    recommendations: 'عقد ورشة التصميم Canva لكافة المعلمين والإداريين في المدرسة.',
+    notes: '',
+    items: [
+      { criterion: 'تفعيل الأنظمة الإلكترونية في المدرسة ومتابعتها باستمرار', score: 10 },
+      { criterion: 'تنمية مهارات أطراف العملية التعليمية في توظيف التكنولوجيا', score: 10 },
+      { criterion: 'الرفع على OneDrive', score: 9 },
+      { criterion: 'تقارير المتابعة', score: 10 },
+      { criterion: 'عقد اجتماعات دورية', score: 10 },
+      { criterion: 'متابعة تنفيذ توصيات اللجنة الدائمة للتعليم الإلكتروني', score: 9 },
+      { criterion: 'تطوير الذات وتبادل الخبرات', score: 8 },
+      { criterion: 'التوعية بالحلول الإلكترونية المعتمدة من الوزارة', score: 10 },
+      { criterion: 'المشاركة في المسابقات', score: 9 },
+      { criterion: 'عقد الشراكات المجتمعية', score: 10 },
+      { criterion: 'التواصل مع أولياء الأمور', score: 7 },
+    ],
+    createdAt: '2025-10-31T10:00:00Z', updatedAt: '2025-10-31T10:00:00Z'
+  },
+  {
+    id: 'f3', employeeName: 'أحمد عادل طبيشات', month: 'نوفمبر', academicYear: '2025-2026', formDate: '2025-11-30',
+    totalScore: 90,
+    recommendations: 'عقد ورش تدريبية ضمن خطة التطوير المهني للمعلمين الجدد في المدرسة.',
+    notes: '',
+    items: [
+      { criterion: 'تفعيل الأنظمة الإلكترونية في المدرسة ومتابعتها باستمرار', score: 10 },
+      { criterion: 'تنمية مهارات أطراف العملية التعليمية في توظيف التكنولوجيا', score: 10 },
+      { criterion: 'الرفع على OneDrive', score: 9 },
+      { criterion: 'تقارير المتابعة', score: 10 },
+      { criterion: 'عقد اجتماعات دورية', score: 10 },
+      { criterion: 'متابعة تنفيذ توصيات اللجنة الدائمة للتعليم الإلكتروني', score: 8 },
+      { criterion: 'تطوير الذات وتبادل الخبرات', score: 8 },
+      { criterion: 'التوعية بالحلول الإلكترونية المعتمدة من الوزارة', score: 10 },
+      { criterion: 'المشاركة في المسابقات', score: 9 },
+      { criterion: 'عقد الشراكات المجتمعية', score: 8 },
+      { criterion: 'التواصل مع أولياء الأمور', score: 7 },
+    ],
+    createdAt: '2025-11-30T10:00:00Z', updatedAt: '2025-11-30T10:00:00Z'
+  },
+  {
+    id: 'f4', employeeName: 'أحمد عادل طبيشات', month: 'يناير', academicYear: '2025-2026', formDate: '2026-01-31',
+    totalScore: 90.90909091,
+    recommendations: 'عقد الشراكات المجتمعية.',
+    notes: '',
+    items: [
+      { criterion: 'تفعيل الأنظمة الإلكترونية في المدرسة ومتابعتها باستمرار', score: 9 },
+      { criterion: 'تنمية مهارات أطراف العملية التعليمية في توظيف التكنولوجيا', score: 8 },
+      { criterion: 'الرفع على OneDrive', score: 9 },
+      { criterion: 'تقارير المتابعة', score: 10 },
+      { criterion: 'عقد اجتماعات دورية', score: 10 },
+      { criterion: 'متابعة تنفيذ توصيات اللجنة الدائمة للتعليم الإلكتروني', score: 8 },
+      { criterion: 'تطوير الذات وتبادل الخبرات', score: 8 },
+      { criterion: 'التوعية بالحلول الإلكترونية المعتمدة من الوزارة', score: 10 },
+      { criterion: 'المشاركة في المسابقات', score: 9 },
+      { criterion: 'عقد الشراكات المجتمعية', score: 9 },
+      { criterion: 'التواصل مع أولياء الأمور', score: 10 },
+    ],
+    createdAt: '2026-01-31T10:00:00Z', updatedAt: '2026-01-31T10:00:00Z'
+  },
+  {
+    id: 'f5', employeeName: 'أحمد عادل طبيشات', month: 'فبراير', academicYear: '2025-2026', formDate: '2026-02-28',
+    totalScore: 92.72727273,
+    recommendations: 'المشاركة في مسابقات البحث العلمي ومسابقات الذكاء الاصطناعي.',
+    notes: '',
+    items: [
+      { criterion: 'تفعيل الأنظمة الإلكترونية في المدرسة ومتابعتها باستمرار', score: 9 },
+      { criterion: 'تنمية مهارات أطراف العملية التعليمية في توظيف التكنولوجيا', score: 8 },
+      { criterion: 'الرفع على OneDrive', score: 9 },
+      { criterion: 'تقارير المتابعة', score: 10 },
+      { criterion: 'عقد اجتماعات دورية', score: 10 },
+      { criterion: 'متابعة تنفيذ توصيات اللجنة الدائمة للتعليم الإلكتروني', score: 9 },
+      { criterion: 'تطوير الذات وتبادل الخبرات', score: 9 },
+      { criterion: 'التوعية بالحلول الإلكترونية المعتمدة من الوزارة', score: 10 },
+      { criterion: 'المشاركة في المسابقات', score: 10 },
+      { criterion: 'عقد الشراكات المجتمعية', score: 9 },
+      { criterion: 'التواصل مع أولياء الأمور', score: 9 },
+    ],
+    createdAt: '2026-02-28T10:00:00Z', updatedAt: '2026-02-28T10:00:00Z'
+  },
+  {
+    id: 'f6', employeeName: 'أحمد عادل طبيشات', month: 'مارس', academicYear: '2025-2026', formDate: '2026-03-31',
+    totalScore: 91.81818182,
+    recommendations: 'رفع التقارير والتوثيق للتعلم عن بعد، وإنشاء الخطة التنفيذية للتعلم عن بعد، وإنشاء الخطة الاستراتيجية لتفعيل الخدمات التكنولوجية 2024-2026.',
+    notes: '',
+    items: [
+      { criterion: 'تفعيل الأنظمة الإلكترونية في المدرسة ومتابعتها باستمرار', score: 9 },
+      { criterion: 'تنمية مهارات أطراف العملية التعليمية في توظيف التكنولوجيا', score: 8 },
+      { criterion: 'الرفع على OneDrive', score: 9 },
+      { criterion: 'تقارير المتابعة', score: 10 },
+      { criterion: 'عقد اجتماعات دورية', score: 10 },
+      { criterion: 'متابعة تنفيذ توصيات اللجنة الدائمة للتعليم الإلكتروني', score: 8 },
+      { criterion: 'تطوير الذات وتبادل الخبرات', score: 9 },
+      { criterion: 'التوعية بالحلول الإلكترونية المعتمدة من الوزارة', score: 10 },
+      { criterion: 'المشاركة في المسابقات', score: 9 },
+      { criterion: 'عقد الشراكات المجتمعية', score: 9 },
+      { criterion: 'التواصل مع أولياء الأمور', score: 10 },
+    ],
+    createdAt: '2026-03-31T10:00:00Z', updatedAt: '2026-03-31T10:00:00Z'
+  },
+];
+
+// --- localStorage Keys ---
 const KEYS = {
-  teachers:'qstss_v5_teachers', evaluations:'qstss_v15_evaluations',
+  teachers:'qstss_v5_teachers', evaluations:'qstss_v19_evaluations',
   departments:'qstss_v6_departments',
-  users:'qstss_v13_users',
+  users:'qstss_v14_users',
   currentUser:'qstss_current_user',
+  dailyTasks: 'qstss_v1_daily_tasks',
+  followUpForms: 'qstss_v1_followup_forms',
+  workshops: 'qstss_v1_workshops',
+  individualPDRecords: 'qstss_v1_individual_pd',
 };
 function getOrInit<T>(key:string,initial:T[]):T[] {
   if(typeof window==='undefined') return initial;
@@ -516,6 +1112,77 @@ export const db = {
   saveTeachers:    (t:Teacher[])=>saveData(KEYS.teachers,t),
   getEvaluations:  ()=>getOrInit(KEYS.evaluations,initialEvaluations),
   saveEvaluations: (e:Evaluation[])=>saveData(KEYS.evaluations,e),
+  getDailyTasks:   () => {
+    const stored = getOrInit(KEYS.dailyTasks, initialDailyTasks);
+    // Ensure seed tasks are present (Smart Sync)
+    const existingTitles = new Set(stored.map(t => `${t.title}-${t.month}-${t.academicYear}`));
+    const newFromSeed = initialDailyTasks.filter(t => !existingTitles.has(`${t.title}-${t.month}-${t.academicYear}`));
+    
+    if (newFromSeed.length > 0) {
+      const merged = [...stored, ...newFromSeed];
+      saveData(KEYS.dailyTasks, merged);
+      return merged;
+    }
+    return stored;
+  },
+  saveDailyTasks:  (t:DailyTask[])=>saveData(KEYS.dailyTasks,t),
+  getMonthlyNotes: () => {
+    const stored = getOrInit('monthly_task_notes', []) as MonthlyTaskNote[];
+    const existingKeys = new Set(stored.map(n => `${n.month}-${n.academicYear}`));
+    const newFromSeed = SEED_NOTES.filter(n => !existingKeys.has(`${n.month}-${n.academicYear}`)).map(n => ({
+      id: generateId(),
+      ...n,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }));
+
+    if (newFromSeed.length > 0) {
+      const merged = [...stored, ...newFromSeed];
+      saveData('monthly_task_notes', merged);
+      return merged;
+    }
+    return stored;
+  },
+  saveMonthlyNotes:(n:MonthlyTaskNote[])=>saveData('monthly_task_notes',n),
+  
+  getAchievements: () => {
+    const stored = getOrInit('system_achievements', []) as Achievement[];
+    const existingIds = new Set(stored.map(a => `${a.serialNumber}-${a.academicYear}`));
+    
+    const newFromSeed = SEED_ACHIEVEMENTS.filter(a => !existingIds.has(`${a.serialNumber}-${a.academicYear}`)).map(a => ({
+      id: generateId(),
+      ...a,
+      level: a.level as 'عالمي' | 'إقليمي' | 'محلي',
+      smartCategory: classifyAchievement(a.achievementName, a.organizer, a.result),
+      documentationStatus: 'موثق' as const,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })) as Achievement[];
+
+    if (newFromSeed.length > 0) {
+      const merged = [...stored, ...newFromSeed];
+      saveData('system_achievements', merged);
+      return merged;
+    }
+    return stored;
+  },
+  saveAchievements: (a: Achievement[]) => saveData('system_achievements', a),
+  getFollowUpForms:()=>getOrInit(KEYS.followUpForms,initialFollowUpForms),
+  saveFollowUpForms:(f:CoordinatorFollowUpForm[])=>saveData(KEYS.followUpForms,f),
+  getWorkshops: () => {
+    if (typeof window === 'undefined') return [];
+    const { PD_WORKSHOPS } = require('./pdData');
+    const stored = getOrInit(KEYS.workshops, PD_WORKSHOPS) as any[];
+    return stored;
+  },
+  saveWorkshops: (w: any[]) => saveData(KEYS.workshops, w),
+  getIndividualPDRecords: () => {
+    if (typeof window === 'undefined') return [];
+    const { PD_INDIVIDUAL_RECORDS } = require('./pdData');
+    const stored = getOrInit(KEYS.individualPDRecords, PD_INDIVIDUAL_RECORDS) as any[];
+    return stored;
+  },
+  saveIndividualPDRecords: (r: any[]) => saveData(KEYS.individualPDRecords, r),
   getCurrentUser:():User|null=>{
     if(typeof window==='undefined') return null;
     const s=localStorage.getItem(KEYS.currentUser);
