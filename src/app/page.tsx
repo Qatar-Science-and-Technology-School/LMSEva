@@ -12,6 +12,12 @@ export default function Home() {
     const saved = db.getCurrentUser();
     setUser(saved);
     setLoading(false);
+
+    const handleUserChange = () => {
+      setUser(db.getCurrentUser());
+    };
+    window.addEventListener('qstss_user_changed', handleUserChange);
+    return () => window.removeEventListener('qstss_user_changed', handleUserChange);
   }, []);
 
   if (loading) {

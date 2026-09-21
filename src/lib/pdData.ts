@@ -18,6 +18,10 @@ export interface Workshop {
   deliveryMethod: string;
   targetAudience: string;
   targetGroup?: string; // mapping for legacy/compatibility
+  targetClasses?: string; // added to specify grades/classes for student PD
+  procedure?: string; // الإجراء / الإجراءات لخطة التطوير المهني
+  followUpNotes?: string; // المتابعة
+  executionLevel?: string; // مستوى التنفيذ
   hours: string;
   durationHours?: number;
   venue: string;
@@ -43,6 +47,7 @@ export interface Workshop {
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
+  attendees?: PDAttendee[];
   // Legacy support for older fields if needed
   nameAr?: string;
   nameEn?: string;
@@ -62,6 +67,18 @@ export interface Workshop {
   lastUpdate?: string;
   type?: string;
   subject?: string;
+}
+
+export interface PDAttendee {
+  id?: string;
+  teacherId?: string;
+  name: string;
+  department: string;
+  jobTitle?: string;
+  signatureStatus: 'تم التوقيع' | 'حاضر' | 'بانتظار التوقيع';
+  signatureDate?: string;
+  signatureImage?: string; // Base64 data URL of the actual drawn signature
+  notes?: string;
 }
 
 export interface PDAttendance {
@@ -106,6 +123,7 @@ export interface IndividualPDRecord {
   durationMinutes: number;
   evidenceStatus: string;
   signatureStatus: 'تم التوقيع' | 'غير متوفر' | 'بانتظار التوقيع';
+  signatureImage?: string; // Base64 data URL of trainee drawn signature
   sourceFileName?: string;
   sourceType: string; // "كشف تدريب فردي مرفق" or "تقديري ذكي بناءً على بيانات النظام السابقة"
   notes?: string;
@@ -295,7 +313,7 @@ export const PD_WORKSHOPS: Workshop[] = [
     workshopNumber: 13,
     academicYear: '2025-2026',
     titleAr: 'ورشة تدريبية حول استخدام الذكاء الاصطناعي في منصة ClassPoint',
-    titleEn: 'ClassPoint Training with Qatar Science and Technology Secondary School for Boys',
+    titleEn: 'ClassPoint Training with Qatar Science & Technology Preparatory Secondary School for Boys',
     subject: 'ClassPoint training with AI features',
     facilitatorName: 'هبة السرحان',
     trainerName: 'هبة السرحان',
@@ -339,8 +357,8 @@ export const PD_WORKSHOPS: Workshop[] = [
     trainerName: 'أحمد طبيشات',
     trainerPosition: 'منسق مشاريع إلكترونية',
     organizerType: 'تطوير مهني داخل المدرسة',
-    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
-    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
+    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
+    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
     trainingMode: 'جلسة تطويرية Hands on Session',
     deliveryMethod: 'ورشة عمل تطبيقية',
     targetAudience: 'معلمي المدرسة',
@@ -377,8 +395,8 @@ export const PD_WORKSHOPS: Workshop[] = [
     trainerName: 'أحمد طبيشات',
     trainerPosition: 'منسق مشاريع إلكترونية',
     organizerType: 'تطوير مهني داخل المدرسة',
-    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
-    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
+    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
+    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
     trainingMode: 'جلسة تطويرية Hands on Session',
     deliveryMethod: 'ورشة عمل تطبيقية',
     targetAudience: 'معلمي المدرسة الجدد',
@@ -414,8 +432,8 @@ export const PD_WORKSHOPS: Workshop[] = [
     trainerName: 'أحمد طبيشات',
     trainerPosition: 'منسق مشاريع إلكترونية',
     organizerType: 'تطوير مهني داخل المدرسة',
-    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
-    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
+    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
+    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
     trainingMode: 'جلسة تطويرية Hands on Session',
     deliveryMethod: 'ورشة عمل تطبيقية',
     targetAudience: 'الإداريون الجدد',
@@ -452,8 +470,8 @@ export const PD_WORKSHOPS: Workshop[] = [
     trainerName: 'أحمد طبيشات',
     trainerPosition: 'منسق المشاريع الإلكترونية',
     organizerType: 'تطوير مهني داخل المدرسة',
-    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
-    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
+    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
+    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
     trainingMode: 'جلسة تطويرية Hands on Session',
     deliveryMethod: 'ورشة عمل تطبيقية',
     targetAudience: 'جميع طلاب الصف التاسع',
@@ -490,8 +508,8 @@ export const PD_WORKSHOPS: Workshop[] = [
     trainerName: 'أحمد طبيشات',
     trainerPosition: 'منسق المشاريع الإلكترونية',
     organizerType: 'تطوير مهني داخل المدرسة',
-    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
-    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
+    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
+    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
     trainingMode: 'جلسة تطويرية Hands on Session',
     deliveryMethod: 'ورشة عمل تطبيقية',
     targetAudience: 'جميع طلاب الصف التاسع',
@@ -528,8 +546,8 @@ export const PD_WORKSHOPS: Workshop[] = [
     trainerName: 'Cybercrime Prevention Department - Abdullah Alharami',
     trainerPosition: 'Trainer',
     organizerType: 'تطوير مهني داخل المدرسة',
-    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
-    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
+    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
+    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
     trainingMode: 'جلسة تطويرية Hands on Session',
     deliveryMethod: 'Lecture',
     targetAudience: 'جميع طلاب الصف التاسع',
@@ -566,8 +584,8 @@ export const PD_WORKSHOPS: Workshop[] = [
     trainerName: 'أحمد طبيشات',
     trainerPosition: 'منسق المشاريع الإلكترونية',
     organizerType: 'تطوير مهني داخل المدرسة',
-    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
-    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
+    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
+    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
     trainingMode: 'جلسة تطويرية Hands on Session',
     deliveryMethod: 'ورشة عمل تطبيقية',
     targetAudience: 'جميع طلاب الصف الحادي عشر',
@@ -682,8 +700,8 @@ export const PD_WORKSHOPS: Workshop[] = [
     trainerName: 'أحمد طبيشات',
     trainerPosition: 'منسق المشاريع الإلكترونية',
     organizerType: 'تطوير مهني داخل المدرسة',
-    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
-    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
+    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
+    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
     trainingMode: 'جلسة تطويرية Hands on Session',
     deliveryMethod: 'ورشة عمل تطبيقية',
     targetAudience: 'المعلمون',
@@ -720,8 +738,8 @@ export const PD_WORKSHOPS: Workshop[] = [
     trainerName: 'أحمد طبيشات',
     trainerPosition: 'منسق المشاريع الإلكترونية',
     organizerType: 'تطوير مهني داخل المدرسة',
-    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
-    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين',
+    organizerName: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
+    organizedBy: 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين',
     trainingMode: 'جلسة تطويرية Hands on Session',
     deliveryMethod: 'ورشة عمل تطبيقية',
     targetAudience: 'الإداريون الجدد',
@@ -833,7 +851,7 @@ const PRIORITY_TEACHERS = [
   { name: 'أنس جرادات', dept: 'مختبر الطاقة' }, { name: 'علي الصيعري', dept: 'مختبر التصنيع الرقمي' }, { name: 'إياد سلامة', dept: 'مختبر الروبوت' }
 ];
 
-const MONTHS_GEN = ['سبتمبر', 'أكتوبر', 'نوفمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو'];
+const MONTHS_GEN = ['سبتمبر', 'أكتوبر', 'نوفمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
 const SKILLS_2425 = ['Qatar Education System', 'LMS Monitoring', 'Digital Assessments', 'Microsoft Teams', 'Microsoft Forms', 'ClassPoint', 'Edpuzzle', 'Canva', 'AI Tools', 'OneDrive', 'SharePoint', 'ClassDojo', 'Interactive Board', 'VR Lab', 'E-Portfolio', 'Student Engagement Reports'];
 const SKILLS_2324 = ['Qatar Education System', 'Teams', 'OneDrive', 'School Portal', 'Microsoft Forms', 'ClassPoint', 'Edpuzzle', 'Canva', 'Digital Assessment', 'E-Learning Lessons', 'LMS Uploading', 'Student Follow-up', 'Cyber Safety', 'AI Basics', 'ClassDojo', 'VR Introduction'];
 

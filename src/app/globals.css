@@ -339,17 +339,37 @@ table {
   font-size: 0.875rem;
 }
 
-thead {
-  background: var(--navy);
+thead,
+thead tr,
+table thead tr,
+.table-container thead tr,
+table tr:first-child th {
+  background-color: #0F2044 !important;
+  background: #0F2044 !important;
+  color: #FFFFFF !important;
 }
 
-th {
+th,
+thead th,
+table thead th,
+table thead tr th,
+table tr:first-child th {
   padding: 0.875rem 1rem;
   text-align: right;
-  font-weight: 600;
-  color: white;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  font-weight: 700;
+  background-color: #0F2044 !important;
+  background: #0F2044 !important;
+  color: #FFFFFF !important;
+  border-bottom: 1px solid rgba(255,255,255,0.15) !important;
   white-space: nowrap;
+}
+
+th *,
+thead th *,
+thead tr *,
+table thead tr th *,
+table tr:first-child th * {
+  color: #FFFFFF !important;
 }
 
 td {
@@ -559,25 +579,96 @@ tr:hover td { background: var(--gray-50); }
 @media print {
   @page {
     size: A4;
-    margin: 1.5cm;
+    margin: 0;
   }
 
   body {
     background: white !important;
     color: black !important;
-    font-size: 10pt;
+    font-size: 9pt;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Force static layout on all parents in print so position: fixed viewport repetition works perfectly on every page */
+  html, body, .app-layout, .main-content, .page-content, .print-report-container {
+    position: static !important;
+    transform: none !important;
+    filter: none !important;
+    perspective: none !important;
+    will-change: auto !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+
+
+
+  /* Padding for printed container: 0 top/bottom, 45px left/right.
+     Top/bottom margins are handled on EVERY PAGE by the master table spacers! */
+  .print-report-container {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    padding-left: 45px !important;
+    padding-right: 45px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* Master Table for repeating page margins */
+  .print-master-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .print-master-table thead {
+    display: table-header-group !important;
+  }
+
+  .print-master-table tfoot {
+    display: table-footer-group !important;
+  }
+
+  .print-master-table tbody {
+    display: table-row-group !important;
+  }
+
+  .print-master-table td {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .print-header-spacer {
+    height: 155px !important;
+    display: block !important;
+  }
+
+  .print-footer-spacer {
+    height: 120px !important;
+    display: block !important;
   }
 
   /* Hide navigation and UI elements */
   aside, 
   header, 
   footer, 
-  .no-print, 
-  button, 
-  select, 
-  input,
+  .no-print,
   .topbar,
   .sidebar { 
+    display: none !important; 
+  }
+  .no-print * { 
+    display: none !important; 
+  }
+  .no-print button, 
+  .no-print select, 
+  .no-print input { 
     display: none !important; 
   }
 
@@ -597,34 +688,41 @@ tr:hover td { background: var(--gray-50); }
   }
 
   /* Professional Table Styling */
-  table {
+  table:not(.print-master-table):not(.landscape-report-sheet *):not(.printable-report *) {
     border-collapse: collapse !important;
     width: 100% !important;
-    margin-bottom: 1rem !important;
-    border: 1px solid #000 !important;
+    margin-bottom: 1.25rem !important;
+    border: 1px solid #CBD5E1 !important;
+    page-break-inside: auto !important;
   }
 
-  th, td {
-    border: 1px solid #ddd !important;
-    padding: 6px 8px !important;
+  table:not(.print-master-table):not(.landscape-report-sheet *):not(.printable-report *) th, 
+  table:not(.print-master-table):not(.landscape-report-sheet *):not(.printable-report *) td {
+    border: 1px solid #E2E8F0 !important;
+    padding: 5px 6px !important;
     text-align: right !important;
     color: black !important;
+    font-size: 8pt !important;
+    word-break: break-word !important;
   }
 
-  th {
-    background-color: #f3f4f6 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  table:not(.print-master-table):not(.landscape-report-sheet *):not(.printable-report *) th {
+    background-color: #0F2044 !important;
+    color: white !important;
+    font-weight: 700 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  tr {
-    page-break-inside: avoid;
+  table:not(.print-master-table) tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
   }
 
   /* Keep colors in print */
-  .badge, .score-circle, .progress-fill {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+  .badge, .score-circle, .progress-fill, .kpi-card {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Print-only elements */
@@ -635,14 +733,67 @@ tr:hover td { background: var(--gray-50); }
   /* Hide interactive shadows and transforms */
   .card, .kpi-card {
     box-shadow: none !important;
-    border: 1px solid #eee !important;
+    border: 1px solid #CBD5E1 !important;
     transform: none !important;
+    background: white !important;
+    page-break-inside: avoid !important;
   }
 
-  /* Ensure text is black for clarity */
-  h1, h2, h3, h4, h5, p, span, td {
-    color: #000 !important;
+  /* Print chart sizes & force Recharts render dimensions in print */
+  .chart-print-container,
+  .recharts-wrapper {
+    width: 100% !important;
+    max-width: 650px !important;
+    height: 220px !important;
+    margin: 0 auto !important;
+    page-break-inside: avoid !important;
+    display: block !important;
   }
+
+  .recharts-surface {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Ensure text is black/navy for clarity by default in legacy print report container */
+  .print-report-container h1:not(.text-white),
+  .print-report-container h2:not(.text-white),
+  .print-report-container h3:not(.text-white),
+  .print-report-container h4:not(.text-white),
+  .print-report-container h5:not(.text-white),
+  .print-report-container p:not(.text-white),
+  .print-report-container span:not(.text-white):not(.badge),
+  .print-report-container td:not(.text-white) {
+    color: #0F2044 !important;
+  }
+
+  .print-header-badge,
+  .print-header-badge *,
+  .text-white,
+  .text-white * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .landscape-report-sheet .text-white,
+  .landscape-report-sheet .text-white *,
+  .landscape-report-sheet .print-header-badge,
+  .landscape-report-sheet .print-header-badge * {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+}
+
+.print-header-badge,
+.print-header-badge *,
+.landscape-report-sheet .text-white,
+.landscape-report-sheet .text-white *,
+.landscape-report-sheet .print-header-badge,
+.landscape-report-sheet .print-header-badge * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 .print-only {
@@ -693,4 +844,44 @@ tr:hover td { background: var(--gray-50); }
 
 @media (max-width: 640px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* Hide master table thead and tfoot in screen view */
+.print-master-table thead,
+.print-master-table tfoot {
+  display: none;
+}
+
+/* High fidelity printable reports & Landscape mode */
+@media print {
+  .printable-report, .printable-report * {
+    visibility: visible !important;
+  }
+
+  .landscape-report-sheet {
+    width: 100% !important;
+    max-width: 285mm !important;
+    min-height: 196mm !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+    padding: 4mm 7mm !important;
+    margin: 0 auto !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: 1.5px solid #0F2044 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .landscape-report-sheet:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
 }

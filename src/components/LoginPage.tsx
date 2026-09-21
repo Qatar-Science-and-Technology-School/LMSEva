@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { db, SCHOOL_NAME, DESIGNER_CREDIT } from '@/lib/data';
+import { db, SCHOOL_NAME } from '@/lib/data';
 import type { User } from '@/lib/data';
 
 interface Props { onLogin: (user: User) => void; }
@@ -12,7 +12,7 @@ const QUICK_LOGINS = [
   { label: '📐 يامن فرح - رياضيات',   email: 'y.farah2507@education.qa',     password: 'Yamen@QSTSS26'   },
   { label: '📖 أسعد ناعس - عربي',     email: 'n.asaad0108@education.qa',     password: 'Asaad@QSTSS26'   },
   { label: '☪️ ماهر علوان - إسلامية', email: 'm.elwan2704@education.qa',     password: 'Maher@QSTSS26'   },
-  { label: '💻 عيسى سويدان - حاسوب', email: 'e.sweidan0601@education.qa',    password: 'Essa@QSTSS26'    },
+  { label: '💻 روي مخول - حاسوب',    email: 'r.makhoul0812@education.qa',   password: 'Roy@QSTSS26'     },
   { label: '🔬 المختبرات التخصصية',   email: 'm.salameh1301@education.qa',   password: 'Salameh@QSTSS26' },
   { label: '🤖 أحمد فارس - STEM',    email: 'a.faris1404@education.qa',     password: 'Ahmad@QSTSS26'   },
   { label: '🇬🇧 يوسف دحمان - إنجليزي', email: 'y.dahman0209@education.qa',    password: 'Youssef@QSTSS26' },
@@ -24,15 +24,17 @@ export default function LoginPage({ onLogin }: Props) {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError('');
-    setTimeout(() => {
-      const user = db.login(email, password);
+    try {
+      const user = await db.login(email, password);
       if (user) { onLogin(user); }
       else { setError('البريد الإلكتروني أو كلمة المرور غير صحيحة'); }
-      setLoading(false);
-    }, 500);
+    } catch (err) {
+      setError('حدث خطأ في الاتصال بالسيرفر');
+    }
+    setLoading(false);
   };
 
   const quickFill = (e: string, p: string) => { setEmail(e); setPassword(p); };
@@ -100,12 +102,7 @@ export default function LoginPage({ onLogin }: Props) {
           </div>
         </div>
 
-        <p style={{ textAlign:'center', fontSize:'0.65rem', color:'#CBD5E1', marginTop:'1.25rem', marginBottom:0 }}>
-          © 2025-2026 {SCHOOL_NAME}
-        </p>
-        <p style={{ textAlign:'center', fontSize:'0.62rem', color:'#94A3B8', marginTop:'0.25rem', marginBottom:0 }}>
-          {DESIGNER_CREDIT}
-        </p>
+
       </div>
     </div>
   );

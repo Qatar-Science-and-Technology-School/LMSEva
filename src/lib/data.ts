@@ -1,7 +1,10 @@
 import { SEED_TASKS, SEED_NOTES, SEED_ACHIEVEMENTS } from './seedData';
+import { PD_WORKSHOPS, PD_INDIVIDUAL_RECORDS } from './pdData';
+import { generateSeptember2026Evaluations } from './lmsReportSeptember2026';
+export * from './lmsReportSeptember2026';
 
 // مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
-export const SCHOOL_NAME = 'مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين';
+export const SCHOOL_NAME = 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين - أم السنيم';
 export const SYSTEM_TITLE = 'التعليم الالكتروني والحلول الرقمية';
 export const SYSTEM_SUBTITLE = 'نظام إلكتروني لمتابعة وتقييم تفعيل المعلمين لنظام قطر للتعليم والمنصات التعليمية الرقمية';
 export const DESIGNER_CREDIT = 'تصميم وتطوير: م.أحمد طبيشات - منسق المشاريع الإلكترونية';
@@ -21,7 +24,67 @@ export interface User {
 export interface Department { id:string; nameAr:string; nameEn:string; }
 export interface Teacher { id:string; employeeId:string; nameAr:string; nameEn:string; departmentId:string; subject:string; email:string; jobCategory:string; status:'active'|'inactive'; createdAt:string; activeFromYear?:string; excludedYears?:string[]; }
 export interface EvaluationCriterion { score:number; note:string; }
-export interface Evaluation { id:string; teacherId:string; evaluatorId:string; month:string; academicYear:string; evaluationDate:string; criteria:EvaluationCriterion[]; totalScore:number; averageScore:number; percentage:number; performanceLevel:string; strengths:string; improvementAreas:string; recommendations:string; actionPlan:string; evidenceLinks:string[]; generalNotes:string; createdAt:string; updatedAt:string; }
+export interface Evaluation { id:string; teacherId:string; evaluatorId:string; month:string; academicYear:string; term?:string; evaluationDate:string; criteria:EvaluationCriterion[]; totalScore:number; averageScore:number; percentage:number; performanceLevel:string; strengths:string; improvementAreas:string; recommendations:string; actionPlan:string; hasWeeklyAssignment?:boolean; evidenceLinks:string[]; generalNotes:string; createdAt:string; updatedAt:string; }
+
+export interface ModelLessonEvaluation {
+  id: string;
+  teacherId: string;
+  teacherNameAr: string;
+  teacherNameEn: string;
+  departmentId: string;
+  departmentName: string;
+  academicYear: string;
+  month?: string;
+  date: string;
+  period: string;
+  classGrade: string;
+  toolsUsed: string;
+  scoreAssessmentFeedback: number;
+  scoreTechDepth: number;
+  scoreLmsClarity: number;
+  scoreClassroomMgmt: number;
+  scoreStudentEngagement: number;
+  scoreTeacherTools: number;
+  overallScore: number;
+  strengths: string;
+  improvements: string;
+  recommendations: string;
+  lessonPlanUrl?: string;
+  attendees?: string;
+  teacherSignature?: string;
+  academicDeputySignature?: string;
+  eProjectsCoordSignature?: string;
+  evaluatorId?: string;
+  evaluatorName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ModelLessonScheduleItem {
+  id: string;
+  teacherId: string;
+  teacherNameAr: string;
+  teacherNameEn?: string;
+  departmentId: string;
+  departmentName?: string;
+  subject?: string;
+  academicYear: string;
+  date: string; // YYYY-MM-DD
+  dayName: string; // الأحد, الإثنين, الثلاثاء, الأربعاء, الخميس
+  period: string; // 1 to 7
+  classGrade: string; // e.g. "9-1", "10-2", "11-AP"
+  lessonTopic: string; // عنوان أو موضوع الحصة
+  toolsPlanned: string; // الأدوات والتطبيقات الرقمية المقترحة
+  roomVenue?: string; // المختبر أو القاعة الصفية
+  notes?: string;
+  status: 'مجدولة' | 'تم التنفيذ' | 'مؤجلة' | 'ملغاة';
+  evaluatorId?: string;
+  evaluatorName?: string;
+  evaluationId?: string; // link to evaluation if executed
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 // --- Daily Tasks ---
 export type TaskStatus = 'مكتملة' | 'قيد التنفيذ' | 'مؤجلة' | 'تحتاج متابعة' | 'ملغاة' | 'يوجد دليل إنجاز';
@@ -68,6 +131,18 @@ export interface MonthlyTaskNote {
   source: string;
   createdAt: string;
   updatedAt: string;
+}
+
+
+export interface ElearningSms {
+  id: string;
+  title: string;          // عنوان الرسالة
+  messageText: string;    // نص الرسالة
+  sentDate: string;       // تاريخ الإرسال (YYYY-MM-DD)
+  academicYear?: string;
+  senderName?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TaskCategory {
@@ -127,7 +202,7 @@ export interface Achievement {
 }
 
 export const MONTHS = ['سبتمبر','أكتوبر','نوفمبر','يناير','فبراير','مارس','أبريل','مايو'];
-export const ACADEMIC_YEARS = ['2021-2022', '2022-2023', '2023-2024', '2024-2025', '2025-2026'];
+export const ACADEMIC_YEARS = ['2021-2022', '2022-2023', '2023-2024', '2024-2025', '2025-2026', '2026-2027'];
 
 export const ACHIEVEMENT_NAMES = [
   'مسابقة البحث العلمي والابتكار',
@@ -184,17 +259,137 @@ export const ACHIEVEMENT_RESULTS = [
   'شهادة تقدير',
   'مشاركة متميزة',
 ];
+export interface EvaluationCriterion { score:number; note:string; value?:string|boolean; }
+export interface Evaluation { id:string; teacherId:string; evaluatorId:string; month:string; academicYear:string; term?:string; evaluationDate:string; criteria:EvaluationCriterion[]; totalScore:number; averageScore:number; percentage:number; performanceLevel:string; strengths:string; improvementAreas:string; recommendations:string; actionPlan:string; hasWeeklyAssignment?:boolean; evidenceLinks:string[]; generalNotes:string; createdAt:string; updatedAt:string; }
+
+export interface ModelLessonEvaluation {
+  id: string;
+  teacherId: string;
+  teacherNameAr: string;
+  teacherNameEn: string;
+  departmentId: string;
+  departmentName: string;
+  academicYear: string;
+  month?: string;
+  date: string;
+  period: string;
+  classGrade: string;
+  toolsUsed: string;
+  scoreAssessmentFeedback: number;
+  scoreTechDepth: number;
+  scoreLmsClarity: number;
+  scoreClassroomMgmt: number;
+  scoreStudentEngagement: number;
+  scoreTeacherTools: number;
+  overallScore: number;
+  strengths: string;
+  improvements: string;
+  recommendations: string;
+  lessonPlanUrl?: string;
+  attendees?: string;
+  teacherSignature?: string;
+  academicDeputySignature?: string;
+  eProjectsCoordSignature?: string;
+  evaluatorId?: string;
+  evaluatorName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const EVALUATION_CRITERIA = [
-  'استخدام المعلم لنظام قطر للتعليم بشكل منتظم',
-  'نشر الدروس والوحدات التعليمية على نظام قطر للتعليم',
-  'رفع مصادر تعليمية رقمية متنوعة مثل ملفات، روابط، فيديوهات، عروض',
-  'إنشاء واجبات أو تقييمات إلكترونية للطلاب',
-  'تصحيح التقييمات وتقديم تغذية راجعة للطلاب',
-  'متابعة دخول الطلاب وتفاعلهم مع الدروس والأنشطة',
-  'استخدام منصات تعليمية مساندة مثل ClassPoint, Edpuzzle, Teams, Forms, ClassDojo',
-  'توظيف التكنولوجيا والسبورة التفاعلية داخل الحصة بطريقة تفاعلية وجاذبة',
-  'استخدام أدوات الذكاء الاصطناعي أو الأدوات الرقمية بطريقة مناسبة وآمنة',
-  'تنظيم المحتوى الرقمي والالتزام بتعليمات قسم التعليم الإلكتروني',
+  'تفعيل الدروس والخطط والمحتوى ومصادر التعلم',
+  'تنظيم الدروس: رفع الأهداف وتخصيص صور الدروس',
+  'تفاعل الطلاب وحلقات النقاش والتغذية الراجعة',
+  'يقوم المعلم برفع الواجبات على النظام أسبوعياً',
+  'يدخل المعلم باستمرار للنظام في الحصص الدراسية',
+];
+
+export interface QesLmsCriterionDef {
+  id: string;
+  num: string;
+  name: string;
+  short: string;
+  max: number;
+  type: 'scale' | 'boolean' | 'descriptive';
+  measureType: string;
+  scoreText: string;
+  evidence: string;
+  desc: string;
+}
+
+export const QES_LMS_CRITERIA: QesLmsCriterionDef[] = [
+  {
+    id: 'c1',
+    num: '1',
+    name: 'تفعيل الدروس والخطط والمحتوى ومصادر التعلم',
+    short: 'الدروس والخطط والمحتوى',
+    max: 20,
+    type: 'scale',
+    measureType: 'مقياس متدرج (1 - 20)',
+    scoreText: 'من 20',
+    evidence: 'شمولية رفع الخطط والمصادر الإثرائية بانتظام',
+    desc: 'شمولية رفع الخطط والمصادر الإثرائية بانتظام'
+  },
+  {
+    id: 'c2',
+    num: '2',
+    name: 'تنظيم الدروس: رفع الأهداف وتخصيص صور الدروس',
+    short: 'تنظيم وأهداف وصور الدروس',
+    max: 20,
+    type: 'boolean',
+    measureType: 'نعم / لا',
+    scoreText: '20 أو 0',
+    evidence: 'نعم = 20، لا = صفر (وضوح الأهداف وتعيين صور مناسبة للدروس)',
+    desc: 'نعم = 20، لا = صفر (وضوح الأهداف وتعيين صور مناسبة للدروس)'
+  },
+  {
+    id: 'c3',
+    num: '3',
+    name: 'تفاعل الطلاب وحلقات النقاش والتغذية الراجعة',
+    short: 'تفاعل الطلاب والنقاش',
+    max: 20,
+    type: 'scale',
+    measureType: 'مقياس متدرج (1 - 20)',
+    scoreText: 'من 20',
+    evidence: 'جودة التغذية الراجعة وتفاعل الطلبة في غرف النقاش',
+    desc: 'جودة التغذية الراجعة وتفاعل الطلبة في غرف النقاش'
+  },
+  {
+    id: 'c4',
+    num: '4',
+    name: 'يقوم المعلم برفع الواجبات على النظام أسبوعياً',
+    short: 'رفع الواجبات الأسبوعية',
+    max: 20,
+    type: 'boolean',
+    measureType: 'نعم / لا',
+    scoreText: '20 أو 0',
+    evidence: 'نعم = 20، لا = صفر (الالتزام بالجدول الزمني للواجبات الأسبوعية)',
+    desc: 'نعم = 20، لا = صفر (الالتزام بالجدول الزمني للواجبات الأسبوعية)'
+  },
+  {
+    id: 'c5',
+    num: '5',
+    name: 'يدخل المعلم باستمرار للنظام في الحصص الدراسية',
+    short: 'دخول النظام في الحصص',
+    max: 20,
+    type: 'scale',
+    measureType: 'مقياس متدرج (1 - 20)',
+    scoreText: 'من 20',
+    evidence: 'تفعيل النظام وتوظيفه المباشر داخل الحصة الصفية',
+    desc: 'تفعيل النظام وتوظيفه المباشر داخل الحصة الصفية'
+  },
+  {
+    id: 'c6',
+    num: '-',
+    name: 'يستخدم المعلم منصات تعليمية أخرى مساندة',
+    short: 'المنصات المساندة',
+    max: 0,
+    type: 'descriptive',
+    measureType: 'رصد وصفي (نعم / لا)',
+    scoreText: 'بدون علامة',
+    evidence: 'حصر الأدوات والمنصات المساندة (مثل: MS Teams وغيره)',
+    desc: 'حصر الأدوات والمنصات المساندة (مثل: MS Teams وغيره)'
+  }
 ];
 export function getPerformanceLevel(score:number):{label:string;color:string;bg:string} {
   if(score>=90) return {label:'متميز',           color:'#065F46',bg:'#D1FAE5'};
@@ -206,19 +401,201 @@ export const SUBJECT_TO_DEPT:Record<string,string> = {
   'Math':'d_math','Mathematics':'d_math','Chemistry':'d_stem','Physics':'d_stem',
   'Biology':'d_stem','English':'d_english','STEM':'d_stem','Energy Lab':'d_energylab',
   'Fab Lab':'d_fablab','Robotic Lab':'d_robotlab','Social Studies':'d_social',
+  'Administrative':'d_admin','Admin':'d_admin','PE':'d_pe','Physical Education':'d_pe',
+  'Technology Design':'d_techdesign','Tech Design':'d_techdesign','Scientific Research':'d_research','Research':'d_research',
+  'E-Learning':'d_elearning','ELearning':'d_elearning','التعليم الإلكتروني':'d_elearning','التعليم الالكتروني':'d_elearning',
+  'التربية البدنية':'d_pe','التصميم التكنولوجي':'d_techdesign','البحث العلمي':'d_research','الإدارة':'d_admin',
 };
 export const initialDepartments:Department[] = [
-  {id:'d_arabic',  nameAr:'اللغة العربية',         nameEn:'Arabic Language'},
-  {id:'d_islamic', nameAr:'التربية الإسلامية',      nameEn:'Islamic Education'},
-  {id:'d_cs',      nameAr:'الحاسوب',               nameEn:'Computer Science'},
-  {id:'d_math',    nameAr:'الرياضيات',             nameEn:'Mathematics'},
-  {id:'d_english', nameAr:'اللغة الإنجليزية',      nameEn:'English Language'},
-  {id:'d_stem',    nameAr:'STEM',                  nameEn:'STEM'},
-  {id:'d_energylab',nameAr:'مختبر الطاقة',         nameEn:'Energy Lab'},
-  {id:'d_fablab',  nameAr:'مختبر التصنيع الرقمي', nameEn:'Fab Lab'},
-  {id:'d_robotlab',nameAr:'مختبر الروبوت',         nameEn:'Robotic Lab'},
-  {id:'d_social',  nameAr:'الدراسات الاجتماعية',   nameEn:'Social Studies'},
+  {id:'d_admin',      nameAr:'الإدارة',                nameEn:'Administration'},
+  {id:'d_stem',       nameAr:'STEM',                   nameEn:'STEM'},
+  {id:'d_research',   nameAr:'البحث العلمي',           nameEn:'Scientific Research'},
+  {id:'d_cs',         nameAr:'الحاسوب',                nameEn:'Computer Science'},
+  {id:'d_pe',         nameAr:'التربية البدنية',        nameEn:'Physical Education'},
+  {id:'d_techdesign', nameAr:'التصميم التكنولوجي',     nameEn:'Technology Design'},
+  {id:'d_arabic',     nameAr:'اللغة العربية',          nameEn:'Arabic Language'},
+  {id:'d_islamic',    nameAr:'التربية الإسلامية',       nameEn:'Islamic Education'},
+  {id:'d_english',    nameAr:'اللغة الإنجليزية',       nameEn:'English Language'},
+  {id:'d_math',       nameAr:'الرياضيات',              nameEn:'Mathematics'},
+  {id:'d_fablab',     nameAr:'مختبر التصنيع الرقمي',  nameEn:'Fab Lab'},
+  {id:'d_robotlab',   nameAr:'مختبر الروبوت',          nameEn:'Robotic Lab'},
+  {id:'d_energylab',  nameAr:'مختبر الطاقة',          nameEn:'Energy Lab'},
+  {id:'d_social',     nameAr:'الدراسات الاجتماعية',    nameEn:'Social Studies'},
+  {id:'d_elearning',  nameAr:'التعليم الإلكتروني',      nameEn:'E-Learning'},
 ];
+
+// ── Official School Department Staff Counts & Canonical Mapping ───────────────
+export const OFFICIAL_DEPARTMENT_STAFF: Record<string, { id: string; count: number; nameAr: string }> = {
+  'التربية الإسلامية': { id: 'd_islamic', count: 5, nameAr: 'التربية الإسلامية' },
+  'البحث العلمي': { id: 'd_research', count: 2, nameAr: 'البحث العلمي' },
+  'مختبر الطاقة': { id: 'd_energylab', count: 2, nameAr: 'مختبر الطاقة' },
+  'الرياضيات': { id: 'd_math', count: 7, nameAr: 'الرياضيات' },
+  'اللغة الإنجليزية': { id: 'd_english', count: 5, nameAr: 'اللغة الإنجليزية' },
+  'اللغة العربية': { id: 'd_arabic', count: 7, nameAr: 'اللغة العربية' },
+  'STEM': { id: 'd_stem', count: 20, nameAr: 'STEM' },
+  'الحاسوب': { id: 'd_cs', count: 5, nameAr: 'الحاسوب' },
+  'مختبر التصنيع الرقمي': { id: 'd_fablab', count: 2, nameAr: 'مختبر التصنيع الرقمي' },
+  'مختبر الروبوت': { id: 'd_robotlab', count: 2, nameAr: 'مختبر الروبوت' },
+  'إداري': { id: 'd_admin', count: 2, nameAr: 'الإدارة' },
+  'الإدارة': { id: 'd_admin', count: 2, nameAr: 'الإدارة' },
+  'إدارة': { id: 'd_admin', count: 2, nameAr: 'الإدارة' },
+  'التربية البدنية': { id: 'd_pe', count: 3, nameAr: 'التربية البدنية' },
+  'التصميم التكنولوجي': { id: 'd_techdesign', count: 2, nameAr: 'التصميم التكنولوجي' },
+  'الدراسات الاجتماعية': { id: 'd_social', count: 1, nameAr: 'الدراسات الاجتماعية' },
+  'التعليم الإلكتروني': { id: 'd_elearning', count: 1, nameAr: 'التعليم الإلكتروني' },
+  'التعليم الالكتروني': { id: 'd_elearning', count: 1, nameAr: 'التعليم الإلكتروني' },
+  'E-Learning': { id: 'd_elearning', count: 1, nameAr: 'التعليم الإلكتروني' }
+};
+
+export function resolveTeacherDepartment(
+  teacherId?: string,
+  teacherName?: string,
+  fallbackDept?: string,
+  teachers: any[] = [],
+  departments: any[] = []
+): string {
+  const normalizedName = (teacherName || '').trim().toLowerCase();
+  const teacher = (teachers || []).find(t => 
+    (teacherId && t.id === teacherId) || 
+    (teacherName && (
+      (t.nameAr && t.nameAr.trim().toLowerCase() === normalizedName) || 
+      (t.nameEn && t.nameEn.trim().toLowerCase() === normalizedName)
+    ))
+  );
+  if (teacher) {
+    if (teacher.departmentId) {
+      const dept = (departments || []).find(d => d.id === teacher.departmentId);
+      if (dept) return dept.nameAr;
+    }
+    if (teacher.subject && SUBJECT_TO_DEPT[teacher.subject]) {
+      const deptId = SUBJECT_TO_DEPT[teacher.subject];
+      const dept = (departments || []).find(d => d.id === deptId);
+      if (dept) return dept.nameAr;
+      return teacher.subject;
+    }
+    if (teacher.department) return teacher.department;
+  }
+  return fallbackDept || 'أخرى';
+}
+
+export function getDepartmentStaffCount(
+  deptName: string,
+  teachers: any[] = [],
+  departments: any[] = []
+): { count: number; deptId: string; canonicalName: string } {
+  const normalized = (deptName || '').trim();
+  const official = OFFICIAL_DEPARTMENT_STAFF[normalized];
+
+  let targetId = official ? official.id : '';
+  if (!targetId && departments && departments.length > 0) {
+    const matchedDept = departments.find(d => 
+      d.nameAr === normalized || 
+      d.nameEn?.toLowerCase() === normalized.toLowerCase() || 
+      d.id === normalized
+    );
+    if (matchedDept) targetId = matchedDept.id;
+  }
+  if (!targetId && SUBJECT_TO_DEPT[normalized]) {
+    targetId = SUBJECT_TO_DEPT[normalized];
+  }
+
+  let activeCount = 0;
+  if (teachers && teachers.length > 0) {
+    activeCount = teachers.filter(t => {
+      if (t.status === 'inactive') return false;
+      if (targetId && (t.departmentId === targetId || (Array.isArray(t.departmentIds) && t.departmentIds.includes(targetId)))) {
+        return true;
+      }
+      if (t.department && (t.department === normalized || (official && t.department === official.nameAr))) {
+        return true;
+      }
+      if (t.subject && SUBJECT_TO_DEPT[t.subject] && targetId && SUBJECT_TO_DEPT[t.subject] === targetId) {
+        return true;
+      }
+      return false;
+    }).length;
+  }
+
+  // If active teachers exist in the system, use activeCount. Otherwise fallback to official benchmark.
+  const finalCount = activeCount > 0 ? activeCount : (official ? official.count : 1);
+  const canonicalName = official ? official.nameAr : normalized;
+
+  return {
+    count: finalCount,
+    deptId: targetId,
+    canonicalName
+  };
+}
+
+export interface InstitutionalEvaluation {
+  label: string;
+  shortLabel: string;
+  tier: 'full' | 'advanced' | 'very_good' | 'good' | 'preliminary' | 'developing';
+  color: string;
+  bg: string;
+  border: string;
+}
+
+export function getInstitutionalEvaluation(rate: number, certified: number = 0): InstitutionalEvaluation {
+  if (rate >= 100) {
+    return {
+      label: '⭐ اعتماد كامل (100%)',
+      shortLabel: '⭐ كامل 100%',
+      tier: 'full',
+      color: '#065F46',
+      bg: '#D1FAE5',
+      border: '#6EE7B7'
+    };
+  }
+  if (rate >= 70) {
+    return {
+      label: `🟢 مستوى متقدم (${rate}%)`,
+      shortLabel: `🟢 متقدم ${rate}%`,
+      tier: 'advanced',
+      color: '#047857',
+      bg: '#ECFDF5',
+      border: '#A7F3D0'
+    };
+  }
+  if (rate >= 50) {
+    return {
+      label: `🔵 إنجاز جيد جداً (${rate}%)`,
+      shortLabel: `🔵 جيد جداً ${rate}%`,
+      tier: 'very_good',
+      color: '#0369A1',
+      bg: '#E0F2FE',
+      border: '#BAE6FD'
+    };
+  }
+  if (rate >= 30) {
+    return {
+      label: `🟣 مستوى جيد (${rate}%)`,
+      shortLabel: `🟣 جيد ${rate}%`,
+      tier: 'good',
+      color: '#6D28D9',
+      bg: '#EDE9FE',
+      border: '#DDD6FE'
+    };
+  }
+  if (rate > 0 || certified > 0) {
+    return {
+      label: `🟠 مستوى أولي (${rate}%)`,
+      shortLabel: `🟠 أولي ${rate}%`,
+      tier: 'preliminary',
+      color: '#B45309',
+      bg: '#FEF3C7',
+      border: '#FDE68A'
+    };
+  }
+  return {
+    label: '⚪ قيد التطوير (0%)',
+    shortLabel: '⚪ قيد التطوير',
+    tier: 'developing',
+    color: '#64748B',
+    bg: '#F1F5F9',
+    border: '#E2E8F0'
+  };
+}
 
 export function classifyAchievement(name: string, organizer: string, result: string): string {
   const n = (name || '').toUpperCase();
@@ -261,7 +638,24 @@ export const TASK_CATEGORIES: TaskCategory[] = [
 export const HIGH_PERF_DEPTS = new Set(['d_arabic','d_islamic','d_cs','d_math']);
 export function getDeptName(id:string,depts:Department[]):string { return depts.find(d=>d.id===id)?.nameAr||id; }
 
-// ── Centralized Recognition Logic ──────────────────────────────────────────
+// ── Centralized Leader Exclusion & Recognition Logic ───────────────────────
+export function isExcludedTeacher(t: any): boolean {
+  if (!t) return false;
+  const nameAr = (t.nameAr || t.name || t.teacherName || t.teacherNameAr || '').trim();
+  const nameEn = (t.nameEn || t.teacherNameEn || '').trim().toLowerCase();
+  const email = (t.email || '').trim().toLowerCase();
+  const role = (t.role || '').trim().toLowerCase();
+  const job = (t.jobCategory || t.jobTitle || t.subject || '').trim().toLowerCase();
+
+  // Exclude Dr. Rani Al-Toum (Academic Vice Principal)
+  if (nameAr.includes('راني') && (nameAr.includes('توم') || nameAr.includes('التوم'))) return true;
+  if (nameEn.includes('rani') && (nameEn.includes('toum') || nameEn.includes('al-toum'))) return true;
+  if (email.includes('r.altoum') || email.includes('altoum1512')) return true;
+  if (role === 'leader' || job.includes('نائب') || job.includes('مدير')) return true;
+
+  return false;
+}
+
 export function getMonthlyDepartmentHonorees(
   evaluations: Evaluation[],
   teachers: Teacher[],
@@ -270,10 +664,12 @@ export function getMonthlyDepartmentHonorees(
   month: string
 ) {
   const honorees: any[] = [];
-  const evals = evaluations.filter(e => e.academicYear === year && e.month === month);
+  const validTeachers = teachers.filter(t => !isExcludedTeacher(t));
+  const validTeacherIds = new Set(validTeachers.map(t => t.id));
+  const evals = evaluations.filter(e => e.academicYear === year && e.month === month && validTeacherIds.has(e.teacherId));
   
-  departments.forEach(dept => {
-    const deptTeachers = teachers.filter(t => t.departmentId === dept.id);
+  departments.filter(d => d.id !== 'd_admin').forEach(dept => {
+    const deptTeachers = validTeachers.filter(t => t.departmentId === dept.id);
     const teacherIds = new Set(deptTeachers.map(t => t.id));
     const deptEvals = evals.filter(e => teacherIds.has(e.teacherId));
     
@@ -281,19 +677,19 @@ export function getMonthlyDepartmentHonorees(
       deptEvals.sort((a, b) => {
         if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
         if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
-        const a10 = a.criteria.filter(c => c.score === 10).length;
-        const b10 = b.criteria.filter(c => c.score === 10).length;
+        const a10 = a.criteria ? a.criteria.filter(c => c.score === 10).length : 0;
+        const b10 = b.criteria ? b.criteria.filter(c => c.score === 10).length : 0;
         if (b10 !== a10) return b10 - a10;
-        if ((b.criteria[0]?.score||0) !== (a.criteria[0]?.score||0)) return (b.criteria[0]?.score||0) - (a.criteria[0]?.score||0);
-        if ((b.criteria[1]?.score||0) !== (a.criteria[1]?.score||0)) return (b.criteria[1]?.score||0) - (a.criteria[1]?.score||0);
-        if ((b.criteria[3]?.score||0) !== (a.criteria[3]?.score||0)) return (b.criteria[3]?.score||0) - (a.criteria[3]?.score||0);
-        if ((b.criteria[4]?.score||0) !== (a.criteria[4]?.score||0)) return (b.criteria[4]?.score||0) - (a.criteria[4]?.score||0);
-        const tA = teachers.find(x => x.id === a.teacherId);
-        const tB = teachers.find(x => x.id === b.teacherId);
+        if ((b.criteria?.[0]?.score||0) !== (a.criteria?.[0]?.score||0)) return (b.criteria?.[0]?.score||0) - (a.criteria?.[0]?.score||0);
+        if ((b.criteria?.[1]?.score||0) !== (a.criteria?.[1]?.score||0)) return (b.criteria?.[1]?.score||0) - (a.criteria?.[1]?.score||0);
+        if ((b.criteria?.[3]?.score||0) !== (a.criteria?.[3]?.score||0)) return (b.criteria?.[3]?.score||0) - (a.criteria?.[3]?.score||0);
+        if ((b.criteria?.[4]?.score||0) !== (a.criteria?.[4]?.score||0)) return (b.criteria?.[4]?.score||0) - (a.criteria?.[4]?.score||0);
+        const tA = validTeachers.find(x => x.id === a.teacherId);
+        const tB = validTeachers.find(x => x.id === b.teacherId);
         return (tA?.nameAr || '').localeCompare(tB?.nameAr || '', 'ar');
       });
       const winnerEv = deptEvals[0];
-      const teacher = teachers.find(t => t.id === winnerEv.teacherId);
+      const teacher = validTeachers.find(t => t.id === winnerEv.teacherId);
       if (teacher) {
         honorees.push({
           academicYear: year,
@@ -323,6 +719,8 @@ export function getTeacherRecognitionHistory(
   departments: Department[],
   teacherId: string
 ) {
+  const teacher = teachers.find(t => t.id === teacherId);
+  if (teacher && isExcludedTeacher(teacher)) return [];
   const history: any[] = [];
   ACADEMIC_YEARS.forEach(year => {
     MONTHS.forEach(month => {
@@ -547,6 +945,7 @@ const YEAR_MULT: Record<string,number> = {
   '2023-2024': 0.86,
   '2024-2025': 0.93,
   '2025-2026': 1.00,
+  '2026-2027': 1.00,
 };
 
 function seededRnd(seed:number):()=>number {
@@ -561,7 +960,7 @@ const MONTH_DATES:Record<string,string> = {
   'يناير':'01','فبراير':'02','مارس':'03','أبريل':'04','مايو':'05',
 };
 const EARLY_MONTHS = new Set(['يناير','فبراير','مارس','أبريل','مايو']);
-const YEAR_START:Record<string,string> = {'2021-2022':'2021','2022-2023':'2022','2023-2024':'2023','2024-2025':'2024','2025-2026':'2025'};
+const YEAR_START:Record<string,string> = {'2021-2022':'2021','2022-2023':'2022','2023-2024':'2023','2024-2025':'2024','2025-2026':'2025','2026-2027':'2026'};
 
 // ── Official 2025-2026 annual scores by employee_id ────────────────────────
 const OFFICIAL_2526: Record<string,number> = {
@@ -587,43 +986,66 @@ const OFFICIAL_2526: Record<string,number> = {
 const MONTH_OFFSETS = [-1.5, 1.0, -0.5, 2.0, -1.0, 0.5, -2.0, 1.5];
 
 function makeCriteria(target:number, seed:number):EvaluationCriterion[] {
-  // Generate 10 criteria scores that sum close to target
-  const avg = target / 10;
+  const isPass = target >= 50;
+  const c2 = isPass ? 20 : 0;
+  const c4 = isPass ? 20 : 0;
+  const fixedSum = c2 + c4;
+  const remaining = Math.max(0, target - fixedSum);
+  const avg = remaining / 3;
   const rng = seededRnd(seed);
-  const raw = Array.from({length:10}, (_, i) => {
-    const nudge = (rng() - 0.5) * 1.0; // ±0.5 variation
-    return roundQ(clamp(avg + nudge, 1, 10));
-  });
-  // Adjust sum to match target exactly (spread rounding over criteria)
-  const sum = raw.reduce((a,b) => a+b, 0);
-  const diff = roundQ(target - sum);
-  // Distribute diff across first criteria
-  let remaining = diff;
-  for (let i = 0; i < raw.length && Math.abs(remaining) >= 0.25; i++) {
-    const adj = remaining > 0 ? 0.25 : -0.25;
-    const nv = clamp(roundQ(raw[i] + adj), 1, 10);
-    remaining = roundQ(remaining - (nv - raw[i]));
-    raw[i] = nv;
+  
+  let c1 = roundQ(clamp(avg + (rng() - 0.5) * 2, 1, 20));
+  let c3 = roundQ(clamp(avg + (rng() - 0.5) * 2, 1, 20));
+  let c5 = roundQ(clamp(remaining - (c1 + c3), 1, 20));
+
+  let diff = roundQ(remaining - (c1 + c3 + c5));
+  if (Math.abs(diff) >= 0.25) {
+    c1 = clamp(roundQ(c1 + diff), 1, 20);
+    diff = roundQ(remaining - (c1 + c3 + c5));
+    if (Math.abs(diff) >= 0.25) {
+      c3 = clamp(roundQ(c3 + diff), 1, 20);
+    }
   }
-  return raw.map(score => ({score, note:''}));
+
+  return [
+    { score: c1, note: '' },
+    { score: c2, note: '', value: c2 === 20 ? 'نعم' : 'لا' },
+    { score: c3, note: '' },
+    { score: c4, note: '', value: c4 === 20 ? 'نعم' : 'لا' },
+    { score: c5, note: '' },
+    { score: 0, note: 'MS Teams, Forms', value: 'نعم' }
+  ];
 }
 
 function makeCriteriaHigh(target:number, seed:number):EvaluationCriterion[] {
-  const avg = target / 10;
+  const c2 = 20;
+  const c4 = 20;
+  const fixedSum = 40;
+  const remaining = Math.max(0, target - fixedSum);
+  const avg = remaining / 3;
   const rng = seededRnd(seed);
-  const raw = Array.from({length:10}, () => {
-    const nudge = (rng() - 0.5) * 0.4;
-    return roundQ(clamp(avg + nudge, 8.5, 10));
-  });
-  const sum = raw.reduce((a,b) => a+b, 0);
-  let remaining = roundQ(target - sum);
-  for (let i = 0; i < raw.length && Math.abs(remaining) >= 0.25; i++) {
-    const adj = remaining > 0 ? 0.25 : -0.25;
-    const nv = clamp(roundQ(raw[i] + adj), 8.5, 10);
-    remaining = roundQ(remaining - (nv - raw[i]));
-    raw[i] = nv;
+  
+  let c1 = roundQ(clamp(avg + (rng() - 0.5) * 1.5, 16, 20));
+  let c3 = roundQ(clamp(avg + (rng() - 0.5) * 1.5, 16, 20));
+  let c5 = roundQ(clamp(remaining - (c1 + c3), 16, 20));
+
+  let diff = roundQ(remaining - (c1 + c3 + c5));
+  if (Math.abs(diff) >= 0.25) {
+    c1 = clamp(roundQ(c1 + diff), 16, 20);
+    diff = roundQ(remaining - (c1 + c3 + c5));
+    if (Math.abs(diff) >= 0.25) {
+      c3 = clamp(roundQ(c3 + diff), 16, 20);
+    }
   }
-  return raw.map(score => ({score, note:''}));
+
+  return [
+    { score: c1, note: '' },
+    { score: c2, note: '', value: 'نعم' },
+    { score: c3, note: '' },
+    { score: c4, note: '', value: 'نعم' },
+    { score: c5, note: '' },
+    { score: 0, note: 'MS Teams, ClassPoint', value: 'نعم' }
+  ];
 }
 
 function buildSampleEvaluations():Evaluation[] {
@@ -681,17 +1103,11 @@ function buildSampleEvaluations():Evaluation[] {
           let targetTotal = clamp(base * yearMult + monthBonus + noise, isFollowup ? 40 : 70, 99);
           targetTotal = roundQ(targetTotal);
 
-          const avgCrit = targetTotal / 10;
-          criteria = Array.from({length:10}, (_, ci) => {
-            const r2 = seededRnd(seed + ci * 17 + 5);
-            const v = clamp(roundQ(avgCrit + (r2()-0.5)*1.5), 4.0, 9.9);
-            return {score:v, note:''};
-          });
-          const totalScore = roundQ(criteria.reduce((s,c)=>s+c.score, 0));
-          clampedTotal = clamp(totalScore, 40, 99);
+          criteria = makeCriteria(targetTotal, seed);
+          clampedTotal = targetTotal;
         }
 
-        const averageScore = roundQ(clampedTotal / 10);
+        const averageScore = roundQ(clampedTotal / 5);
         const perf = getPerformanceLevel(clampedTotal);
         const yr = YEAR_START[year];
         const calYr = EARLY_MONTHS.has(month) ? String(parseInt(yr)+1) : yr;
@@ -770,7 +1186,7 @@ function buildSampleEvaluations():Evaluation[] {
         rawTotal = clamp(targetBase + offset + noise, 80, 100);
       }
       const totalScore = roundQ(rawTotal);
-      const averageScore = roundQ(totalScore / 10);
+      const averageScore = roundQ(totalScore / 5);
       const perf = getPerformanceLevel(totalScore);
       const seed26 = parseInt(tid.replace('t','')) * 500 + mIdx * 31;
       const criteria = makeCriteria(totalScore, seed26);
@@ -802,6 +1218,10 @@ function buildSampleEvaluations():Evaluation[] {
       });
     });
   });
+
+  // Append official September 2026 evaluations for all teachers based on the comprehensive LMS report
+  const sep26Evals = generateSeptember2026Evaluations(initialTeachers);
+  out.push(...sep26Evals);
 
   return out;
 }
@@ -1072,62 +1492,1033 @@ export const initialFollowUpForms: CoordinatorFollowUpForm[] = [
   },
 ];
 
-// --- localStorage Keys ---
-const KEYS = {
-  teachers:'qstss_v5_teachers', evaluations:'qstss_v19_evaluations',
-  departments:'qstss_v6_departments',
-  users:'qstss_v14_users',
-  currentUser:'qstss_current_user',
-  dailyTasks: 'qstss_v1_daily_tasks',
-  followUpForms: 'qstss_v1_followup_forms',
-  workshops: 'qstss_v1_workshops',
-  individualPDRecords: 'qstss_v1_individual_pd',
-};
-function getOrInit<T>(key:string,initial:T[]):T[] {
-  if(typeof window==='undefined') return initial;
-  try {
-    const s=localStorage.getItem(key);
-    if(!s){localStorage.setItem(key,JSON.stringify(initial));return initial;}
-    return JSON.parse(s);
-  } catch(e) {
-    console.error('Storage error:', e);
-    return initial;
+// --- Firestore-based Storage ---
+import { getCollection, saveCollection, saveDocument, deleteDocument, seedIfEmpty, invalidateCache, COLLECTIONS } from './firestoreDb';
+
+// Keep currentUser key for localStorage session management
+const CURRENT_USER_KEY = 'qstss_current_user';
+
+export const initialElearningSms: ElearningSms[] = [
+  {
+    id: 'sms-001',
+    title: 'تفعيل حسابات أولياء الأمور بنظام قطر للتعليم',
+    messageText: 'أولياء الأمور الكرام، نرحب بكم في العام الأكاديمي الجديد ونحثكم على تسجيل الدخول وتفعيل حساباتكم على منصة نظام قطر للتعليم لمتابعة الخطط والواجبات والتقييمات الأسبوعية لأبنائكم الطلبة. مدرسة قطر للعلوم والتكنولوجيا.',
+    sentDate: '2026-09-02',
+    academicYear: '2026-2027',
+    senderName: 'قسم التعليم الإلكتروني والمشاريع',
+    createdAt: '2026-09-02T08:00:00.000Z',
+    updatedAt: '2026-09-02T08:00:00.000Z',
+  },
+  {
+    id: 'sms-002',
+    title: 'إشعار نشر التقييمات الأسبوعية والواجبات الإلكترونية',
+    messageText: 'السادة أولياء الأمور الأفاضل، تم إسناد التقييمات الإلكترونية الأسبوعية والواجبات المدرسية عبر نظام قطر للتعليم، يرجى حث أبنائكم على الحل والالتزام بالمواعيد المحددة للرصد والمتابعة. شاكرين حسن تعاونكم.',
+    sentDate: '2026-09-10',
+    academicYear: '2026-2027',
+    senderName: 'قسم التعليم الإلكتروني والمشاريع',
+    createdAt: '2026-09-10T09:30:00.000Z',
+    updatedAt: '2026-09-10T09:30:00.000Z',
+  },
+  {
+    id: 'sms-003',
+    title: 'دليل الدخول والتطبيقات التفاعلية الداعمة للتعلم',
+    messageText: 'أولياء الأمور الكرام، حرصاً على تعزيز التمكين الرقمي للطلبة، تم رفع أدلة استخدام منصة قطر للتعليم وتطبيقات الذكاء الاصطناعي المساندة على بوابة المدرسة، للاطلاع ودعم رحلة التعلم الذاتي لأبنائكم.',
+    sentDate: '2026-09-14',
+    academicYear: '2026-2027',
+    senderName: 'قسم التعليم الإلكتروني والمشاريع',
+    createdAt: '2026-09-14T08:15:00.000Z',
+    updatedAt: '2026-09-14T08:15:00.000Z',
   }
-}
-function saveData<T>(key:string,data:T[]) {
-  if(typeof window!=='undefined') {
-    try {
-      localStorage.setItem(key,JSON.stringify(data));
-    } catch(e) {
-      console.error('Save error:', e);
-    }
+];
+
+export const SEED_WORKSHOPS_2627: any[] = [
+  {
+    id: 'PD-2627-W01',
+    workshopNumber: 1,
+    academicYear: '2026-2027',
+    titleAr: 'تدريب المعلمين والإداريين بالمدارس التخصصية الجديدة',
+    titleEn: 'Training for Teachers & Admins in New Specialized Schools',
+    date: '2026-08-20',
+    month: 'أغسطس',
+    facilitatorName: 'أحمد طبيشات',
+    trainerName: 'أحمد طبيشات',
+    organizerType: 'تطوير مهني داخل المدرسة',
+    organizerName: 'قسم التعلم الإلكتروني',
+    organizedBy: 'قسم التعلم الإلكتروني',
+    trainingMode: 'جلسة تطويرية',
+    deliveryMethod: 'حضوري',
+    targetAudience: 'المعلمين والإداريين ومنسقي المشاريع الإلكترونية',
+    procedure: 'إعداد الخطة التدريبية والبدء بتدريب المعلمين والإداريين الجدد ضمن جدول والخطة المعتمدة من المدرسة',
+    executionLevel: 'تم',
+    status: 'موثق',
+    hours: '3',
+    venue: 'مختبر الحاسوب',
+    category: 'تطوير مهني',
+    followUpNotes: 'تم تنفيذ ورش المعلمين الجدد ومنسقي المشاريع والإداريين وفق الخطة المعتمدة',
+    reportAvailable: true,
+    evidenceStatus: 'موثق',
+    createdAt: '2026-08-20',
+    updatedAt: '2026-08-20'
+  },
+  {
+    id: 'PD-2627-W02',
+    workshopNumber: 2,
+    academicYear: '2026-2027',
+    titleAr: 'برنامج الأنظمة التعليمية والتقنية',
+    titleEn: 'Educational & Technical Systems Program',
+    date: '2026-08-22',
+    month: 'أغسطس',
+    facilitatorName: 'أحمد طبيشات',
+    trainerName: 'أحمد طبيشات',
+    organizerType: 'تطوير مهني داخل المدرسة',
+    organizerName: 'قسم التعلم الإلكتروني',
+    organizedBy: 'قسم التعلم الإلكتروني',
+    trainingMode: 'جلسة تطويرية',
+    deliveryMethod: 'حضوري',
+    targetAudience: 'المعلمين الجدد',
+    procedure: 'عقد ورش متعددة للمعلمين الجدد في المدرسة لتمكينهم من الأنظمة والمنصات التعليمية المعتمدة',
+    executionLevel: 'تم',
+    status: 'موثق',
+    hours: '2.5',
+    venue: 'مختبر الحاسوب',
+    category: 'تطوير مهني',
+    followUpNotes: 'تم عقد الورش التدريبية وتمكين المعلمين منها - للاطلاع على التقرير انقر هنا',
+    reportAvailable: true,
+    evidenceStatus: 'موثق',
+    createdAt: '2026-08-22',
+    updatedAt: '2026-08-22'
+  },
+  {
+    id: 'PD-2627-W03',
+    workshopNumber: 3,
+    academicYear: '2026-2027',
+    titleAr: 'ورشة الذكاء الاصطناعي لمنسقي المشاريع',
+    titleEn: 'AI Workshop for E-Project Coordinators',
+    date: '2026-09-02',
+    month: 'سبتمبر',
+    facilitatorName: 'قسم التعليم الإلكتروني والحلول الرقمية',
+    trainerName: 'قسم التعليم الإلكتروني والحلول الرقمية',
+    organizerType: 'تطوير مهني وزاري',
+    organizerName: 'وزارة التربية والتعليم والتعليم العالي',
+    organizedBy: 'وزارة التربية والتعليم والتعليم العالي',
+    trainingMode: 'ورشة خارجية',
+    deliveryMethod: 'حضوري',
+    targetAudience: 'منسقي المشاريع الإلكترونية',
+    procedure: 'حضور الورشة التخصصية بناءً على تعليمات وزارة التربية والتعليم والتعليم العالي',
+    executionLevel: 'تم',
+    status: 'موثق',
+    hours: '7',
+    venue: 'فندق ميريديان',
+    category: 'الذكاء الاصطناعي',
+    followUpNotes: 'تم حضور الورش في فندق ميريديان – من الساعة ٧:٠٠ ص إلى ٢:٠٠ م يوم ٢ سبتمبر ٢٠٢٦م',
+    reportAvailable: true,
+    evidenceStatus: 'موثق',
+    createdAt: '2026-09-02',
+    updatedAt: '2026-09-02'
+  },
+  {
+    id: 'PD-2627-W04',
+    workshopNumber: 4,
+    academicYear: '2026-2027',
+    titleAr: 'الدليل الإرشادي لتفعيل الأدوات التكنولوجية',
+    titleEn: 'Guidebook for Activating Technological Tools',
+    date: '2026-08-28',
+    month: 'أغسطس',
+    facilitatorName: 'أحمد طبيشات',
+    trainerName: 'أحمد طبيشات',
+    organizerType: 'تطوير مهني ونشر معرفي',
+    organizerName: 'قسم التعلم الإلكتروني',
+    organizedBy: 'قسم التعلم الإلكتروني',
+    trainingMode: 'جلسة تدريبية',
+    deliveryMethod: 'حضوري وعن بعد',
+    targetAudience: 'الطلاب / أولياء الأمور / المعلمين والإداريين',
+    procedure: 'إعداد الدليل الإرشادي وإرساله لكافة أطراف العملية التعليمية للاطلاع عليه وتمكينهم من استخدام الأدوات التكنولوجية في المدرسة والسياسات الخاصة بها',
+    executionLevel: 'تم',
+    status: 'موثق',
+    hours: '2',
+    venue: 'المنصة الرقمية',
+    category: 'أدلة رقمية',
+    followUpNotes: 'تم نشر الدليل الجديد ونشره للطلاب وأولياء الأمور عبر المنصة الرسمية: https://qstssschools.web.app',
+    evidenceUrl: 'https://qstssschools.web.app',
+    reportAvailable: true,
+    evidenceStatus: 'موثق',
+    createdAt: '2026-08-28',
+    updatedAt: '2026-08-28'
+  },
+  {
+    id: 'PD-2627-W05',
+    workshopNumber: 5,
+    academicYear: '2026-2027',
+    titleAr: 'ورشة تعريفية لمنصة قطر للتعليم',
+    titleEn: 'Introductory Workshop for Qatar Education LMS',
+    date: '2026-09-08',
+    month: 'سبتمبر',
+    facilitatorName: 'أحمد طبيشات',
+    trainerName: 'أحمد طبيشات',
+    organizerType: 'تطوير مهني داخل المدرسة',
+    organizerName: 'قسم التعلم الإلكتروني',
+    organizedBy: 'قسم التعلم الإلكتروني',
+    trainingMode: 'جلسة تطويرية تطبيقية',
+    deliveryMethod: 'حضوري',
+    targetAudience: 'جميع المعلمين والطلاب / الصف السابع والتاسع الجدد',
+    procedure: 'عقد ورشة تعريفية للمعلمين والطلاب عن آخر المستجدات والتحديثات على سياسات الرفع وإنشاء الدروس على نظام قطر للتعليم ضمن العناوين المرفقة بالدليل الإرشادي للتعليم الإلكتروني',
+    executionLevel: 'تم',
+    status: 'موثق',
+    hours: '2',
+    venue: 'المسرح المدرسي / مختبر الحاسوب',
+    category: 'نظام قطر للتعليم',
+    followUpNotes: 'تم تنفيذ الورشة مرفق تقرير الورشة: انقر هنا',
+    reportAvailable: true,
+    evidenceStatus: 'موثق',
+    createdAt: '2026-09-08',
+    updatedAt: '2026-09-08'
+  },
+  {
+    id: 'PD-2627-W06',
+    workshopNumber: 6,
+    academicYear: '2026-2027',
+    titleAr: 'منصة ClassPoint التفاعلية',
+    titleEn: 'Interactive ClassPoint Platform Workshop',
+    date: '2026-09-22',
+    month: 'سبتمبر',
+    facilitatorName: 'أحمد طبيشات',
+    trainerName: 'أحمد طبيشات',
+    organizerType: 'تطوير مهني مشترك',
+    organizerName: 'شركة Inkone',
+    organizedBy: 'شركة Inkone',
+    trainingMode: 'جلسة تدريبية تفاعلية',
+    deliveryMethod: 'عن بعد',
+    targetAudience: 'المعلمين',
+    procedure: 'عقد الورش التدريبية المختلفة لمعلمي الأقسام لتمكينهم من ClassPoint من قبل شركة Inkone عن بعد',
+    executionLevel: 'قيد التنفيذ',
+    status: 'قيد التنفيذ',
+    hours: '2',
+    venue: 'Online',
+    category: 'ClassPoint',
+    followUpNotes: 'التنسيق مع شركة Inkone لعقد الورشة عن بعد ومتابعة التفعيل الصفي',
+    reportAvailable: false,
+    evidenceStatus: 'قيد التنفيذ',
+    createdAt: '2026-09-15',
+    updatedAt: '2026-09-15'
+  },
+  {
+    id: 'PD-2627-W07',
+    workshopNumber: 7,
+    academicYear: '2026-2027',
+    titleAr: 'نظام قطر للتعليم وبرنامج التيمز وون درايف',
+    titleEn: 'Qatar Education LMS, Teams & OneDrive for Grade 9',
+    date: '2026-09-28',
+    month: 'سبتمبر',
+    facilitatorName: 'أحمد طبيشات / فيصل الحضري',
+    trainerName: 'أحمد طبيشات / فيصل الحضري',
+    organizerType: 'تطوير مهني وتمكين طلابي',
+    organizerName: 'قسم التعلم الإلكتروني',
+    organizedBy: 'قسم التعلم الإلكتروني',
+    trainingMode: 'ورشة عمل تطبيقية للطلاب',
+    deliveryMethod: 'حضوري',
+    targetAudience: 'الطلاب',
+    targetClasses: 'الصف التاسع',
+    procedure: 'عقد ورش لطلاب الصف التاسع الجدد لتمكينهم من نظام قطر للتعليم وبرنامج التيمز والحوسبة السحابية',
+    executionLevel: 'مخطط',
+    status: 'مخطط',
+    hours: '1.5',
+    venue: 'مختبر الحاسوب',
+    category: 'نظام قطر للتعليم',
+    followUpNotes: 'التنسيق مع الأخصائي وجدولة الحصص الميدانية في مختبر الحاسوب',
+    reportAvailable: false,
+    evidenceStatus: 'مخطط',
+    createdAt: '2026-09-15',
+    updatedAt: '2026-09-15'
+  },
+  {
+    id: 'PD-2627-W08',
+    workshopNumber: 8,
+    academicYear: '2026-2027',
+    titleAr: 'تطبيقات الذكاء الاصطناعي في الإطار الإداري',
+    titleEn: 'AI Applications for Administrative Workflow',
+    date: '2026-10-15',
+    month: 'أكتوبر',
+    facilitatorName: 'أحمد طبيشات',
+    trainerName: 'أحمد طبيشات',
+    organizerType: 'تطوير مهني للإداريين',
+    organizerName: 'قسم التعلم الإلكتروني',
+    organizedBy: 'قسم التعلم الإلكتروني',
+    trainingMode: 'ورشة عمل تطبيقية',
+    deliveryMethod: 'حضوري',
+    targetAudience: 'الإداريين',
+    procedure: 'تدريب الإداريين على التمكين التكنولوجي على استخدام تطبيقات الذكاء الاصطناعي الحديثة والمتطورة لتسريع المهام الإدارية',
+    executionLevel: 'مخطط',
+    status: 'مخطط',
+    hours: '2',
+    venue: 'مختبر الابتكار',
+    category: 'الذكاء الاصطناعي',
+    followUpNotes: 'إعداد المادة التدريبية وتجهيز المختبر التقني',
+    reportAvailable: false,
+    evidenceStatus: 'مخطط',
+    createdAt: '2026-09-15',
+    updatedAt: '2026-09-15'
   }
-}
+];
+
+export const SEED_INDIVIDUAL_2627_RECORDS: any[] = [
+  { id: 'IND-2627-01', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-23', traineeNameAr: 'أحمد العجي', department: 'الإرشاد الأكاديمي', skillProvided: 'Canva', skillCategory: 'Canva', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-23T08:00:00.000Z', updatedAt: '2026-08-23T08:00:00.000Z' },
+  { id: 'IND-2627-02', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-23', traineeNameAr: 'يامن فرح', department: 'الرياضيات', skillProvided: 'AI Generation Video', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 25, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-23T08:30:00.000Z', updatedAt: '2026-08-23T08:30:00.000Z' },
+  { id: 'IND-2627-03', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-24', traineeNameAr: 'أحمد فارس', department: 'STEM', skillProvided: 'LMS Monitoring', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-24T09:00:00.000Z', updatedAt: '2026-08-24T09:00:00.000Z' },
+  { id: 'IND-2627-04', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-24', traineeNameAr: 'فوزي بوفخر الدين', department: 'STEM', skillProvided: 'SharePoint', skillCategory: 'Microsoft 365', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-24T09:30:00.000Z', updatedAt: '2026-08-24T09:30:00.000Z' },
+  { id: 'IND-2627-05', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-25', traineeNameAr: 'كليفورد كالي', department: 'الرياضيات', skillProvided: 'Qatar Education', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-25T10:00:00.000Z', updatedAt: '2026-08-25T10:00:00.000Z' },
+  { id: 'IND-2627-06', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-25', traineeNameAr: 'عيسى سويدان', department: 'الحاسوب', skillProvided: 'GitHub Copilot', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-25T10:30:00.000Z', updatedAt: '2026-08-25T10:30:00.000Z' },
+  { id: 'IND-2627-07', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-25', traineeNameAr: 'د. محمد سلامة', department: 'Research', skillProvided: 'GitHub Copilot', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-25T11:00:00.000Z', updatedAt: '2026-08-25T11:00:00.000Z' },
+  { id: 'IND-2627-08', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-27', traineeNameAr: 'علي الصيعري', department: 'مهندس', skillProvided: 'LMS Qatar Education', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-27T08:00:00.000Z', updatedAt: '2026-08-27T08:00:00.000Z' },
+  { id: 'IND-2627-09', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-27', traineeNameAr: 'صهيب محمد', department: 'أخصائي أنشطة', skillProvided: 'AI Tools', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-27T08:30:00.000Z', updatedAt: '2026-08-27T08:30:00.000Z' },
+  { id: 'IND-2627-10', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-28', traineeNameAr: 'صهيب محمد', department: 'أخصائي أنشطة', skillProvided: 'Canva', skillCategory: 'Canva', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-28T09:00:00.000Z', updatedAt: '2026-08-28T09:00:00.000Z' },
+  { id: 'IND-2627-11', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-08-26', traineeNameAr: 'نبيل أيوب', department: 'STEM', skillProvided: 'نظام قطر للتعليم و Canva', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-26T09:30:00.000Z', updatedAt: '2026-08-26T09:30:00.000Z' },
+  { id: 'IND-2627-12', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-01', traineeNameAr: 'أشرف فدعوس', department: 'STEM', skillProvided: 'AI Tools', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '2026-09-01T10:00:00.000Z' },
+  { id: 'IND-2627-13', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-01', traineeNameAr: 'نزار حاجي', department: 'STEM', skillProvided: 'Outlook', skillCategory: 'Microsoft 365', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-01T10:30:00.000Z', updatedAt: '2026-09-01T10:30:00.000Z' },
+  { id: 'IND-2627-14', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-02', traineeNameAr: 'محمد أحمد حلمي', department: 'مصادر التعلم', skillProvided: 'Calameo E-Book Publisher', skillCategory: 'الكتب الإلكترونية', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-02T11:00:00.000Z', updatedAt: '2026-09-02T11:00:00.000Z' },
+];
+
+// Seed MEEE records for staff who applied or got certified (Original 2025-2026 data as requested)
+const SEED_MEEE_RECORDS = [
+  {
+    id: 'MEEE-admin-ahmad-001',
+    teacherId: '',
+    teacherName: 'أحمد عادل طبيشات',
+    department: 'إداري',
+    status: 'حصل على الشهادة',
+    applicationDate: '2025-09-15',
+    certificationDate: '2025-11-10',
+    academicYear: '2025-2026',
+    notes: 'منسق المشاريع والتعليم الإلكتروني - معتمد خبير مايكروسوفت MIEE',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'MEEE-cert-roy-002',
+    teacherId: '',
+    teacherName: 'روي مخول',
+    department: 'الحاسوب',
+    status: 'حصل على الشهادة',
+    applicationDate: '2025-09-20',
+    certificationDate: '2025-11-15',
+    academicYear: '2025-2026',
+    notes: 'منسق قسم الحاسوب والتكنولوجيا - معتمد خبير مايكروسوفت MIEE',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'MEEE-cert-yamen-003',
+    teacherId: '',
+    teacherName: 'يامن فرح',
+    department: 'الرياضيات',
+    status: 'حصل على الشهادة',
+    applicationDate: '2025-09-25',
+    certificationDate: '2025-11-20',
+    academicYear: '2025-2026',
+    notes: 'منسق قسم الرياضيات - معتمد خبير مايكروسوفت MIEE',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'MEEE-cert-faris-004',
+    teacherId: '',
+    teacherName: 'أحمد عقله فارس',
+    department: 'STEM',
+    status: 'حصل على الشهادة',
+    applicationDate: '2025-09-25',
+    certificationDate: '2025-11-20',
+    academicYear: '2025-2026',
+    notes: 'منسق قسم STEM - معتمد خبير مايكروسوفت MIEE',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'MEEE-cert-dahman-005',
+    teacherId: '',
+    teacherName: 'يوسف دحمان',
+    department: 'اللغة الإنجليزية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2025-10-01',
+    certificationDate: '2025-12-01',
+    academicYear: '2025-2026',
+    notes: 'منسق قسم اللغة الإنجليزية - معتمد خبير مايكروسوفت MIEE',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'MEEE-cert-asaad-006',
+    teacherId: '',
+    teacherName: 'أسعد ناعس',
+    department: 'اللغة العربية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2025-10-05',
+    certificationDate: '2025-12-05',
+    academicYear: '2025-2026',
+    notes: 'منسق قسم اللغة العربية - معتمد خبير مايكروسوفت MIEE',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'MEEE-cert-elwan-007',
+    teacherId: '',
+    teacherName: 'ماهر علوان',
+    department: 'التربية الإسلامية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2025-10-10',
+    certificationDate: '2025-12-10',
+    academicYear: '2025-2026',
+    notes: 'منسق قسم التربية الإسلامية - معتمد خبير مايكروسوفت MIEE',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'MEEE-cert-salameh-008',
+    teacherId: '',
+    teacherName: 'محمد عمر سلامة',
+    department: 'مختبر الروبوت',
+    status: 'حصل على الشهادة',
+    applicationDate: '2025-10-15',
+    certificationDate: '2025-12-15',
+    academicYear: '2025-2026',
+    notes: 'مسؤول المختبرات التخصصية - معتمد خبير مايكروسوفت MIEE',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'MEEE-app-tarabi-009',
+    teacherId: '',
+    teacherName: 'راجي ترابي',
+    department: 'STEM',
+    status: 'تم التقديم',
+    applicationDate: '2025-10-20',
+    certificationDate: '',
+    academicYear: '2025-2026',
+    notes: 'معلم STEM - قيد المراجعة لدى مايكروسوفت',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'MEEE-app-kadhem-010',
+    teacherId: '',
+    teacherName: 'زايد كاظم',
+    department: 'STEM',
+    status: 'تم التقديم',
+    applicationDate: '2025-10-25',
+    certificationDate: '',
+    academicYear: '2025-2026',
+    notes: 'معلم STEM - قيد المراجعة لدى مايكروسوفت',
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+// Official MEEE 2026-2027 Records based on official QSTSS Report (36 Certified Teachers)
+export const SEED_MEEE_2627_RECORDS = [
+  {
+    id: 'MEEE-2627-01',
+    teacherId: '',
+    teacherName: 'راجي ترابي',
+    department: 'STEM',
+    role: 'STEM',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-02',
+    teacherId: '',
+    teacherName: 'حجيبالله خاسييف',
+    department: 'STEM',
+    role: 'STEM -Chemistry',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-03',
+    teacherId: '',
+    teacherName: 'عمران كاشف محمد حسين اسد',
+    department: 'STEM',
+    role: 'STEM',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-04',
+    teacherId: '',
+    teacherName: 'ماهر عيسى حسن علوان',
+    department: 'التربية الإسلامية',
+    role: 'منسق الدراسات الاسلامية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-05',
+    teacherId: '',
+    teacherName: 'حسام حامد علي البنوي',
+    department: 'التربية الإسلامية',
+    role: 'معلم الدراسات الإسلامية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-06',
+    teacherId: '',
+    teacherName: 'محمد عمر محمد سلامه',
+    department: 'البحث العلمي',
+    role: 'اخصائي البحث العلمي',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-17',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-17T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-07',
+    teacherId: '',
+    teacherName: 'كليفرد جورج بايلي',
+    department: 'الرياضيات',
+    role: 'معلم رياضيات',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-08',
+    teacherId: '',
+    teacherName: 'ابراهيم عونى عمر حسن النعيمى',
+    department: 'مختبر الطاقة',
+    role: 'مهندس مختبر الطاقة',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-09',
+    teacherId: '',
+    teacherName: 'سليمان ميا',
+    department: 'STEM',
+    role: 'STEM -Chemistry',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-10',
+    teacherId: '',
+    teacherName: 'زكي أحمد خالد',
+    department: 'اللغة الإنجليزية',
+    role: 'معلم اللغة الإنجليزية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-11',
+    teacherId: '',
+    teacherName: 'محمد كمال محمد زيد',
+    department: 'الرياضيات',
+    role: 'معلم رياضيات',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-12',
+    teacherId: '',
+    teacherName: 'يامن فرح فرح',
+    department: 'الرياضيات',
+    role: 'منسق الرياضيات',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-13',
+    teacherId: '',
+    teacherName: 'فيصل محمد مسلم الحضري',
+    department: 'اللغة العربية',
+    role: 'معلم الدراسات الاجتماعية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-14',
+    teacherId: '',
+    teacherName: 'محمد ورسامي عمر',
+    department: 'اللغة الإنجليزية',
+    role: 'معلم اللغة الإنجليزية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-15',
+    teacherId: '',
+    teacherName: 'احمد عادل عبده طبيشات',
+    department: 'إداري',
+    role: 'منسق المشاريع الالكترونية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-16',
+    teacherId: '',
+    teacherName: 'الحسن علي محمد علي',
+    department: 'التربية الإسلامية',
+    role: 'معلم الدراسات الإسلامية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-17',
+    teacherId: '',
+    teacherName: 'اسعد محمود ناعس',
+    department: 'اللغة العربية',
+    role: 'منسق اللغة العربية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-18',
+    teacherId: '',
+    teacherName: 'زايد كاظم',
+    department: 'STEM',
+    role: 'STEM',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-19',
+    teacherId: '',
+    teacherName: 'امداد علي',
+    department: 'الحاسوب',
+    role: 'معلم حاسوب',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-20',
+    teacherId: '',
+    teacherName: 'ابراهيم حلمى ابراهيم جمعه',
+    department: 'اللغة العربية',
+    role: 'معلم اللغة العربية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-21',
+    teacherId: '',
+    teacherName: 'خالد عصام بارودي',
+    department: 'الحاسوب',
+    role: 'معلم حاسوب',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-17',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-17T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-22',
+    teacherId: '',
+    teacherName: 'محمد قاسم',
+    department: 'الرياضيات',
+    role: 'معلم رياضيات',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-23',
+    teacherId: '',
+    teacherName: 'علاء حسني محمد موسى',
+    department: 'التربية الإسلامية',
+    role: 'معلم الدراسات الإسلامية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-24',
+    teacherId: '',
+    teacherName: 'جاد مصطفى العيتاني',
+    department: 'البحث العلمي',
+    role: 'اخصائي البحث العلمي',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-25',
+    teacherId: '',
+    teacherName: 'يوسف دحمان',
+    department: 'اللغة الإنجليزية',
+    role: 'منسق اللغة الإنجليزية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-26',
+    teacherId: '',
+    teacherName: 'محمد عماد ازكول',
+    department: 'الرياضيات',
+    role: 'معلم رياضيات',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-27',
+    teacherId: '',
+    teacherName: 'امجد سهيل عزيز',
+    department: 'STEM',
+    role: 'STEM - Biology',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-28',
+    teacherId: '',
+    teacherName: 'انس عبدالكريم موسى جرادات',
+    department: 'مختبر الطاقة',
+    role: 'مهندس مختبر الطاقة',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-29',
+    teacherId: '',
+    teacherName: 'اشرف صالح محمد فدعوس',
+    department: 'STEM',
+    role: 'STEM - Physics',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-30',
+    teacherId: '',
+    teacherName: 'نبيل صلاح الدين عطيه ايوب',
+    department: 'STEM',
+    role: 'STEM -Chemistry',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-31',
+    teacherId: '',
+    teacherName: 'على سالم على سالمين الصيعري',
+    department: 'مختبر التصنيع الرقمي',
+    role: 'مهندس مختبر التصنيع',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-17',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-17T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-32',
+    teacherId: '',
+    teacherName: 'شاكيل احمد رفيق',
+    department: 'STEM',
+    role: 'STEM -Chemistry',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-33',
+    teacherId: '',
+    teacherName: 'سمير بلفقي',
+    department: 'اللغة العربية',
+    role: 'معلم اللغة العربية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-34',
+    teacherId: '',
+    teacherName: 'عبدالعزيز محمد',
+    department: 'STEM',
+    role: 'STEM',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-17',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-17T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-35',
+    teacherId: '',
+    teacherName: 'محمد سامي ابراهيم عبدالقادر الكفرى',
+    department: 'الحاسوب',
+    role: 'معلم حاسوب',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+  {
+    id: 'MEEE-2627-36',
+    teacherId: '',
+    teacherName: 'ناصر احمد حسن حلوة',
+    department: 'التربية الإسلامية',
+    role: 'معلم الدراسات الإسلامية',
+    status: 'حصل على الشهادة',
+    applicationDate: '2026-09-01',
+    certificationDate: '2026-09-16',
+    academicYear: '2026-2027',
+    notes: 'تم استيفاء معايير مايكروسوفت واجتياز المتطلبات',
+    updatedAt: '2026-09-16T12:00:00.000Z',
+  },
+];
+
 export const db = {
-  getUsers:        ()=>getOrInit(KEYS.users,initialUsers),
-  saveUsers:       (u:User[])=>saveData(KEYS.users,u),
-  getDepartments:  ()=>getOrInit(KEYS.departments,initialDepartments),
-  saveDepartments: (d:Department[])=>saveData(KEYS.departments,d),
-  getTeachers:     ()=>getOrInit(KEYS.teachers,initialTeachers),
-  saveTeachers:    (t:Teacher[])=>saveData(KEYS.teachers,t),
-  getEvaluations:  ()=>getOrInit(KEYS.evaluations,initialEvaluations),
-  saveEvaluations: (e:Evaluation[])=>saveData(KEYS.evaluations,e),
-  getDailyTasks:   () => {
-    const stored = getOrInit(KEYS.dailyTasks, initialDailyTasks);
-    // Ensure seed tasks are present (Smart Sync)
+  getUsers: async (): Promise<User[]> => {
+    const stored = await seedIfEmpty<User>(COLLECTIONS.users, initialUsers);
+    const initialMap = new Map(initialUsers.map(u => [u.id, u]));
+    let hasChanges = false;
+
+    const updated = stored.map(user => {
+      const match = initialMap.get(user.id);
+      if (match) {
+        if (
+          user.name !== match.name ||
+          user.nameEn !== match.nameEn ||
+          user.email !== match.email ||
+          user.username !== match.username ||
+          user.employeeId !== match.employeeId ||
+          user.departmentId !== match.departmentId ||
+          JSON.stringify(user.departmentIds) !== JSON.stringify(match.departmentIds) ||
+          user.status !== match.status
+        ) {
+          hasChanges = true;
+          return { ...user, ...match };
+        }
+      }
+      return user;
+    });
+
+    const existingUserIds = new Set(stored.map(u => u.id));
+    const missingUsers = initialUsers.filter(u => !existingUserIds.has(u.id));
+    if (missingUsers.length > 0) {
+      hasChanges = true;
+      updated.push(...missingUsers);
+    }
+
+    if (hasChanges) {
+      try {
+        await saveCollection(COLLECTIONS.users, updated);
+      } catch (e) {
+        console.error("Failed to save updated users to Firestore:", e);
+      }
+      return updated;
+    }
+    return stored;
+  },
+  saveUsers: async (u: User[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.users, u);
+  },
+  getDepartments: async (): Promise<Department[]> => {
+    const existing = await seedIfEmpty<Department>(COLLECTIONS.departments, initialDepartments);
+    const existingIds = new Set(existing.map(d => d.id));
+    const missing = initialDepartments.filter(d => !existingIds.has(d.id));
+    if (missing.length > 0) {
+      const merged = [...existing, ...missing];
+      await saveCollection(COLLECTIONS.departments, merged);
+      return merged;
+    }
+    return existing;
+  },
+  saveDepartments: async (d: Department[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.departments, d);
+  },
+  getTeachers: async (): Promise<Teacher[]> => {
+    const list = await seedIfEmpty<Teacher>(COLLECTIONS.teachers, initialTeachers);
+    return list.filter(t => !isExcludedTeacher(t));
+  },
+  saveTeachers: async (t: Teacher[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.teachers, t.filter(x => !isExcludedTeacher(x)));
+  },
+  deleteTeacher: async (id: string): Promise<void> => {
+    await deleteDocument(COLLECTIONS.teachers, id);
+  },
+  getEvaluations: async (): Promise<Evaluation[]> => {
+    const list = await seedIfEmpty<Evaluation>(COLLECTIONS.evaluations, initialEvaluations);
+    const rawTeachers = await getCollection<Teacher>(COLLECTIONS.teachers);
+    const excludedIds = new Set(
+      rawTeachers.filter(t => isExcludedTeacher(t)).map(t => t.id)
+    );
+    return list.filter(e => {
+      if (excludedIds.has(e.teacherId)) return false;
+      const t = initialTeachers.find(x => x.id === e.teacherId);
+      if (t && isExcludedTeacher(t)) return false;
+      return true;
+    });
+  },
+  saveEvaluations: async (e: Evaluation[]): Promise<void> => {
+    const rawTeachers = await getCollection<Teacher>(COLLECTIONS.teachers);
+    const excludedIds = new Set(
+      rawTeachers.filter(t => isExcludedTeacher(t)).map(t => t.id)
+    );
+    const filtered = e.filter(ev => {
+      if (excludedIds.has(ev.teacherId)) return false;
+      const t = initialTeachers.find(x => x.id === ev.teacherId);
+      if (t && isExcludedTeacher(t)) return false;
+      return true;
+    });
+    await saveCollection(COLLECTIONS.evaluations, filtered);
+  },
+  deleteEvaluation: async (id: string): Promise<void> => {
+    return deleteDocument(COLLECTIONS.evaluations, id);
+  },
+  getModelLessonEvaluations: async (): Promise<ModelLessonEvaluation[]> => {
+    return seedIfEmpty<ModelLessonEvaluation>(COLLECTIONS.modelLessonEvaluations, []);
+  },
+  saveModelLessonEvaluations: async (items: ModelLessonEvaluation[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.modelLessonEvaluations, items);
+  },
+  saveModelLessonEvaluation: async (item: ModelLessonEvaluation): Promise<string> => {
+    return saveDocument<ModelLessonEvaluation>(COLLECTIONS.modelLessonEvaluations, item);
+  },
+  deleteModelLessonEvaluation: async (id: string): Promise<void> => {
+    return deleteDocument(COLLECTIONS.modelLessonEvaluations, id);
+  },
+  getModelLessonSchedules: async (): Promise<ModelLessonScheduleItem[]> => {
+    return getCollection<ModelLessonScheduleItem>(COLLECTIONS.modelLessonSchedules);
+  },
+  saveModelLessonSchedules: async (items: ModelLessonScheduleItem[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.modelLessonSchedules, items);
+  },
+  saveModelLessonSchedule: async (item: ModelLessonScheduleItem): Promise<string> => {
+    return saveDocument<ModelLessonScheduleItem>(COLLECTIONS.modelLessonSchedules, item);
+  },
+  deleteModelLessonSchedule: async (id: string): Promise<void> => {
+    return deleteDocument(COLLECTIONS.modelLessonSchedules, id);
+  },
+  getDailyTasks: async (): Promise<DailyTask[]> => {
+    const stored = await seedIfEmpty<DailyTask>(COLLECTIONS.dailyTasks, initialDailyTasks);
     const existingTitles = new Set(stored.map(t => `${t.title}-${t.month}-${t.academicYear}`));
     const newFromSeed = initialDailyTasks.filter(t => !existingTitles.has(`${t.title}-${t.month}-${t.academicYear}`));
-    
     if (newFromSeed.length > 0) {
       const merged = [...stored, ...newFromSeed];
-      saveData(KEYS.dailyTasks, merged);
+      try {
+        await saveCollection(COLLECTIONS.dailyTasks, merged);
+      } catch (e) {
+        console.error("Failed to save merged daily tasks to Firestore:", e);
+      }
       return merged;
     }
     return stored;
   },
-  saveDailyTasks:  (t:DailyTask[])=>saveData(KEYS.dailyTasks,t),
-  getMonthlyNotes: () => {
-    const stored = getOrInit('monthly_task_notes', []) as MonthlyTaskNote[];
+  saveDailyTasks: async (t: DailyTask[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.dailyTasks, t);
+  },
+  deleteDailyTask: async (id: string): Promise<void> => {
+    return deleteDocument(COLLECTIONS.dailyTasks, id);
+  },
+  getMonthlyNotes: async (): Promise<MonthlyTaskNote[]> => {
+    const stored = await seedIfEmpty<MonthlyTaskNote>(COLLECTIONS.monthlyNotes, []);
     const existingKeys = new Set(stored.map(n => `${n.month}-${n.academicYear}`));
     const newFromSeed = SEED_NOTES.filter(n => !existingKeys.has(`${n.month}-${n.academicYear}`)).map(n => ({
       id: generateId(),
@@ -1138,15 +2529,20 @@ export const db = {
 
     if (newFromSeed.length > 0) {
       const merged = [...stored, ...newFromSeed];
-      saveData('monthly_task_notes', merged);
+      try {
+        await saveCollection(COLLECTIONS.monthlyNotes, merged);
+      } catch (e) {
+        console.error("Failed to save merged monthly notes to Firestore:", e);
+      }
       return merged;
     }
     return stored;
   },
-  saveMonthlyNotes:(n:MonthlyTaskNote[])=>saveData('monthly_task_notes',n),
-  
-  getAchievements: () => {
-    const stored = getOrInit('system_achievements', []) as Achievement[];
+  saveMonthlyNotes: async (n: MonthlyTaskNote[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.monthlyNotes, n);
+  },
+  getAchievements: async (): Promise<Achievement[]> => {
+    const stored = await seedIfEmpty<Achievement>(COLLECTIONS.achievements, []);
     const existingIds = new Set(stored.map(a => `${a.serialNumber}-${a.academicYear}`));
     
     const newFromSeed = SEED_ACHIEVEMENTS.filter(a => !existingIds.has(`${a.serialNumber}-${a.academicYear}`)).map(a => ({
@@ -1161,44 +2557,180 @@ export const db = {
 
     if (newFromSeed.length > 0) {
       const merged = [...stored, ...newFromSeed];
-      saveData('system_achievements', merged);
+      try {
+        await saveCollection(COLLECTIONS.achievements, merged);
+      } catch (e) {
+        console.error("Failed to save merged achievements to Firestore:", e);
+      }
       return merged;
     }
     return stored;
   },
-  saveAchievements: (a: Achievement[]) => saveData('system_achievements', a),
-  getFollowUpForms:()=>getOrInit(KEYS.followUpForms,initialFollowUpForms),
-  saveFollowUpForms:(f:CoordinatorFollowUpForm[])=>saveData(KEYS.followUpForms,f),
-  getWorkshops: () => {
-    if (typeof window === 'undefined') return [];
-    const { PD_WORKSHOPS } = require('./pdData');
-    const stored = getOrInit(KEYS.workshops, PD_WORKSHOPS) as any[];
+  saveAchievements: async (a: Achievement[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.achievements, a);
+  },
+  getFollowUpForms: async (): Promise<CoordinatorFollowUpForm[]> => {
+    return seedIfEmpty<CoordinatorFollowUpForm>(COLLECTIONS.followUpForms, initialFollowUpForms);
+  },
+  saveFollowUpForms: async (f: CoordinatorFollowUpForm[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.followUpForms, f);
+  },
+  getWorkshops: async (): Promise<any[]> => {
+    const existing = await getCollection(COLLECTIONS.workshops) as any[];
+    const existingIds = new Set(existing.map((w: any) => w.id));
+    const missing = SEED_WORKSHOPS_2627.filter((w: any) => !existingIds.has(w.id));
+    if (missing.length > 0) {
+      const merged: any[] = [...existing, ...missing];
+      try {
+        await saveCollection(COLLECTIONS.workshops, merged);
+      } catch (e) {
+        console.error("Failed to save merged workshops:", e);
+      }
+      return merged;
+    }
+    return existing.length > 0 ? existing : (typeof PD_WORKSHOPS !== 'undefined' ? PD_WORKSHOPS : SEED_WORKSHOPS_2627);
+  },
+  saveWorkshops: async (w: any[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.workshops, w);
+  },
+  getIndividualPDRecords: async (): Promise<any[]> => {
+    const existing = await getCollection(COLLECTIONS.individualPDRecords) as any[];
+    const existingIds = new Set(existing.map((r: any) => r.id));
+    const missing = SEED_INDIVIDUAL_2627_RECORDS.filter((r: any) => !existingIds.has(r.id));
+    if (missing.length > 0) {
+      const merged: any[] = [...existing, ...missing];
+      try {
+        await saveCollection(COLLECTIONS.individualPDRecords, merged);
+      } catch (e) {
+        console.error("Failed to save merged individual PD records:", e);
+      }
+      return merged;
+    }
+    return existing.length > 0 ? existing : (typeof PD_INDIVIDUAL_RECORDS !== 'undefined' ? PD_INDIVIDUAL_RECORDS : SEED_INDIVIDUAL_2627_RECORDS);
+  },
+  saveIndividualPDRecords: async (r: any[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.individualPDRecords, r);
+  },
+  getMeeeRecords: async (): Promise<any[]> => {
+    const existing = await getCollection(COLLECTIONS.meeeRecords) as any[];
+    const non2627 = existing.filter((r: any) => r.academicYear !== '2026-2027');
+    const existing2627 = existing.filter((r: any) => r.academicYear === '2026-2027');
+
+    let updated2627 = existing2627;
+    let hasChanged = false;
+
+    const is2627Valid = existing2627.length === 36 && existing2627.every((r: any) => r.id && r.id.startsWith('MEEE-2627-'));
+    if (!is2627Valid) {
+      updated2627 = SEED_MEEE_2627_RECORDS;
+      hasChanged = true;
+    }
+
+    const missingOriginal = SEED_MEEE_RECORDS.filter((r: any) => !non2627.some((e: any) => e.id === r.id));
+    if (missingOriginal.length > 0) {
+      non2627.push(...missingOriginal);
+      hasChanged = true;
+    }
+
+    const merged = [...non2627, ...updated2627];
+    if (hasChanged) {
+      try {
+        await saveCollection(COLLECTIONS.meeeRecords, merged);
+      } catch (e) {
+        console.error("Failed to sync meeeRecords in Firestore:", e);
+      }
+    }
+    return merged.length > 0 ? merged : [...SEED_MEEE_RECORDS, ...SEED_MEEE_2627_RECORDS];
+  },
+  saveMeeeRecords: async (r: any[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.meeeRecords, r);
+  },
+  getElearningSms: async (): Promise<ElearningSms[]> => {
+    const stored = await seedIfEmpty<ElearningSms>(COLLECTIONS.elearningSms, initialElearningSms);
+    const existingIds = new Set(stored.map(s => s.id));
+    const missing = initialElearningSms.filter(s => !existingIds.has(s.id));
+    if (missing.length > 0) {
+      const merged = [...stored, ...missing];
+      try {
+        await saveCollection(COLLECTIONS.elearningSms, merged);
+      } catch (e) {
+        console.error("Failed to save merged elearning SMS to Firestore:", e);
+      }
+      return merged;
+    }
     return stored;
   },
-  saveWorkshops: (w: any[]) => saveData(KEYS.workshops, w),
-  getIndividualPDRecords: () => {
-    if (typeof window === 'undefined') return [];
-    const { PD_INDIVIDUAL_RECORDS } = require('./pdData');
-    const stored = getOrInit(KEYS.individualPDRecords, PD_INDIVIDUAL_RECORDS) as any[];
-    return stored;
+  saveElearningSms: async (items: ElearningSms[]): Promise<void> => {
+    await saveCollection(COLLECTIONS.elearningSms, items);
   },
-  saveIndividualPDRecords: (r: any[]) => saveData(KEYS.individualPDRecords, r),
-  getCurrentUser:():User|null=>{
-    if(typeof window==='undefined') return null;
-    const s=localStorage.getItem(KEYS.currentUser);
-    return s?JSON.parse(s):null;
+  deleteElearningSms: async (id: string): Promise<void> => {
+    return deleteDocument(COLLECTIONS.elearningSms, id);
   },
-  setCurrentUser:(u:User|null)=>{
-    if(typeof window==='undefined') return;
-    if(u) localStorage.setItem(KEYS.currentUser,JSON.stringify(u));
-    else localStorage.removeItem(KEYS.currentUser);
+  // Session management stays in localStorage
+  getCurrentUser: (): User | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const s = localStorage.getItem(CURRENT_USER_KEY);
+      return s ? JSON.parse(s) : null;
+    } catch (e) {
+      console.error("Error parsing current user session:", e);
+      localStorage.removeItem(CURRENT_USER_KEY);
+      return null;
+    }
   },
-  login:(emailOrUser:string, password:string):User|null=>{
-    const users=getOrInit(KEYS.users,initialUsers);
-    return users.find(u=>
-      (u.email===emailOrUser || u.username===emailOrUser) &&
-      u.password===password && (u.status==='active' || u.status==='pending')
-    )||null;
+  setCurrentUser: (u: User | null) => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (u) localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(u));
+      else localStorage.removeItem(CURRENT_USER_KEY);
+    } catch (e) {
+      console.error("Error writing current user session:", e);
+    }
+  },
+  login: async (emailOrUser: string, password: string): Promise<User | null> => {
+    const users = await seedIfEmpty<User>(COLLECTIONS.users, initialUsers);
+    return users.find(u =>
+      (u.email === emailOrUser || u.username === emailOrUser) &&
+      u.password === password && (u.status === 'active' || u.status === 'pending')
+    ) || null;
+  },
+  forceReseedAll: async (): Promise<void> => {
+    await Promise.all([
+      saveCollection(COLLECTIONS.users, initialUsers),
+      saveCollection(COLLECTIONS.departments, initialDepartments),
+      saveCollection(COLLECTIONS.teachers, initialTeachers),
+      saveCollection(COLLECTIONS.evaluations, initialEvaluations),
+      saveCollection(COLLECTIONS.dailyTasks, initialDailyTasks),
+      saveCollection(COLLECTIONS.followUpForms, initialFollowUpForms),
+      saveCollection(COLLECTIONS.workshops, PD_WORKSHOPS),
+      saveCollection(COLLECTIONS.individualPDRecords, PD_INDIVIDUAL_RECORDS),
+      saveCollection(COLLECTIONS.meeeRecords, []),
+    ]);
+
+    const notes = SEED_NOTES.map(n => ({
+      id: generateId(),
+      ...n,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }));
+    const achievements = SEED_ACHIEVEMENTS.map(a => ({
+      id: generateId(),
+      ...a,
+      level: a.level as 'عالمي' | 'إقليمي' | 'محلي',
+      smartCategory: classifyAchievement(a.achievementName, a.organizer, a.result),
+      documentationStatus: 'موثق' as const,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    })) as Achievement[];
+
+    await Promise.all([
+      saveCollection(COLLECTIONS.monthlyNotes, notes),
+      saveCollection(COLLECTIONS.achievements, achievements),
+    ]);
+
+    if (typeof window !== 'undefined') {
+      Object.keys(localStorage).filter(k => k.startsWith('qstss')).forEach(k => localStorage.removeItem(k));
+      invalidateCache();
+    }
   },
 };
-export function generateId():string { return Math.random().toString(36).substr(2,9)+Date.now().toString(36); }
+export function generateId(): string { return Math.random().toString(36).substr(2, 9) + Date.now().toString(36); }

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { db, MONTHS, ACADEMIC_YEARS, EVALUATION_CRITERIA, SCHOOL_NAME, DESIGNER_CREDIT, generateId, getDeptName } from '@/lib/data';
 import type { User, Department } from '@/lib/data';
 
@@ -8,8 +8,9 @@ interface Props { currentUser: User; }
 export default function SettingsPage({ currentUser }: Props) {
   const [tab, setTab] = useState<'general'|'users'|'depts'|'data'>('general');
 
-  const [users, setUsers] = useState<User[]>(db.getUsers());
-  const departments = db.getDepartments();
+  const [users, setUsers] = useState<User[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -18,6 +19,13 @@ export default function SettingsPage({ currentUser }: Props) {
     name: '', nameEn: '', email: '', username: '', password: '', role: 'coordinator', status: 'active', employeeId: '', departmentIds: []
   };
   const [userForm, setUserForm] = useState<Partial<User>>(defaultUserForm);
+
+  useEffect(() => {
+    Promise.all([db.getUsers(), db.getDepartments()])
+      .then(([u, d]) => { setUsers(u); setDepartments(d); setLoading(false); });
+  }, []);
+
+  if (loading) return <div style={{ padding: '3rem', textAlign: 'center', direction: 'rtl', color: '#64748B' }}>⏳ جاري تحميل البيانات...</div>;
 
   function openUserModal(user?: User) {
     if (user) {
@@ -30,33 +38,53 @@ export default function SettingsPage({ currentUser }: Props) {
     setShowUserModal(true);
   }
 
-  function saveUser() {
+  async function saveUser() {
     if (!userForm.name || !userForm.password || !userForm.role) {
       alert('الاسم، كلمة المرور والصلاحية حقول مطلوبة.');
       return;
     }
     
     let newList = [...users];
+    let savedUserObj: User | null = null;
     if (editingUserId) {
-      newList = newList.map(u => u.id === editingUserId ? { ...u, ...userForm } as User : u);
+      newList = newList.map(u => {
+        if (u.id === editingUserId) {
+          savedUserObj = { ...u, ...userForm } as User;
+          return savedUserObj;
+        }
+        return u;
+      });
     } else {
-      newList.push({ ...userForm, id: generateId() } as User);
+      savedUserObj = { ...userForm, id: generateId() } as User;
+      newList.push(savedUserObj);
     }
     
-    db.saveUsers(newList);
+    await db.saveUsers(newList);
     setUsers(newList);
     setShowUserModal(false);
+
+    if (savedUserObj && currentUser && currentUser.id === (savedUserObj as User).id) {
+      db.setCurrentUser(savedUserObj as User);
+      window.dispatchEvent(new Event('qstss_user_changed'));
+    }
   }
 
-  function toggleUserStatus(userId: string) {
+  async function toggleUserStatus(userId: string) {
+    let updatedUser: User | null = null;
     const newList = users.map(u => {
       if (u.id === userId) {
-        return { ...u, status: u.status === 'active' ? 'inactive' : 'active' } as User;
+        updatedUser = { ...u, status: u.status === 'active' ? 'inactive' : 'active' } as User;
+        return updatedUser;
       }
       return u;
     });
-    db.saveUsers(newList);
+    await db.saveUsers(newList);
     setUsers(newList);
+
+    if (updatedUser && currentUser && currentUser.id === (updatedUser as User).id) {
+      db.setCurrentUser(updatedUser as User);
+      window.dispatchEvent(new Event('qstss_user_changed'));
+    }
   }
 
   function resetAllData() {
@@ -134,9 +162,9 @@ export default function SettingsPage({ currentUser }: Props) {
           <div style={{ overflowX:'auto' }}>
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.78rem' }}>
               <thead>
-                <tr style={{ background:'#F8FAFC' }}>
+                <tr style={{ background:'#0F2044', color: '#ffffff' }}>
                   {['الاسم','الرقم الوظيفي','البريد الإلكتروني','اسم المستخدم','الصلاحية','الحالة','إجراءات'].map(h => (
-                    <th key={h} style={{ padding:'0.5rem 0.75rem', textAlign:'right', color:'#64748B', borderBottom:'2px solid #E2E8F0' }}>{h}</th>
+                    <th key={h} style={{ padding:'0.5rem 0.75rem', textAlign:'right', color:'#ffffff', background:'#0F2044', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -267,9 +295,9 @@ export default function SettingsPage({ currentUser }: Props) {
           <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'#0F2044', marginBottom:'1rem' }}>الأقسام ({departments.length})</h3>
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.78rem' }}>
             <thead>
-              <tr style={{ background:'#F8FAFC' }}>
+              <tr style={{ background:'#0F2044', color: '#ffffff' }}>
                 {['#','القسم بالعربي','القسم بالإنجليزي'].map(h => (
-                  <th key={h} style={{ padding:'0.5rem 0.75rem', textAlign:'right', color:'#64748B', borderBottom:'2px solid #E2E8F0' }}>{h}</th>
+                  <th key={h} style={{ padding:'0.5rem 0.75rem', textAlign:'right', color:'#ffffff', background:'#0F2044', borderBottom:'2px solid rgba(255,255,255,0.15)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -287,17 +315,42 @@ export default function SettingsPage({ currentUser }: Props) {
       )}
 
       {tab === 'data' && (
-        <div style={{ ...cardStyle, borderTop:'3px solid #991B1B' }}>
-          <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'#991B1B', marginBottom:'0.5rem' }}>⚠️ منطقة الخطر</h3>
-          <p style={{ fontSize:'0.8rem', color:'#64748B', marginBottom:'1rem' }}>
-            إعادة تهيئة النظام وحذف جميع البيانات المحلية. لا يمكن التراجع.
-          </p>
-          <button onClick={resetAllData} style={{
-            background:'#991B1B', color:'#fff', border:'none', borderRadius:'8px',
-            padding:'0.6rem 1.25rem', cursor:'pointer', fontSize:'0.85rem', fontWeight:700
-          }}>
-            🗑️ إعادة تهيئة البيانات
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ ...cardStyle, borderTop:'3px solid #0096C7' }}>
+            <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'#0096C7', marginBottom:'0.5rem' }}>☁️ إدارة قاعدة البيانات السحابية (Firestore)</h3>
+            <p style={{ fontSize:'0.8rem', color:'#64748B', marginBottom:'1rem' }}>
+              إعادة بناء وتعبئة قاعدة البيانات السحابية بالكامل بجميع تقييمات المعلمين الموثقة والمهام وورش العمل لجميع السنوات والمدخلات التاريخية والنهائية.
+            </p>
+            <button onClick={async () => {
+              if (!confirm('⚠️ هل أنت متأكد؟ سيتم استبدال وإعادة تعبئة جميع بيانات قاعدة البيانات السحابية بالكامل للسنوات السابقة والحالية.')) return;
+              try {
+                alert('⏳ جاري بناء وتعبئة قاعدة البيانات السحابية بالكامل... يرجى الانتظار ولا تغلق المتصفح.');
+                await db.forceReseedAll();
+                alert('✅ تم إعادة بناء وتعبئة قاعدة البيانات السحابية بنجاح! سيتم الآن إعادة تحميل النظام.');
+                window.location.reload();
+              } catch (e) {
+                alert('❌ حدث خطأ أثناء ترحيل البيانات السحابية.');
+              }
+            }} style={{
+              background:'#0096C7', color:'#fff', border:'none', borderRadius:'8px',
+              padding:'0.6rem 1.25rem', cursor:'pointer', fontSize:'0.85rem', fontWeight:700
+            }}>
+              🔄 إعادة بناء وتعبئة قاعدة البيانات السحابية
+            </button>
+          </div>
+
+          <div style={{ ...cardStyle, borderTop:'3px solid #991B1B' }}>
+            <h3 style={{ fontSize:'0.9rem', fontWeight:700, color:'#991B1B', marginBottom:'0.5rem' }}>⚠️ منطقة الخطر</h3>
+            <p style={{ fontSize:'0.8rem', color:'#64748B', marginBottom:'1rem' }}>
+              إعادة تهيئة النظام وحذف جميع البيانات المحلية من هذا المتصفح. لا يمكن التراجع.
+            </p>
+            <button onClick={resetAllData} style={{
+              background:'#991B1B', color:'#fff', border:'none', borderRadius:'8px',
+              padding:'0.6rem 1.25rem', cursor:'pointer', fontSize:'0.85rem', fontWeight:700
+            }}>
+              🗑️ إعادة تهيئة البيانات المحلية
+            </button>
+          </div>
         </div>
       )}
     </div>

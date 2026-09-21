@@ -21,9 +21,10 @@ import 'jspdf-autotable';
 interface Props {
   currentUser: User;
   onNavigate: (page: any) => void;
+  selectedYear?: string;
 }
 
-export default function AchievementsPage({ currentUser, onNavigate }: Props) {
+export default function AchievementsPage({ currentUser, onNavigate, selectedYear: propYear }: Props) {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAchievement, setEditingAchievement] = useState<Achievement | null>(null);
@@ -32,7 +33,7 @@ export default function AchievementsPage({ currentUser, onNavigate }: Props) {
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterYear, setFilterYear] = useState('');
+  const [filterYear, setFilterYear] = useState(propYear || '');
   const [filterLevel, setFilterLevel] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterResult, setFilterResult] = useState('');
@@ -48,12 +49,16 @@ export default function AchievementsPage({ currentUser, onNavigate }: Props) {
 
   // Initialize
   useEffect(() => {
-    setAchievements(db.getAchievements());
+    db.getAchievements().then(data => setAchievements(data));
   }, []);
 
-  const saveAchievements = (newData: Achievement[]) => {
+  useEffect(() => {
+    if (propYear) setFilterYear(propYear);
+  }, [propYear]);
+
+  const saveAchievements = async (newData: Achievement[]) => {
     setAchievements(newData);
-    db.saveAchievements(newData);
+    await db.saveAchievements(newData);
   };
 
   // Filtered Data
@@ -324,9 +329,9 @@ export default function AchievementsPage({ currentUser, onNavigate }: Props) {
 
             <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
-                <thead style={{ background: '#F8FAFC' }}>
-                  <tr>
-                    <th style={{ padding: '1rem', width: '50px' }}>SN</th>
+                <thead style={{ background: '#0F2044', color: '#ffffff' }}>
+                  <tr style={{ background: '#0F2044', color: '#ffffff' }}>
+                    <th style={{ padding: '1rem', width: '50px', color: '#ffffff' }}>SN</th>
                     <th style={{ padding: '1rem' }}>الإنجاز</th>
                     <th style={{ padding: '1rem' }}>الجهة</th>
                     <th style={{ padding: '1rem' }}>المستوى</th>
@@ -437,7 +442,7 @@ export default function AchievementsPage({ currentUser, onNavigate }: Props) {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.4rem' }}>العام الأكاديمي</label>
-                  <select name="academicYear" defaultValue={editingAchievement?.academicYear || '2025-2026'} style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                  <select name="academicYear" defaultValue={editingAchievement?.academicYear || '2026-2027'} style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
                     {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </div>
@@ -562,11 +567,11 @@ export default function AchievementsPage({ currentUser, onNavigate }: Props) {
               <h3 style={{ borderBottom: '1px solid #000', paddingBottom: '0.25rem' }}>العام الأكاديمي {year} ({items.length} إنجاز)</h3>
               <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '0.5rem' }}>
                 <thead>
-                  <tr style={{ background: '#eee' }}>
-                    <th style={{ border: '1px solid #000', padding: '0.4rem' }}>م</th>
-                    <th style={{ border: '1px solid #000', padding: '0.4rem' }}>اسم الإنجاز</th>
-                    <th style={{ border: '1px solid #000', padding: '0.4rem' }}>المستوى</th>
-                    <th style={{ border: '1px solid #000', padding: '0.4rem' }}>النتيجة</th>
+                  <tr style={{ background: '#0F2044', color: '#ffffff' }}>
+                    <th style={{ border: '1px solid #0F2044', padding: '0.4rem', color: '#ffffff', background: '#0F2044' }}>م</th>
+                    <th style={{ border: '1px solid #0F2044', padding: '0.4rem', color: '#ffffff', background: '#0F2044' }}>اسم الإنجاز</th>
+                    <th style={{ border: '1px solid #0F2044', padding: '0.4rem', color: '#ffffff', background: '#0F2044' }}>المستوى</th>
+                    <th style={{ border: '1px solid #0F2044', padding: '0.4rem', color: '#ffffff', background: '#0F2044' }}>النتيجة</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -585,9 +590,21 @@ export default function AchievementsPage({ currentUser, onNavigate }: Props) {
         })}
 
         <div style={{ marginTop: '4rem', display: 'flex', justifyContent: 'space-between' }}>
-          <div style={{ textAlign: 'center' }}><div>منسق المشاريع الإلكترونية</div><div style={{ marginTop: '3rem' }}>________________</div></div>
-          <div style={{ textAlign: 'center' }}><div>النائب الأكاديمي</div><div style={{ marginTop: '3rem' }}>________________</div></div>
-          <div style={{ textAlign: 'center' }}><div>مدير المدرسة</div><div style={{ marginTop: '3rem' }}>________________</div></div>
+          <div style={{ textAlign: 'center', width: '180px' }}>
+            <div style={{ fontWeight: 800, marginBottom: '0.5rem' }}>منسق المشاريع الإلكترونية</div>
+            <img src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" style={{ height: '38px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
+            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>م. أحمد عادل طبيشات</div>
+          </div>
+          <div style={{ textAlign: 'center', width: '180px' }}>
+            <div style={{ fontWeight: 800, marginBottom: '0.5rem' }}>النائب الأكاديمي</div>
+            <img src="/signature-rani.png" alt="توقيع د. راني التوم" style={{ height: '38px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
+            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>د. راني التوم</div>
+          </div>
+          <div style={{ textAlign: 'center', width: '180px' }}>
+            <div style={{ fontWeight: 800, marginBottom: '0.5rem' }}>مدير المدرسة</div>
+            <div style={{ height: '38px', margin: '0 auto 4px' }} />
+            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>________________</div>
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { SCHOOL_NAME, DESIGNER_CREDIT } from '@/lib/data';
+import { SCHOOL_NAME, ACADEMIC_YEARS } from '@/lib/data';
 import type { User } from '@/lib/data';
 import Dashboard from './pages/Dashboard';
 import TeachersPage from './pages/TeachersPage';
@@ -10,11 +10,12 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import TakreemPage from './pages/TakreemPage';
-import DailyTasksPage from './pages/DailyTasksPage';
 import AchievementsPage from './pages/AchievementsPage';
 import ProfessionalDevelopmentPage from './pages/ProfessionalDevelopmentPage';
+import ModelLessonsEvaluationPage from './pages/ModelLessonsEvaluationPage';
+import ElearningSmsPage from './pages/ElearningSmsPage';
 
-type Page = 'dashboard'|'teachers'|'evaluation'|'profile'|'analytics'|'reports'|'settings'|'takreem'|'daily_tasks'|'achievements'|'professional_development';
+type Page = 'dashboard'|'teachers'|'evaluation'|'model_lessons'|'profile'|'analytics'|'reports'|'settings'|'takreem'|'achievements'|'professional_development'|'elearning_sms';
 
 interface Props { user: User; onLogout: () => void; }
 
@@ -22,21 +23,23 @@ export default function AppShell({ user, onLogout }: Props) {
   const [page, setPage]             = useState<Page>('dashboard');
   const [selectedTeacherId, setSelectedTeacherId] = useState<string|null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedYear, setSelectedYear] = useState<string>(ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1]);
 
   const isAdmin     = user.role === 'admin';
-  const isEvaluator = user.role === 'evaluator' || user.role === 'admin';
+  const isEvaluator = false;
   const isLeader    = user.role === 'leader' || user.role === 'admin';
-  const isCoord     = user.role === 'coordinator' || user.role === 'admin' || user.role === 'evaluator';
-  const isViewer    = user.role === 'viewer';
+  const isCoord     = user.role === 'coordinator' || user.role === 'admin';
+  const isViewer    = user.role === 'viewer' || user.role === 'evaluator' || user.role === 'leader' || user.role === 'coordinator';
 
   const nav: { id: Page; label: string; icon: string; show: boolean }[] = [
     { id:'dashboard',  label:'لوحة المؤشرات',  icon:'📊', show:true },
-    { id:'teachers',   label:'إدارة المعلمين',  icon:'👨‍🏫', show:isAdmin||isEvaluator||isCoord||isViewer },
-    { id:'evaluation', label:'التقييم الشهري',  icon:'📝', show:isEvaluator||isCoord||isViewer },
+    { id:'teachers',   label:'إدارة المعلمين',  icon:'👨‍🏫', show:true },
+    { id:'evaluation', label:'تقييم نظام قطر للتعليم',  icon:'📝', show:true },
+    { id:'model_lessons', label:'حصص التعليم الإلكتروني', icon:'💻', show:true },
     { id:'takreem',    label:'تكريم المعلمين',  icon:'🏆', show:true },
     { id:'achievements',label:'الإنجازات',      icon:'🌟', show:true },
     { id:'professional_development', label:'التطوير المهني', icon:'🎓', show:true },
-    { id:'daily_tasks',label:'المهام اليومية',  icon:'📅', show:isLeader||isViewer }, 
+    { id:'elearning_sms', label:'E-Learning SMS', icon:'📱', show:true },
     { id:'analytics',  label:'التحليلات',       icon:'📈', show:true },
     { id:'reports',    label:'التقارير',        icon:'📋', show:true },
     { id:'settings',   label:'الإعدادات',       icon:'⚙️', show:isAdmin },
@@ -131,13 +134,46 @@ export default function AppShell({ user, onLogout }: Props) {
           <button onClick={() => setSidebarOpen(o => !o)} style={{
             background:'none', border:'none', cursor:'pointer', fontSize:'1.2rem', padding:'0.25rem'
           }}>☰</button>
+
           <div style={{ textAlign:'center' }}>
             <p style={{ fontWeight:800, fontSize:'0.9rem', color:'#0F2044', margin:0 }}>
               {nav.find(n => n.id === page)?.label}
             </p>
             <p style={{ fontSize:'0.65rem', color:'#94A3B8', margin:0 }}>{SCHOOL_NAME}</p>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+
+          {/* Global Year Selector */}
+          <div style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
+            <div style={{
+              display:'flex', alignItems:'center', gap:'0.5rem',
+              background:'linear-gradient(135deg, #0F2044 0%, #1a3a6b 100%)',
+              borderRadius:'12px', padding:'0.3rem 0.3rem 0.3rem 0.75rem',
+              boxShadow:'0 2px 8px rgba(15,32,68,0.25)'
+            }}>
+              <span style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.7)', fontWeight:600, whiteSpace:'nowrap' }}>
+                📅 العام الدراسي
+              </span>
+              <select
+                value={selectedYear}
+                onChange={e => setSelectedYear(e.target.value)}
+                style={{
+                  background:'rgba(0,180,216,0.15)',
+                  color:'#00B4D8',
+                  border:'1px solid rgba(0,180,216,0.4)',
+                  borderRadius:'8px',
+                  padding:'0.3rem 0.6rem',
+                  fontSize:'0.8rem',
+                  fontWeight:800,
+                  cursor:'pointer',
+                  outline:'none',
+                  direction:'ltr',
+                }}
+              >
+                {ACADEMIC_YEARS.slice().reverse().map(y => (
+                  <option key={y} value={y} style={{ background:'#0F2044', color:'#fff' }}>{y}</option>
+                ))}
+              </select>
+            </div>
             <div style={{
               width:'32px', height:'32px', borderRadius:'50%',
               background:'linear-gradient(135deg,#0F2044,#0096C7)',
@@ -151,28 +187,23 @@ export default function AppShell({ user, onLogout }: Props) {
 
         {/* Page content */}
         <main style={{ flex:1, overflow:'auto' }}>
-          {page === 'dashboard'  && <Dashboard  currentUser={user} onViewTeacher={goProfile} />}
-          {page === 'teachers'   && <TeachersPage currentUser={user} onViewTeacher={goProfile} />}
-          {page === 'evaluation' && <EvaluationPage currentUser={user} />}
-          {page === 'profile'    && selectedTeacherId && <TeacherProfilePage teacherId={selectedTeacherId} currentUser={user} onBack={() => setPage('teachers')} />}
-          {page === 'takreem'    && <TakreemPage currentUser={user} />}
-          {page === 'analytics'  && <AnalyticsPage currentUser={user} />}
-          {page === 'reports'    && <ReportsPage currentUser={user} />}
-          {page === 'daily_tasks' && <DailyTasksPage currentUser={user} onNavigate={setPage} />}
-          {page === 'achievements' && <AchievementsPage currentUser={user} onNavigate={setPage} />}
-          {page === 'professional_development' && <ProfessionalDevelopmentPage currentUser={user} />}
+          {page === 'dashboard'  && <Dashboard  currentUser={user} onViewTeacher={goProfile} onNavigate={setPage} selectedYear={selectedYear} />}
+          {page === 'teachers'   && <TeachersPage currentUser={user} onViewTeacher={goProfile} selectedYear={selectedYear} />}
+          {page === 'evaluation' && <EvaluationPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
+          {page === 'model_lessons' && <ModelLessonsEvaluationPage currentUser={user} selectedYear={selectedYear} />}
+          {page === 'profile'    && selectedTeacherId && <TeacherProfilePage teacherId={selectedTeacherId} currentUser={user} onBack={() => setPage('teachers')} selectedYear={selectedYear} />}
+          {page === 'takreem'    && <TakreemPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
+          {page === 'analytics'  && <AnalyticsPage currentUser={user} selectedYear={selectedYear} />}
+          {page === 'reports'    && <ReportsPage currentUser={user} selectedYear={selectedYear} />}
+          {page === 'achievements' && <AchievementsPage currentUser={user} onNavigate={setPage} selectedYear={selectedYear} />}
+          {page === 'professional_development' && <ProfessionalDevelopmentPage currentUser={user} selectedYear={selectedYear} />}
+          {page === 'elearning_sms' && <ElearningSmsPage currentUser={user} selectedYear={selectedYear} />}
           {page === 'settings'   && isAdmin && <SettingsPage currentUser={user} />}
         </main>
 
-        {/* Footer */}
-        <footer className="no-print" style={{
-          background:'#fff', borderTop:'1px solid #E2E8F0',
-          padding:'0.4rem 1rem', display:'flex', justifyContent:'center',
-          fontSize:'0.62rem', color:'#94A3B8'
-        }}>
-          {DESIGNER_CREDIT} | © 2025-2026 {SCHOOL_NAME}
-        </footer>
+
       </div>
     </div>
   );
 }
+

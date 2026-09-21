@@ -1,21 +1,31 @@
 'use client';
-import { useState, useMemo } from 'react';
-import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, getUserDeptIds, getUserDeptLabel, getMonthlyDepartmentHonorees } from '@/lib/data';
-import type { User } from '@/lib/data';
+import { useState, useMemo, useEffect } from 'react';
+import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, getUserDeptIds, getUserDeptLabel, getMonthlyDepartmentHonorees, isExcludedTeacher, SCHOOL_NAME } from '@/lib/data';
+import type { User, Teacher, Evaluation, Department, ModelLessonEvaluation, Achievement, DailyTask } from '@/lib/data';
+import type { Workshop } from '@/lib/pdData';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const COLORS = ['#0F2044','#0096C7','#00B4D8','#48CAE4','#90E0EF','#ADE8F4','#CAF0F8','#023E8A'];
 
-interface Props { currentUser: User; onViewTeacher: (id: string) => void; }
+interface Props { currentUser: User; onViewTeacher: (id: string) => void; onNavigate?: (page: any) => void; selectedYear?: string; }
 
-export default function Dashboard({ currentUser, onViewTeacher }: Props) {
-  const teachers    = db.getTeachers();
-  const evaluations = db.getEvaluations();
-  const departments = db.getDepartments();
+export default function Dashboard({ currentUser, onViewTeacher, onNavigate, selectedYear: propYear }: Props) {
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [modelLessonEvals, setModelLessonEvals] = useState<ModelLessonEvaluation[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
+  const [workshops, setWorkshops] = useState<Workshop[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const currentYear = ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1];
-  const [selYear,  setSelYear]  = useState(currentYear);
+  const [selYear,  setSelYear]  = useState(propYear || currentYear);
   const [selMonth, setSelMonth] = useState('');
+
+  useEffect(() => {
+    if (propYear) setSelYear(propYear);
+  }, [propYear]);
   const [selDept,  setSelDept]  = useState('');
 
   const isCoord   = currentUser.role === 'coordinator';
@@ -26,6 +36,29 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
   const availableDepts = isCoord && coordDepts.length > 0
     ? departments.filter(d => coordDepts.includes(d.id))
     : departments;
+
+  useEffect(() => {
+    Promise.all([
+      db.getTeachers(),
+      db.getEvaluations(),
+      db.getDepartments(),
+      db.getModelLessonEvaluations().catch(() => []),
+      db.getAchievements().catch(() => []),
+      db.getDailyTasks().catch(() => []),
+      db.getWorkshops().catch(() => [])
+    ]).then(([t, e, d, mle, ach, dt, w]) => {
+      setTeachers(t);
+      setEvaluations(e);
+      setDepartments(d);
+      setModelLessonEvals(mle);
+      setAchievements(ach);
+      setDailyTasks(dt);
+      setWorkshops(w);
+      setLoading(false);
+    });
+  }, []);
+
+  const activeTeachers = useMemo(() => teachers.filter(t => t.status === 'active'), [teachers]);
 
   // Base evaluations scoped to coordinator's departments
   const scopedEvals = useMemo(() => {
@@ -42,10 +75,6 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
       (selDept ? teachers.find(t => t.id === e.teacherId)?.departmentId === selDept : true)
     );
   }, [scopedEvals, selYear, selMonth, selDept, teachers]);
-
-  const avgScore = filtered.length
-    ? Math.round(filtered.reduce((s, e) => s + e.totalScore, 0) / filtered.length * 10) / 10
-    : 0;
 
   const teachersNeedingFollowup = useMemo(() => {
     const byTeacher: Record<string, number[]> = {};
@@ -90,7 +119,7 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
     const byDept: Record<string, number[]> = {};
     filtered.forEach(e => {
       const t = teachers.find(x => x.id === e.teacherId);
-      if (!t) return;
+      if (!t || t.departmentId === 'd_admin' || isExcludedTeacher(t)) return;
       if (!byDept[t.departmentId]) byDept[t.departmentId] = [];
       byDept[t.departmentId].push(e.totalScore);
     });
@@ -102,20 +131,111 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
     return getDeptName(best.id, departments);
   }, [filtered, teachers, departments]);
 
-  // Takreem Honorees Logic for Dashboard
+  // Takreem Top 10 Honorees Logic for Dashboard
   const takreemHonorees = useMemo(() => {
-    const APPROVED_MONTHS = ['سبتمبر', 'أكتوبر', 'نوفمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو'];
-    const targetMonth = selMonth || APPROVED_MONTHS[APPROVED_MONTHS.length - 1];
+    const APPROVED_MONTHS = ['سبتمبر', 'أكتوبر', 'نوفمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
+    const evalsInYear = evaluations.filter(e => e.academicYear === selYear);
+    const monthsWithEvals = APPROVED_MONTHS.filter(m => evalsInYear.some(e => e.month === m));
+    const targetMonth = selMonth || (monthsWithEvals.length > 0 ? monthsWithEvals[monthsWithEvals.length - 1] : 'سبتمبر');
     
-    let honorees = getMonthlyDepartmentHonorees(evaluations, teachers, departments, selYear, targetMonth);
+    const evalsForMonth = evaluations.filter(e => e.academicYear === selYear && e.month === targetMonth);
     
     // Filter by coordinator depts if needed
+    let candidateEvals = evalsForMonth;
     if (isCoord && coordDepts.length > 0) {
-      honorees = honorees.filter(h => coordDepts.includes(h.departmentId));
+      candidateEvals = candidateEvals.filter(e => {
+        const t = teachers.find(x => x.id === e.teacherId);
+        return t && coordDepts.includes(t.departmentId);
+      });
     }
+
+    // Exclude school leaders (e.g. Dr. Rani Al-Toum)
+    candidateEvals = candidateEvals.filter(e => {
+      const t = teachers.find(x => x.id === e.teacherId);
+      return t ? !isExcludedTeacher(t) : true;
+    });
+
+    // Deduplicate by teacherId (taking best score if multiple exist)
+    const byTeacherMap = new Map<string, Evaluation>();
+    candidateEvals.forEach(ev => {
+      const existing = byTeacherMap.get(ev.teacherId);
+      if (!existing || ev.totalScore > existing.totalScore) {
+        byTeacherMap.set(ev.teacherId, ev);
+      }
+    });
+
+    const uniqueEvals = Array.from(byTeacherMap.values());
+
+    // Sort using standard tie-breaking rules
+    uniqueEvals.sort((a, b) => {
+      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+      if (b.averageScore !== a.averageScore) return b.averageScore - a.averageScore;
+      const a10 = a.criteria ? a.criteria.filter(c => c.score === 10).length : 0;
+      const b10 = b.criteria ? b.criteria.filter(c => c.score === 10).length : 0;
+      if (b10 !== a10) return b10 - a10;
+      if ((b.criteria?.[0]?.score || 0) !== (a.criteria?.[0]?.score || 0)) return (b.criteria?.[0]?.score || 0) - (a.criteria?.[0]?.score || 0);
+      if ((b.criteria?.[1]?.score || 0) !== (a.criteria?.[1]?.score || 0)) return (b.criteria?.[1]?.score || 0) - (a.criteria?.[1]?.score || 0);
+      if ((b.criteria?.[3]?.score || 0) !== (a.criteria?.[3]?.score || 0)) return (b.criteria?.[3]?.score || 0) - (a.criteria?.[3]?.score || 0);
+      if ((b.criteria?.[4]?.score || 0) !== (a.criteria?.[4]?.score || 0)) return (b.criteria?.[4]?.score || 0) - (a.criteria?.[4]?.score || 0);
+      const tA = teachers.find(x => x.id === a.teacherId);
+      const tB = teachers.find(x => x.id === b.teacherId);
+      return (tA?.nameAr || '').localeCompare(tB?.nameAr || '', 'ar');
+    });
+
+    const top10 = uniqueEvals.slice(0, 10).map((ev, idx) => {
+      const teacher = teachers.find(t => t.id === ev.teacherId);
+      const deptName = teacher ? getDeptName(teacher.departmentId, departments) : '';
+      return {
+        rank: idx + 1,
+        academicYear: selYear,
+        month: targetMonth,
+        departmentId: teacher?.departmentId,
+        departmentName: deptName,
+        teacherId: teacher?.id || ev.teacherId,
+        teacherNameAr: teacher?.nameAr || '-',
+        teacherNameEn: teacher?.nameEn || '',
+        subject: teacher?.subject || '',
+        totalScore: ev.totalScore,
+        averageScore: ev.averageScore,
+        performanceLevel: ev.performanceLevel,
+        evaluation: ev
+      };
+    });
     
-    return { month: targetMonth, data: honorees };
+    return { month: targetMonth, data: top10 };
   }, [evaluations, teachers, departments, selYear, selMonth, isCoord, coordDepts]);
+
+  useEffect(() => {
+    Promise.all([db.getTeachers(), db.getEvaluations(), db.getDepartments()])
+      .then(([t, e, d]) => { setTeachers(t); setEvaluations(e); setDepartments(d); setLoading(false); });
+  }, []);
+
+
+  // Model lessons filtered
+  const filteredModelLessons = useMemo(() => {
+    return modelLessonEvals.filter(m => {
+      const matchYear = !selYear || m.academicYear === selYear;
+      const matchDept = !selDept || m.departmentId === selDept;
+      return matchYear && matchDept;
+    });
+  }, [modelLessonEvals, selYear, selDept]);
+
+  const modelLessonAvg = useMemo(() => {
+    if (!filteredModelLessons.length) return 0;
+    const total = filteredModelLessons.reduce((acc, m) => acc + (m.overallScore || 0), 0);
+    return Math.round((total / filteredModelLessons.length) * 10) / 10;
+  }, [filteredModelLessons]);
+
+  if (loading) return (
+    <div style={{ padding: '4rem', textAlign: 'center', direction: 'rtl', color: '#0F2044', fontWeight: 600 }}>
+      <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⏳</div>
+      <div>جاري تحميل وتحديث لوحة المؤشرات...</div>
+    </div>
+  );
+
+  const avgScore = filtered.length
+    ? Math.round(filtered.reduce((s, e) => s + e.totalScore, 0) / filtered.length * 10) / 10
+    : 0;
 
   // Monthly chart
   const monthlyData = MONTHS.map(m => {
@@ -131,104 +251,132 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
 
   // Performance distribution
   const distData = [
-    { name:'متميز', count: filtered.filter(e => e.totalScore >= 90).length },
-    { name:'متقدم جدًا', count: filtered.filter(e => e.totalScore >= 80 && e.totalScore < 90).length },
-    { name:'مستوى جيد', count: filtered.filter(e => e.totalScore >= 70 && e.totalScore < 80).length },
-    { name:'يحتاج متابعة', count: filtered.filter(e => e.totalScore < 70).length },
+    { name:'متميز (90-100)', count: filtered.filter(e => e.totalScore >= 90).length },
+    { name:'متقدم جدًا (80-89)', count: filtered.filter(e => e.totalScore >= 80 && e.totalScore < 90).length },
+    { name:'مستوى جيد (70-79)', count: filtered.filter(e => e.totalScore >= 70 && e.totalScore < 80).length },
+    { name:'يحتاج متابعة (<70)', count: filtered.filter(e => e.totalScore < 70).length },
   ].filter(d => d.count > 0);
-  const distColors = ['#065F46','#1E40AF','#0E7490','#92400E','#991B1B'];
 
-  // Year trend — enhanced with multiple metrics
-  const yearTrend = ACADEMIC_YEARS.map(yr => {
-    const ye = evaluations.filter(e => e.academicYear === yr);
-    const avg = ye.length ? Math.round(ye.reduce((s, e) => s + e.totalScore, 0) / ye.length * 10) / 10 : 0;
-    const distinguished = ye.filter(e => e.totalScore >= 90).length;
-    const needsFollowup = ye.filter(e => e.totalScore < 80).length;
-    return { name: yr, avg, total: ye.length, متميز: distinguished, 'يحتاج متابعة': needsFollowup };
-  }).filter(d => d.total > 0);
+  // Recent model lessons
+  const recentModelLessons = [...modelLessonEvals]
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+    .slice(0, 5);
 
-  // Recent evals
-  // Recent evals — sorted by dept then teacher name
-  const recent = [...filtered]
-    .sort((a, b) => {
-      const tA = teachers.find(x => x.id === a.teacherId);
-      const tB = teachers.find(x => x.id === b.teacherId);
-      const dA = getDeptName(tA?.departmentId||'', departments);
-      const dB = getDeptName(tB?.departmentId||'', departments);
-      return dA.localeCompare(dB,'ar') || (tA?.nameAr||'').localeCompare(tB?.nameAr||'','ar');
-    }).slice(0, 10);
-
-  const kpiStyle = {
-    background:'#fff', borderRadius:'12px', padding:'1.25rem',
-    boxShadow:'0 2px 8px rgba(0,0,0,0.06)', border:'1px solid #E2E8F0'
+  const kpiCardStyle = {
+    background: '#fff',
+    borderRadius: '14px',
+    padding: '1.25rem',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+    border: '1px solid #E2E8F0',
   };
+
   const darkCardStyle = {
-    background:'#0F2044', borderRadius:'12px', padding:'1.25rem', color:'#fff',
-    boxShadow:'0 4px 12px rgba(0,0,0,0.15)', border:'1px solid rgba(255,255,255,0.1)'
+    background: 'linear-gradient(145deg, #0F2044 0%, #172E5C 100%)',
+    borderRadius: '16px',
+    padding: '1.25rem',
+    color: '#fff',
+    boxShadow: '0 4px 20px rgba(15,32,68,0.15)',
+    border: '1px solid rgba(255,255,255,0.08)'
   };
 
   return (
-    <div style={{ padding:'1.5rem', direction:'rtl' }}>
-      {/* Filters */}
-      <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.5rem', flexWrap:'wrap', alignItems:'center' }}>
-        <select className="form-input" style={{ width:'auto', minWidth:'130px' }}
-          value={selYear} onChange={e => setSelYear(e.target.value)}>
-          {ACADEMIC_YEARS.map(y => <option key={y}>{y}</option>)}
-        </select>
-        <select className="form-input" style={{ width:'auto', minWidth:'110px' }}
-          value={selMonth} onChange={e => setSelMonth(e.target.value)}>
-          <option value="">كل الأشهر</option>
-          {MONTHS.map(m => <option key={m}>{m}</option>)}
-        </select>
-        <select className="form-input" style={{ width:'auto', minWidth:'160px' }}
-          value={selDept} onChange={e => setSelDept(e.target.value)}
-          disabled={isCoord && coordDepts.length === 1}>
-          <option value="">{isCoord && coordDepts.length === 1 ? coordLabel : 'كل الأقسام'}</option>
-          {availableDepts.filter(d => d.id !== selDept || selDept === '').map(d => <option key={d.id} value={d.id}>{d.nameAr}</option>)}
-        </select>
+    <div style={{ padding: '1.5rem', direction: 'rtl', maxWidth: '1400px', margin: '0 auto' }}>
+      
+      {/* Top Filter Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span>📊</span> لوحة المؤشرات الشاملة
+          </h1>
+          <p style={{ fontSize: '0.75rem', color: '#64748B', margin: '0.2rem 0 0' }}>
+            {SCHOOL_NAME} | متابعة التفعيل الرقمي وحصص التعليم الإلكتروني
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <select className="form-input" style={{ width: 'auto', minWidth: '130px', fontWeight: 700 }}
+            value={selYear} onChange={e => setSelYear(e.target.value)}>
+            {ACADEMIC_YEARS.map(y => <option key={y}>{y}</option>)}
+          </select>
+          <select className="form-input" style={{ width: 'auto', minWidth: '110px' }}
+            value={selMonth} onChange={e => setSelMonth(e.target.value)}>
+            <option value="">كل الأشهر</option>
+            {MONTHS.map(m => <option key={m}>{m}</option>)}
+          </select>
+          <select className="form-input" style={{ width: 'auto', minWidth: '160px' }}
+            value={selDept} onChange={e => setSelDept(e.target.value)}
+            disabled={isCoord && coordDepts.length === 1}>
+            <option value="">{isCoord && coordDepts.length === 1 ? coordLabel : 'كل الأقسام'}</option>
+            {availableDepts.map(d => <option key={d.id} value={d.id}>{d.nameAr}</option>)}
+          </select>
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))', gap:'1rem', marginBottom:'1.5rem' }}>
+
+      {/* Interconnected KPI Metrics Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '0.85rem', marginBottom: '1.5rem' }}>
         {[
-          { label:'إجمالي المعلمين', value: teachers.length, icon:'👨‍🏫', color:'#0F2044' },
-          { label:'التقييمات المكتملة', value: filtered.length, icon:'✅', color:'#0096C7' },
-          { label:'متوسط الأداء', value: `${avgScore}%`, icon:'📊', color: avgScore >= 80 ? '#065F46' : avgScore >= 60 ? '#92400E' : '#991B1B' },
-          { label:'يحتاجون متابعة', value: teachersNeedingFollowup, icon:'⚠️', color:'#991B1B' },
-          { label:'أفضل معلم', value: bestTeacher ? `${bestTeacher.nameAr} (${bestTeacher.score}%)` : '-', icon:'🏆', color:'#065F46' },
-          { label:'أفضل قسم', value: bestDept || '-', icon:'🥇', color:'#0096C7' },
-          { label:'العام الحالي', value: selYear, icon:'📅', color:'#0F2044' },
-          { label:'الأشهر المقيمة', value: selMonth || `${MONTHS.length} أشهر`, icon:'🗓️', color:'#0096C7' },
+          { label: 'الكادر الأكاديمي النشط', value: `${activeTeachers.length} كادر`, sub: 'معلمون ومهندسون معتمدون', icon: '👨‍🏫', color: '#0F2044', borderTop: '#0F2044', page: 'teachers' },
+          { label: 'تقييمات نظام قطر للتعليم', value: filtered.length, sub: `متوسط الأداء: ${avgScore}%`, icon: '📝', color: '#0096C7', borderTop: '#0096C7', page: 'evaluation' },
+          { label: 'حصص التعليم الإلكتروني', value: `${filteredModelLessons.length} حصة`, sub: `متوسط التقييم: ${modelLessonAvg} / 10`, icon: '💻', color: '#4338CA', borderTop: '#4338CA', page: 'model_lessons' },
+          { label: 'المتميزون والمكرمون', value: `${takreemHonorees.data.length} مكرم`, sub: `لشهر ${takreemHonorees.month}`, icon: '🏆', color: '#D97706', borderTop: '#D97706', page: 'takreem' },
+          { label: 'الإنجازات والمسابقات', value: `${achievements.length} إنجاز`, sub: 'مشاركات وجوائز موثقة', icon: '🌟', color: '#059669', borderTop: '#059669', page: 'achievements' },
+          { label: 'ورش التطوير المهني', value: `${workshops.length} ورشة`, sub: 'تدريب وتطوير مستمر', icon: '🎓', color: '#7C3AED', borderTop: '#7C3AED', page: 'professional_development' },
         ].map((k, i) => (
-          <div key={i} style={kpiStyle}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+          <div key={i} 
+            onClick={() => k.page && onNavigate && onNavigate(k.page)}
+            style={{ 
+              ...kpiCardStyle, 
+              borderTop: `4px solid ${k.borderTop}`,
+              cursor: k.page ? 'pointer' : 'default',
+              transition: 'transform 0.15s, box-shadow 0.15s'
+            }}
+            onMouseEnter={e => {
+              if (k.page) {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 14px rgba(0,0,0,0.08)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (k.page) {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.04)';
+              }
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <p style={{ fontSize:'0.7rem', color:'#64748B', margin:'0 0 0.25rem' }}>{k.label}</p>
-                <p style={{ fontSize:'1.1rem', fontWeight:800, color: k.color, margin:0, lineHeight:1.2 }}>{k.value}</p>
+                <p style={{ fontSize: '0.72rem', color: '#64748B', margin: '0 0 0.35rem', fontWeight: 800 }}>{k.label}</p>
+                <p style={{ fontSize: '1.3rem', fontWeight: 900, color: k.color, margin: 0 }}>{k.value}</p>
+                <p style={{ fontSize: '0.65rem', color: '#94A3B8', margin: '0.3rem 0 0', fontWeight: 600 }}>{k.sub}</p>
               </div>
-              <span style={{ fontSize:'1.5rem' }}>{k.icon}</span>
+              <span style={{ fontSize: '1.6rem', background: '#F8FAFC', padding: '5px', borderRadius: '10px' }}>{k.icon}</span>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Charts row 1 */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>
+      {/* Main Charts Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
         <div style={darkCardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>📈 متوسط الأداء حسب الشهر</h3>
-          <ResponsiveContainer width="100%" height={200}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff', margin: 0 }}>📈 مسار متوسط الأداء الشهري للعام الدراسي</h3>
+            <span style={{ fontSize: '0.7rem', color: '#90E0EF', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '6px' }}>{selYear}</span>
+          </div>
+          <ResponsiveContainer width="100%" height={220}>
             <LineChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="name" tick={{ fontSize:9, fill:'#fff' }} axisLine={{ stroke:'rgba(255,255,255,0.2)' }} />
-              <YAxis domain={[0,100]} tick={{ fontSize:9, fill:'#fff' }} axisLine={{ stroke:'rgba(255,255,255,0.2)' }} />
-              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
-              <Line type="monotone" dataKey="avg" stroke="#00B4D8" strokeWidth={3} dot={{ r:4, fill:'#00B4D8' }} name="المتوسط" />
+              <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#fff' }} axisLine={{ stroke: 'rgba(255,255,255,0.2)' }} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: '#fff' }} axisLine={{ stroke: 'rgba(255,255,255,0.2)' }} />
+              <Tooltip contentStyle={{ background: '#0F2044', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#fff' }} />
+              <Line type="monotone" dataKey="avg" stroke="#00B4D8" strokeWidth={3.5} dot={{ r: 4, fill: '#00B4D8', strokeWidth: 2, stroke: '#fff' }} name="المتوسط" />
             </LineChart>
           </ResponsiveContainer>
         </div>
+
         <div style={darkCardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>🏅 توزيع مستويات الأداء</h3>
-          <ResponsiveContainer width="100%" height={240}>
+          <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fff', marginBottom: '1rem' }}>🏅 توزيع مستويات الأداء</h3>
+          <ResponsiveContainer width="100%" height={220}>
             <PieChart>
               <Pie 
                 data={distData} 
@@ -236,174 +384,185 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
                 nameKey="name" 
                 cx="50%" 
                 cy="50%" 
-                outerRadius={65}
-                labelLine={{ stroke:'rgba(255,255,255,0.5)' }}
-                label={{ fill: '#FFFFFF', fontSize: 11, fontWeight: 700 }}
+                outerRadius={70}
+                labelLine={{ stroke: 'rgba(255,255,255,0.5)' }}
+                label={{ fill: '#FFFFFF', fontSize: 10, fontWeight: 700 }}
               >
                 {distData.map((_, i) => (
-                  <Cell key={i} fill={['#00B4D8','#0096C7','#0077B6','#023E8A','#03045E'][i % 5]} />
+                  <Cell key={i} fill={['#10B981', '#00B4D8', '#F59E0B', '#EF4444'][i % 4]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
-              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ color:'#fff', fontSize:'11px', paddingTop:'10px' }} />
+              <Tooltip contentStyle={{ background: '#0F2044', border: 'none', borderRadius: '8px', color: '#fff' }} />
+              <Legend verticalAlign="bottom" height={36} wrapperStyle={{ color: '#fff', fontSize: '11px', paddingTop: '8px' }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Charts row 2 */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1rem' }}>
-        <div style={darkCardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'1rem' }}>🏫 مقارنة الأقسام</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={deptData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis type="number" domain={[0,100]} tick={{ fontSize:9, fill:'#fff' }} />
-              <YAxis dataKey="name" type="category" tick={{ fontSize:9, fill:'#fff' }} width={90} />
-              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
-              <Bar dataKey="avg" fill="#00B4D8" name="المتوسط" radius={[0,4,4,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div style={darkCardStyle}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', marginBottom:'0.5rem' }}>📅 تطور الأداء عبر السنوات</h3>
-          <div style={{ display:'flex', gap:'1rem', marginBottom:'0.75rem', flexWrap:'wrap' }}>
-            {yearTrend.map((yr, i) => (
-              <div key={i} style={{ display:'flex', alignItems:'center', gap:'0.35rem' }}>
-                <span style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.6)' }}>{yr.name}:</span>
-                <span style={{ fontSize:'0.75rem', fontWeight:800, color: yr.avg >= 90 ? '#00B4D8' : yr.avg >= 80 ? '#48CAE4' : '#F59E0B' }}>{yr.avg}%</span>
-                <span style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.4)' }}>({yr.total} تقييم)</span>
-              </div>
-            ))}
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={yearTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="name" tick={{ fontSize:9, fill:'#fff' }} />
-              <YAxis domain={[0,100]} tick={{ fontSize:9, fill:'#fff' }} />
-              <Tooltip contentStyle={{ background:'#1a3a6b', border:'none', borderRadius:'8px', color:'#fff' }} />
-              <Legend wrapperStyle={{ color:'#fff', fontSize:'10px' }} />
-              <Bar dataKey="avg" fill="#00B4D8" name="المتوسط %" radius={[4,4,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Takreem Honorees Widget */}
-      <div style={{ ...darkCardStyle, marginBottom:'1rem' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem' }}>
-          <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#fff', margin:0 }}>
-            🏆 {isCoord && coordDepts.length === 1 ? 'المعلم المكرم في القسم لهذا الشهر' : 'المعلمون المكرمون لهذا الشهر'} ({takreemHonorees.month})
+      {/* Department Rankings & Model Lessons Showcase */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+        
+        {/* Dept Bar Chart */}
+        <div style={kpiCardStyle}>
+          <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F2044', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span>🏢</span> مقارنة متوسط الأداء بين الأقسام
           </h3>
-          <button onClick={() => {
-            const navBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.includes('تكريم المعلمين'));
-            if(navBtn) navBtn.click();
-          }} className="btn btn-ghost" style={{ fontSize:'0.7rem', padding:'0.25rem 0.6rem', color:'#fff' }}>
-            عرض صفحة التكريم
-          </button>
+          <ResponsiveContainer width="100%" height={210}>
+            <BarChart data={deptData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+              <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#64748B' }} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: '#64748B' }} />
+              <Tooltip contentStyle={{ background: '#fff', border: '1px solid #CBD5E1', borderRadius: '8px' }} />
+              <Bar dataKey="avg" fill="#0096C7" name="متوسط القسم" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'0.75rem' }}>
-          {takreemHonorees.data.map((h: any) => (
-            <div key={h.teacherId} style={{ padding:'0.75rem', background:'rgba(255,255,255,0.05)', borderRadius:'8px', borderLeft:'3px solid #0096C7' }}>
-              <div style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.7)', fontWeight:700 }}>{h.departmentName}</div>
-              <div style={{ fontSize:'0.85rem', fontWeight:800, color:'#fff', margin:'0.25rem 0' }}>{h.teacherNameAr}</div>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                <span style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.7)' }}>الدرجة:</span>
-                <span style={{ fontSize:'0.85rem', fontWeight:800, color:'#00B4D8' }}>{h.totalScore}%</span>
-              </div>
+
+        {/* Latest Model Lessons Section */}
+        <div style={kpiCardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span>💻</span> أحدث حصص التعليم الإلكتروني المقيمة
+            </h3>
+            <span style={{ fontSize: '0.7rem', color: '#4338CA', fontWeight: 700 }}>{filteredModelLessons.length} حصة موثقة</span>
+          </div>
+          
+          {recentModelLessons.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.8rem' }}>
+              لا توجد تقييمات حصص مسجلة حتى الآن
             </div>
-          ))}
-          {takreemHonorees.data.length === 0 && (
-            <div style={{ gridColumn:'1/-1', textAlign:'center', padding:'1rem', color:'rgba(255,255,255,0.5)', fontSize:'0.8rem' }}>لا يوجد بيانات لهذا الشهر</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {recentModelLessons.map(ml => (
+                <div key={ml.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.55rem 0.75rem', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                  <div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F2044' }}>
+                      {ml.teacherNameAr} <span style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 500 }}>({ml.departmentName})</span>
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: '#475569', marginTop: '2px' }}>
+                      📅 {ml.date} | الصف: {ml.classGrade} | الأدوات: <span style={{ color: '#0369A1', fontWeight: 700 }}>{ml.toolsUsed || 'منصات رقمية'}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ 
+                      background: (ml.overallScore || 0) >= 9 ? '#ECFDF5' : (ml.overallScore || 0) >= 7.5 ? '#EFF6FF' : '#FEF2F2',
+                      color: (ml.overallScore || 0) >= 9 ? '#065F46' : (ml.overallScore || 0) >= 7.5 ? '#1E40AF' : '#991B1B',
+                      padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900
+                    }}>
+                      {ml.overallScore} / 10
+                    </span>
+                    <button onClick={() => onViewTeacher(ml.teacherId)} className="btn btn-ghost" style={{ padding: '2px 6px', fontSize: '0.68rem' }}>ملف</button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
 
-      {/* Teachers Needing Follow-up Table */}
-      <div style={{ ...kpiStyle, background: '#fff', marginBottom: '1rem' }}>
-        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F2044', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          ⚠️ معلمون يحتاجون إلى متابعة وخطة تحسين (أقل من 80%)
-        </h3>
+      {/* Honorees Banner */}
+      {takreemHonorees.data.length > 0 && (
+        <div style={{ ...kpiCardStyle, background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)', border: '1px solid #FDE68A', marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <h3 style={{ fontSize: '0.92rem', fontWeight: 900, color: '#92400E', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>🏆</span> لوحة شرف المعلمين المتميزين لشهر {takreemHonorees.month} {selYear}
+            </h3>
+            <span style={{ fontSize: '0.72rem', color: '#B45309', fontWeight: 700 }}>
+              أفضل {takreemHonorees.data.length} معلمين تقييماً على مستوى المدرسة
+            </span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(215px, 1fr))', gap: '0.75rem' }}>
+            {takreemHonorees.data.map((h: any, idx: number) => {
+              const rank = h.rank || idx + 1;
+              const rankBadge = rank === 1 ? '🥇 #1' : rank === 2 ? '🥈 #2' : rank === 3 ? '🥉 #3' : `#${rank}`;
+              const rankBg = rank === 1 ? '#FEF3C7' : rank === 2 ? '#F1F5F9' : rank === 3 ? '#FFEDD5' : '#F8FAFC';
+              const rankColor = rank === 1 ? '#B45309' : rank === 2 ? '#475569' : rank === 3 ? '#C2410C' : '#64748B';
+
+              return (
+                <div 
+                  key={idx} 
+                  onClick={() => onViewTeacher(h.teacherId)}
+                  title="انقر لعرض الملف الأكاديمي للمعلم"
+                  style={{ 
+                    background: '#fff', 
+                    borderRadius: '10px', 
+                    padding: '0.75rem', 
+                    border: '1px solid #FCD34D', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 158, 11, 0.15)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                    <span style={{ 
+                      background: rankBg, 
+                      color: rankColor, 
+                      fontWeight: 900, 
+                      fontSize: '0.72rem', 
+                      padding: '2px 6px', 
+                      borderRadius: '8px', 
+                      border: `1px solid ${rank === 1 ? '#FDE68A' : rank === 2 ? '#CBD5E1' : rank === 3 ? '#FED7AA' : '#E2E8F0'}`,
+                      minWidth: '32px',
+                      textAlign: 'center',
+                      display: 'inline-block'
+                    }}>
+                      {rankBadge}
+                    </span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0F2044' }}>{h.teacherNameAr}</div>
+                      <div style={{ fontSize: '0.68rem', color: '#64748B' }}>{h.departmentName}</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <span style={{ background: '#ECFDF5', color: '#065F46', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 900 }}>
+                      {h.totalScore}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Evaluations Table */}
+      <div style={kpiCardStyle}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>📋 أحدث التقييمات الشهرية لنظام قطر للتعليم</h3>
+          <span style={{ fontSize: '0.72rem', color: '#64748B' }}>إجمالي التقييمات المكتملة: {filtered.length}</span>
+        </div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
             <thead>
-              <tr style={{ background: '#0F2044' }}>
-                {['المعلم', 'القسم', 'المتوسط', 'عدد التقييمات', 'الإجراء'].map(h => (
-                  <th key={h} style={{ padding: '0.6rem 0.75rem', textAlign: 'right', fontWeight: 600, color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>{h}</th>
+              <tr style={{ background: '#0F2044', color: '#fff' }}>
+                {['المعلم', 'القسم', 'الشهر', 'العام الأكاديمي', 'الدرجة الكلية', 'مستوى الأداء', 'الإجراء'].map(h => (
+                  <th key={h} style={{ padding: '0.65rem 0.75rem', textAlign: 'right', fontWeight: 700, fontSize: '0.75rem' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {Object.entries(filtered.reduce((acc, e) => {
-                if (!acc[e.teacherId]) acc[e.teacherId] = [];
-                acc[e.teacherId].push(e.totalScore);
-                return acc;
-              }, {} as Record<string, number[]>))
-                .map(([id, scores]) => {
-                  const avg = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 10) / 10;
-                  const t = teachers.find(x => x.id === id);
-                  return { t, avg, count: scores.length };
-                })
-                .filter(x => x.avg < 80 && x.t)
-                .sort((a, b) => a.avg - b.avg)
-                .map((item, i) => (
-                  <tr key={item.t?.id} style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                    <td style={{ padding: '0.6rem 0.75rem', fontWeight: 600, color: '#0F2044' }}>{item.t?.nameAr}</td>
-                    <td style={{ padding: '0.6rem 0.75rem', color: '#64748B' }}>{getDeptName(item.t?.departmentId || '', departments)}</td>
-                    <td style={{ padding: '0.6rem 0.75rem', fontWeight: 700, color: '#991B1B' }}>{item.avg}%</td>
-                    <td style={{ padding: '0.6rem 0.75rem', color: '#64748B' }}>{item.count}</td>
-                    <td style={{ padding: '0.6rem 0.75rem' }}>
-                      <button onClick={() => onViewTeacher(item.t?.id || '')} className="btn btn-ghost" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem', color: '#0F2044', border: '1px solid #E2E8F0' }}>عرض الملف</button>
-                    </td>
-                  </tr>
-                ))}
-              {filtered.length > 0 && !Object.entries(filtered.reduce((acc, e) => {
-                if (!acc[e.teacherId]) acc[e.teacherId] = [];
-                acc[e.teacherId].push(e.totalScore);
-                return acc;
-              }, {} as Record<string, number[]>)).some(([id, scores]) => (scores.reduce((a, b) => a + b, 0) / scores.length) < 80) && (
-                <tr>
-                  <td colSpan={5} style={{ padding: '1.5rem', textAlign: 'center', color: '#64748B', fontSize: '0.8rem' }}>
-                    ✅ جميع المعلمين في هذا النطاق لديهم أداء مرضي (فوق 80%)
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Recent evaluations table */}
-      <div style={kpiStyle}>
-        <h3 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'1rem' }}>🕐 آخر التقييمات</h3>
-        <div style={{ overflowX:'auto' }}>
-          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.8rem' }}>
-            <thead>
-              <tr style={{ background:'#0F2044' }}>
-                {['المعلم','القسم','الشهر','العام','الدرجة','مستوى الأداء','الإجراء'].map(h => (
-                  <th key={h} style={{ padding:'0.6rem 0.75rem', textAlign:'right', fontWeight:600, color:'#fff', borderBottom:'1px solid rgba(255,255,255,0.1)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recent.map((ev, i) => {
+              {filtered.slice(0, 10).map((ev, i) => {
                 const t = teachers.find(x => x.id === ev.teacherId);
                 const dept = t ? getDeptName(t.departmentId, departments) : '-';
                 const perf = getPerformanceLevel(ev.totalScore);
                 return (
-                  <tr key={ev.id} style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC', borderBottom:'1px solid #E2E8F0' }}>
-                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:600, color:'#0F2044' }}>{t?.nameAr || '-'}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', color:'#64748B' }}>{dept}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', color:'#0F2044' }}>{ev.month}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', color:'#64748B' }}>{ev.academicYear}</td>
-                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:700, color:'#0096C7' }}>{ev.totalScore}/100</td>
-                    <td style={{ padding:'0.6rem 0.75rem' }}>
-                      <span style={{ background:perf.bg, color:perf.color, padding:'0.2rem 0.6rem', borderRadius:'999px', fontSize:'0.7rem', fontWeight:700 }}>
+                  <tr key={ev.id} style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                    <td style={{ padding: '0.65rem 0.75rem', fontWeight: 700, color: '#0F2044' }}>{t?.nameAr || '-'}</td>
+                    <td style={{ padding: '0.65rem 0.75rem', color: '#64748B' }}>{dept}</td>
+                    <td style={{ padding: '0.65rem 0.75rem', color: '#0F2044', fontWeight: 600 }}>{ev.month}</td>
+                    <td style={{ padding: '0.65rem 0.75rem', color: '#64748B' }}>{ev.academicYear}</td>
+                    <td style={{ padding: '0.65rem 0.75rem', fontWeight: 900, color: '#0096C7' }}>{ev.totalScore} / 100</td>
+                    <td style={{ padding: '0.65rem 0.75rem' }}>
+                      <span style={{ background: perf.bg, color: perf.color, padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.68rem', fontWeight: 800 }}>
                         {perf.label}
                       </span>
                     </td>
-                    <td style={{ padding:'0.6rem 0.75rem' }}>
-                      {t && <button onClick={() => onViewTeacher(t.id)} className="btn btn-ghost" style={{ padding:'0.25rem 0.6rem', fontSize:'0.7rem', color:'#0F2044', border:'1px solid #E2E8F0' }}>عرض الملف</button>}
+                    <td style={{ padding: '0.65rem 0.75rem' }}>
+                      {t && <button onClick={() => onViewTeacher(t.id)} className="btn btn-ghost" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem' }}>ملف المعلم</button>}
                     </td>
                   </tr>
                 );
@@ -412,6 +571,7 @@ export default function Dashboard({ currentUser, onViewTeacher }: Props) {
           </table>
         </div>
       </div>
+
     </div>
   );
 }

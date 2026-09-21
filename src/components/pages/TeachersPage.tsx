@@ -1,17 +1,17 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { db, getDeptName, SUBJECT_TO_DEPT, getUserDeptIds } from '@/lib/data';
-import type { User, Teacher } from '@/lib/data';
+import type { User, Teacher, Department, Evaluation } from '@/lib/data';
 import * as XLSX from 'xlsx';
 
-interface Props { currentUser: User; onViewTeacher: (id: string) => void; }
+interface Props { currentUser: User; onViewTeacher: (id: string) => void; selectedYear?: string; }
 
 const blankTeacher = (): Omit<Teacher,'id'|'createdAt'> => ({
   employeeId:'', nameAr:'', nameEn:'', departmentId:'', subject:'',
   email:'', jobCategory:'معلم', status:'active'
 });
 
-export default function TeachersPage({ currentUser, onViewTeacher }: Props) {
+export default function TeachersPage({ currentUser, onViewTeacher, selectedYear }: Props) {
   const isAdmin = currentUser.role === 'admin';
   const isCoord = currentUser.role === 'coordinator';
 
@@ -20,10 +20,23 @@ export default function TeachersPage({ currentUser, onViewTeacher }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [editId,    setEditId]    = useState<string|null>(null);
   const [form,      setForm]      = useState(blankTeacher());
+  const [toast,     setToast]     = useState<string | null>(null);
 
-  const teachers    = db.getTeachers();
-  const departments = db.getDepartments();
-  const evaluations = db.getEvaluations();
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const reload = () => {
+    Promise.all([db.getTeachers(), db.getDepartments(), db.getEvaluations()])
+      .then(([t, d, e]) => { setTeachers(t); setDepartments(d); setEvaluations(e); setLoading(false); });
+  };
+  useEffect(() => { reload(); }, []);
 
   const coordDepts = getUserDeptIds(currentUser);
 
@@ -48,6 +61,8 @@ export default function TeachersPage({ currentUser, onViewTeacher }: Props) {
     });
   }, [teachers, search, deptF, isCoord, coordDepts, departments]);
 
+  if (loading) return <div style={{ padding: '3rem', textAlign: 'center', direction: 'rtl', color: '#64748B' }}>⏳ جاري تحميل البيانات...</div>;
+
   // Dept dropdown: coordinators see only their assigned depts
   const availableDepts = isCoord && coordDepts.length > 0
     ? departments.filter(d => coordDepts.includes(d.id))
@@ -56,21 +71,69 @@ export default function TeachersPage({ currentUser, onViewTeacher }: Props) {
   function openAdd() { setForm(blankTeacher()); setEditId(null); setShowModal(true); }
   function openEdit(t: Teacher) { setForm({ employeeId:t.employeeId, nameAr:t.nameAr, nameEn:t.nameEn, departmentId:t.departmentId, subject:t.subject, email:t.email, jobCategory:t.jobCategory, status:t.status }); setEditId(t.id); setShowModal(true); }
 
-  function saveTeacher() {
-    const list = db.getTeachers();
-    if (editId) {
-      const idx = list.findIndex(t => t.id === editId);
-      if (idx !== -1) list[idx] = { ...list[idx], ...form };
-    } else {
-      list.push({ id: `t${Date.now()}`, ...form, createdAt: new Date().toISOString().split('T')[0] });
+  async function saveTeacher() {
+    try {
+      const list = await db.getTeachers();
+      let updated: Teacher[];
+      if (editId) {
+        updated = list.map(t => t.id === editId ? { ...t, ...form } : t);
+      } else {
+        const newTeacher: Teacher = {
+          id: `t${Date.now()}`,
+          ...form,
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        updated = [newTeacher, ...list];
+      }
+      setTeachers(updated);
+      setShowModal(false);
+      await db.saveTeachers(updated);
+      showToast(editId ? `تم تحديث بيانات المعلم "${form.nameAr}" بنجاح` : `تمت إضافة المعلم "${form.nameAr}" بنجاح`);
+    } catch (err) {
+      console.error('Error saving teacher:', err);
+      alert('حدث خطأ أثناء حفظ بيانات المعلم');
+    } finally {
+      reload();
     }
-    db.saveTeachers(list);
-    setShowModal(false);
   }
 
-  function deleteTeacher(id: string) {
-    if (!confirm('هل تريد حذف هذا المعلم؟')) return;
-    db.saveTeachers(db.getTeachers().filter(t => t.id !== id));
+  async function deleteTeacher(id: string) {
+    const target = teachers.find(t => t.id === id);
+    const name = target ? target.nameAr : 'المعلم';
+    if (!confirm(`هل أنت متأكد من حذف المعلم "${name}" نهائياً من النظام؟`)) return;
+
+    const updated = teachers.filter(t => t.id !== id);
+    setTeachers(updated); // Optimistic immediate update
+
+    try {
+      await db.deleteTeacher(id);
+      await db.saveTeachers(updated);
+      showToast(`تم حذف المعلم "${name}" بنجاح`);
+    } catch (err) {
+      console.error('Error deleting teacher:', err);
+      alert('حدث خطأ أثناء حذف المعلم');
+    } finally {
+      reload();
+    }
+  }
+
+  async function toggleStatus(t: Teacher) {
+    if (!isAdmin) return;
+    const newStatus: 'active' | 'inactive' = t.status === 'active' ? 'inactive' : 'active';
+    const statusLabel = newStatus === 'active' ? 'نشط' : 'غير نشط';
+
+    const updated = teachers.map(item => item.id === t.id ? { ...item, status: newStatus } : item);
+    setTeachers(updated); // Optimistic immediate update
+
+    try {
+      await db.saveTeachers(updated);
+      showToast(`تم تغيير حالة المعلم "${t.nameAr}" إلى (${statusLabel}) بنجاح`);
+    } catch (err) {
+      console.error('Error toggling teacher status:', err);
+      alert('حدث خطأ أثناء تغيير حالة المعلم');
+    } finally {
+      reload();
+    }
   }
 
   function exportExcel() {
@@ -140,9 +203,35 @@ export default function TeachersPage({ currentUser, onViewTeacher }: Props) {
                     <td style={{ padding:'0.6rem 0.75rem', color:'#64748B' }}>{t.subject}</td>
                     <td style={{ padding:'0.6rem 0.75rem', fontSize:'0.72rem', color:'#64748B' }}>{t.email}</td>
                     <td style={{ padding:'0.6rem 0.75rem' }}>
-                      <span style={{ background: t.status==='active'?'#D1FAE5':'#FEE2E2', color: t.status==='active'?'#065F46':'#991B1B', padding:'0.2rem 0.6rem', borderRadius:'999px', fontSize:'0.68rem', fontWeight:700 }}>
+                      <button
+                        type="button"
+                        onClick={() => toggleStatus(t)}
+                        title={isAdmin ? `انقر لتبديل الحالة فورياً إلى (${t.status === 'active' ? 'غير نشط' : 'نشط'})` : undefined}
+                        disabled={!isAdmin}
+                        style={{
+                          background: t.status==='active'?'#D1FAE5':'#FEE2E2',
+                          color: t.status==='active'?'#065F46':'#991B1B',
+                          border: t.status==='active'?'1px solid #A7F3D0':'1px solid #FECACA',
+                          padding:'0.25rem 0.65rem',
+                          borderRadius:'999px',
+                          fontSize:'0.68rem',
+                          fontWeight:800,
+                          cursor: isAdmin ? 'pointer' : 'default',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        <span style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: '50%',
+                          background: t.status === 'active' ? '#059669' : '#DC2626'
+                        }} />
                         {t.status==='active'?'نشط':'غير نشط'}
-                      </span>
+                        {isAdmin && <span style={{ fontSize: '0.65rem', opacity: 0.65 }}>⇄</span>}
+                      </button>
                     </td>
                     <td style={{ padding:'0.6rem 0.75rem' }}>
                       {perf && <span style={{ background:perf.bg, color:perf.color, padding:'0.2rem 0.5rem', borderRadius:'999px', fontSize:'0.68rem', fontWeight:700 }}>{lastScore}/100</span>}
@@ -191,7 +280,7 @@ export default function TeachersPage({ currentUser, onViewTeacher }: Props) {
                 <select className="form-input" value={form.departmentId}
                   onChange={e => setForm(f => ({ ...f, departmentId: e.target.value }))}>
                   <option value="">اختر القسم</option>
-                  {db.getDepartments().map(d => <option key={d.id} value={d.id}>{d.nameAr}</option>)}
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.nameAr}</option>)}
                 </select>
               </div>
               <div>
@@ -216,6 +305,29 @@ export default function TeachersPage({ currentUser, onViewTeacher }: Props) {
               <button onClick={saveTeacher} className="btn btn-primary">💾 حفظ</button>
             </div>
           </div>
+        </div>
+      )}
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '2rem',
+          left: '2rem',
+          zIndex: 9999,
+          background: '#0F2044',
+          color: '#ffffff',
+          padding: '0.85rem 1.4rem',
+          borderRadius: '12px',
+          boxShadow: '0 8px 24px rgba(15,32,68,0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.65rem',
+          fontSize: '0.86rem',
+          fontWeight: 800,
+          border: '1px solid #00B4D8'
+        }}>
+          <span style={{ fontSize: '1.1rem' }}>✓</span>
+          {toast}
         </div>
       )}
     </div>
