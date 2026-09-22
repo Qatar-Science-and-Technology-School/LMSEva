@@ -32,6 +32,8 @@ interface Props {
   onViewReport: (w: Workshop) => void;
   onSelectWorkshop?: (w: Workshop) => void;
   onAddWorkshop?: () => void;
+  onAddIndividual?: () => void;
+  onViewIndividualReport?: (r: IndividualPDRecord) => void;
   canEdit?: boolean;
 }
 
@@ -45,6 +47,8 @@ export interface PlanRow {
   executionLevel: 'تم' | 'قيد التنفيذ' | 'مخطط';
   followUp: string;
   reportWorkshop?: Workshop;
+  individualRecord?: IndividualPDRecord;
+  rowType?: 'collective' | 'individual' | 'program';
   externalUrl?: string;
 }
 
@@ -157,6 +161,7 @@ function PlanRowModal({
     trainer: row?.trainer || 'أحمد طبيشات',
     executionLevel: row?.executionLevel || 'مخطط',
     followUp: row?.followUp || '',
+    rowType: row?.rowType || 'collective',
     externalUrl: row?.externalUrl || ''
   });
 
@@ -173,6 +178,7 @@ function PlanRowModal({
         trainer: 'أحمد طبيشات',
         executionLevel: 'مخطط',
         followUp: '',
+        rowType: 'collective',
         externalUrl: ''
       });
     }
@@ -291,7 +297,26 @@ function PlanRowModal({
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0F2044', marginBottom: '0.35rem' }}>
+                نوع البند *
+              </label>
+              <select
+                value={form.rowType || 'collective'}
+                onChange={e => setForm({ ...form, rowType: e.target.value as any })}
+                style={{
+                  width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px',
+                  border: '1.5px solid #CBD5E1', fontSize: '0.85rem', fontWeight: 800,
+                  background: '#fff'
+                }}
+              >
+                <option value="collective">👥 ورشة جماعية</option>
+                <option value="individual">👤 تدريب فردي</option>
+                <option value="program">🎓 برنامج واعتمادات</option>
+              </select>
+            </div>
+
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 800, color: '#0F2044', marginBottom: '0.35rem' }}>
                 المدرب *
@@ -424,12 +449,15 @@ export default function PDPlanTab({
   onViewReport,
   onSelectWorkshop,
   onAddWorkshop,
+  onAddIndividual,
+  onViewIndividualReport,
   canEdit
 }: Props) {
   const [showCertifiedList, setShowCertifiedList] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingRow, setEditingRow] = useState<PlanRow | null>(null);
   const [isAddingRow, setIsAddingRow] = useState(false);
+  const [planFilter, setPlanFilter] = useState<'all' | 'collective' | 'individual' | 'program'>('all');
 
   // Load custom plan rows from localStorage
   const [customRows, setCustomRows] = useState<PlanRow[] | null>(() => {
@@ -444,7 +472,19 @@ export default function PDPlanTab({
     return null;
   });
 
-  // ── 1. Unified Plan Rows (Strictly Dynamic from workshops) ──────────────────
+  // Track deleted rows in edit mode
+  const [deletedRowIds, setDeletedRowIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('qstss_deleted_plan_row_ids');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse deleted plan rows:', e);
+      }
+    }
+    return [];
+  });
+
   // ── 1. Individual PD Statistics (Dynamic from individualRecords) ─────────────
   const individualStats = useMemo(() => {
     const targetYear = filterYear && filterYear !== 'all' ? filterYear : '2026-2027';
@@ -581,19 +621,25 @@ export default function PDPlanTab({
     const targetYear = filterYear && filterYear !== 'all' ? filterYear : '2026-2027';
     const rows: PlanRow[] = [];
 
-    // A. Group Workshops for the selected academic year
+    // A. Collective Workshops for the selected academic year
     const yearWorkshops = workshops.filter(w => 
       w.academicYear === targetYear || 
       (!w.academicYear && targetYear === '2026-2027' && (w.date?.includes('2026') || w.date?.includes('2027')))
-    ).sort((a, b) => (a.workshopNumber || 0) - (b.workshopNumber || 0) || new Date(a.date || '').getTime() - new Date(b.date || '').getTime());
+    );
 
-    // If workshops are in the database, derive rows directly from them
     if (yearWorkshops.length > 0) {
-      yearWorkshops.forEach((w) => {
+      const sortedWorkshops = [...yearWorkshops].sort((a, b) => {
+        if (a.workshopNumber && b.workshopNumber) return a.workshopNumber - b.workshopNumber;
+        if (a.date && b.date) return new Date(a.date).getTime() - new Date(b.date).getTime();
+        return 0;
+      });
+
+      sortedWorkshops.forEach((w) => {
         const isDone = w.status === 'موثق' || w.status === 'تم التنفيذ';
         const isInProgress = w.status === 'قيد التنفيذ';
         rows.push({
           id: w.id,
+          rowType: 'collective',
           title: w.titleAr || w.nameAr || 'ورشة تدريبية',
           targetAudience: w.targetAudience ? `${w.targetAudience}${w.targetClasses ? ` (${w.targetClasses})` : ''}` : (w.targetGroup || 'المعلمين'),
           procedure: w.procedure || (w.objectives ? w.objectives.split('\n')[0].replace(/^[•\-\*]\s*/, '') : 'عقد ورشة عمل تدريبية وتطبيقية لتمكين المتدربين من الأدوات الرقمية'),
@@ -607,21 +653,41 @@ export default function PDPlanTab({
       });
     } else {
       // Fallback baseline if DB not yet loaded
-      rows.push(...BASELINE_PLAN_ITEMS_2627);
+      rows.push(...BASELINE_PLAN_ITEMS_2627.map(r => ({ ...r, rowType: 'collective' as const })));
     }
 
-    // B. Individual PD Program (Dynamic synthesized row from individualRecords)
-    if (individualStats.totalSessions > 0) {
-      const topSkillsSummary = individualStats.skillList.slice(0, 3).map(s => s.skill).join('، ');
-      rows.push({
-        id: 'plan-dynamic-individual',
-        title: 'برنامج التدريب والتطوير المهني الفردي للمعلمين',
-        targetAudience: 'معلمي المدرسة (جلسات فردية تخصصية)',
-        procedure: `عقد ${individualStats.totalSessions} جلسة تدريب وتطوير فردي ومباشر لتلبية الاحتياجات التكنولوجية الخاصة بكل معلم في استخدام المنصات التعليمية ونظام قطر للتعليم وأدوات الذكاء الاصطناعي`,
-        timeframe: 'الفصل الدراسي الأول ٢٠٢٦-٢٠٢٧م (مستمر)',
-        trainer: 'أحمد طبيشات (منسق المشاريع الإلكترونية)',
-        executionLevel: 'تم',
-        followUp: `تم إنجاز ${individualStats.totalSessions} جلسة تطوير فردي للمعلمين شملت ${individualStats.uniqueTeachers} معلماً بمجموع ${individualStats.totalHours} تدريبية، وتضمنت مهارات تكنولوجية: ${topSkillsSummary || 'الذكاء الاصطناعي ونظام قطر للتعليم'}`
+    // B. Individual Workshops for the selected academic year
+    const relevantInd = individualRecords.filter(r => 
+      r.academicYear === targetYear || 
+      (!r.academicYear && targetYear === '2026-2027' && (r.trainingDate?.includes('2026') || r.trainingDate?.includes('2027')))
+    );
+    const indToUse = relevantInd.length > 0 ? relevantInd : (targetYear === '2026-2027' ? individualRecords.slice(0, 14) : []);
+
+    if (indToUse.length > 0) {
+      const sortedInd = [...indToUse].sort((a, b) => {
+        if (a.trainingDate && b.trainingDate) return new Date(b.trainingDate).getTime() - new Date(a.trainingDate).getTime();
+        return 0;
+      });
+
+      sortedInd.forEach(r => {
+        const titleText = r.skillProvided 
+          ? (r.skillProvided.startsWith('ورشة') || r.skillProvided.startsWith('تدريب') ? r.skillProvided : `ورشة فردية: ${r.skillProvided}`)
+          : 'جلسة تطوير مهني فردي';
+
+        rows.push({
+          id: r.id.startsWith('ind-') || r.id.startsWith('plan-') ? r.id : `plan-ind-${r.id}`,
+          rowType: 'individual',
+          title: titleText,
+          targetAudience: `${r.traineeNameAr} (${r.department || 'الهيئة التدريسية'})`,
+          procedure: r.notes || `جلسة تدريب وتطوير مهني فردي وتطبيقي (${r.trainingType || 'تدريب فردي'}) لتمكين المعلم من المهارات التكنولوجية في ${r.skillProvided || 'الأنظمة والمنصات التعليمية'} (${r.durationMinutes || 20} دقيقة)`,
+          timeframe: r.trainingDate || (r.month ? `${r.month} ${targetYear}` : 'الفصل الدراسي الأول'),
+          trainer: r.trainerName || 'أحمد طبيشات',
+          executionLevel: 'تم',
+          followUp: r.signatureStatus === 'تم التوقيع'
+            ? `تم إنجاز جلسة التطوير الفردي مع توقيع المعلم على الإقرار والاستفادة (${r.durationMinutes || 20} دقيقة)`
+            : `تم إنجاز جلسة التطوير الفردي بنجاح (${r.durationMinutes || 20} دقيقة)`,
+          individualRecord: r
+        });
       });
     }
 
@@ -629,6 +695,7 @@ export default function PDPlanTab({
     if (meeeStats.certifiedCount > 0) {
       rows.push({
         id: 'plan-dynamic-meee',
+        rowType: 'program',
         title: 'برنامج تأهيل واعتماد معلّمي مايكروسوفت الخبراء (MIEE)',
         targetAudience: 'كافة أعضاء الهيئة التدريسية والإدارية بالمدرسة',
         procedure: 'تنظيم ورش عمل وجلسات إرشادية وتدريبية لدعم المعلمين في إعداد ملفات الترشح لاجتياز معايير خبراء مايكروسوفت للتعلم الإبداعي MIEE',
@@ -640,15 +707,48 @@ export default function PDPlanTab({
     }
 
     return rows;
-  }, [workshops, individualStats, meeeStats, filterYear]);
+  }, [workshops, individualRecords, meeeStats, filterYear]);
 
-  // Active Plan Rows: Use customized rows if present, otherwise default
+  // Active Plan Rows: Smart merge between dynamic defaultPlanRows and custom manual edits
   const activePlanRows = useMemo(() => {
-    if (customRows && customRows.length > 0) {
-      return customRows;
+    if (!customRows || customRows.length === 0) {
+      return defaultPlanRows;
     }
-    return defaultPlanRows;
-  }, [customRows, defaultPlanRows]);
+    const customIdSet = new Set(customRows.map(r => r.id));
+    const deletedSet = new Set(deletedRowIds);
+    
+    // New items from defaultPlanRows that were not in customRows and not deleted
+    const newItems = defaultPlanRows.filter(r => !customIdSet.has(r.id) && !deletedSet.has(r.id));
+    
+    // Existing items following customRows order with live references merged
+    const orderedExisting = customRows
+      .filter(r => !deletedSet.has(r.id))
+      .map(customRow => {
+        const defaultMatch = defaultPlanRows.find(d => d.id === customRow.id);
+        if (defaultMatch) {
+          return {
+            ...customRow,
+            reportWorkshop: defaultMatch.reportWorkshop || customRow.reportWorkshop,
+            individualRecord: defaultMatch.individualRecord || customRow.individualRecord,
+            rowType: defaultMatch.rowType || customRow.rowType
+          };
+        }
+        return customRow;
+      });
+
+    // New items (newly added collective or individual workshops) are prepended so they are instantly visible
+    return [...newItems, ...orderedExisting];
+  }, [customRows, defaultPlanRows, deletedRowIds]);
+
+  // Filtered rows for the view
+  const collectiveCount = useMemo(() => activePlanRows.filter(r => (r.rowType || 'collective') === 'collective').length, [activePlanRows]);
+  const individualCount = useMemo(() => activePlanRows.filter(r => r.rowType === 'individual').length, [activePlanRows]);
+  const programCount = useMemo(() => activePlanRows.filter(r => r.rowType === 'program').length, [activePlanRows]);
+
+  const displayedRows = useMemo(() => {
+    if (planFilter === 'all') return activePlanRows;
+    return activePlanRows.filter(r => (r.rowType || 'collective') === planFilter);
+  }, [activePlanRows, planFilter]);
 
   // Handlers for Row Actions
   const handleSaveRow = (updatedRow: PlanRow) => {
@@ -672,9 +772,12 @@ export default function PDPlanTab({
 
   const handleDeleteRow = (id: string) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا البند من خطة التطوير المهني؟')) return;
+    const newDeleted = [...deletedRowIds, id];
+    setDeletedRowIds(newDeleted);
     const next = activePlanRows.filter(r => r.id !== id);
     setCustomRows(next);
     try {
+      localStorage.setItem('qstss_deleted_plan_row_ids', JSON.stringify(newDeleted));
       localStorage.setItem('qstss_custom_pd_plan_2627', JSON.stringify(next));
     } catch (e) {
       console.error(e);
@@ -698,8 +801,10 @@ export default function PDPlanTab({
   const handleResetToDefault = () => {
     if (!window.confirm('هل أنت متأكد من استعادة الخطة الافتراضية؟ سيتم إلغاء كافة التعديلات اليدوية المحفوظة.')) return;
     setCustomRows(null);
+    setDeletedRowIds([]);
     try {
       localStorage.removeItem('qstss_custom_pd_plan_2627');
+      localStorage.removeItem('qstss_deleted_plan_row_ids');
     } catch (e) {
       console.error(e);
     }
@@ -757,12 +862,28 @@ export default function PDPlanTab({
               onClick={onAddWorkshop}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.4rem',
-                background: '#F1F5F9', color: '#0F2044', border: '1px solid #CBD5E1',
+                background: '#EFF6FF', color: '#1D4ED8', border: '1.5px solid #BFDBFE',
                 padding: '0.65rem 1.25rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem',
-                cursor: 'pointer'
+                cursor: 'pointer', boxShadow: '0 2px 6px rgba(37,99,235,0.08)'
               }}
             >
+              <Users size={16} />
               <span>+ إضافة ورشة جماعية للخطة</span>
+            </button>
+          )}
+
+          {canEdit && onAddIndividual && (
+            <button
+              onClick={onAddIndividual}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                background: '#ECFDF5', color: '#047857', border: '1.5px solid #A7F3D0',
+                padding: '0.65rem 1.25rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem',
+                cursor: 'pointer', boxShadow: '0 2px 6px rgba(16,185,129,0.08)'
+              }}
+            >
+              <Plus size={16} />
+              <span>+ إضافة ورشة فردية للخطة</span>
             </button>
           )}
 
@@ -1191,17 +1312,97 @@ export default function PDPlanTab({
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '0.5rem'
+          gap: '0.75rem'
         }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 900, color: '#fff' }}>
-              جدول خطة الورش الجماعية (المنفذة والمستقبلية) - الفصل الدراسي الأول لسنة ٢٠٢٦-٢٠٢٧م
-            </h3>
-            <span style={{ fontSize: '0.72rem', color: '#BAE6FD', fontWeight: 600 }}>
-              {customRows ? 'تم تعديل الخطة وتخصيصها يدوياً' : 'يتم تحديث الخطة تلقائياً ومباشرة عند إدراج أي ورشة تدريبية جماعية جديدة'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <h3 style={{ margin: 0, fontSize: '1.02rem', fontWeight: 900, color: '#fff' }}>
+                جدول خطة التطوير المهني والتمكين التكنولوجي (الورش الجماعية والفردية) - الفصل الأول ٢٠٢٦-٢٠٢٧م
+              </h3>
+              <span style={{ fontSize: '0.72rem', background: 'rgba(56,189,248,0.2)', color: '#38BDF8', padding: '0.15rem 0.55rem', borderRadius: '6px', fontWeight: 800, border: '1px solid rgba(56,189,248,0.35)' }}>
+                تحديث لحظي ومباشر ✓
+              </span>
+            </div>
+            <span style={{ fontSize: '0.72rem', color: '#BAE6FD', fontWeight: 600, display: 'block', marginTop: '0.2rem' }}>
+              يتم تحديث الخطة تلقائياً ومباشرة عند إدراج أي ورشة تدريبية جماعية أو فردية جديدة
             </span>
+
+            {/* Quick Filter Tabs */}
+            <div className="no-print" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.65rem' }}>
+              <button
+                onClick={() => setPlanFilter('all')}
+                style={{
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: planFilter === 'all' ? '#0284C7' : 'rgba(255,255,255,0.12)',
+                  color: '#fff',
+                  boxShadow: planFilter === 'all' ? '0 2px 6px rgba(2,132,199,0.4)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                📋 كل البنود ({activePlanRows.length})
+              </button>
+              <button
+                onClick={() => setPlanFilter('collective')}
+                style={{
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: planFilter === 'collective' ? '#0284C7' : 'rgba(255,255,255,0.12)',
+                  color: '#fff',
+                  boxShadow: planFilter === 'collective' ? '0 2px 6px rgba(2,132,199,0.4)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                👥 الورش الجماعية ({collectiveCount})
+              </button>
+              <button
+                onClick={() => setPlanFilter('individual')}
+                style={{
+                  padding: '0.3rem 0.75rem',
+                  borderRadius: '8px',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: planFilter === 'individual' ? '#0284C7' : 'rgba(255,255,255,0.12)',
+                  color: '#fff',
+                  boxShadow: planFilter === 'individual' ? '0 2px 6px rgba(2,132,199,0.4)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                👤 ورش التطوير الفردي ({individualCount})
+              </button>
+              {programCount > 0 && (
+                <button
+                  onClick={() => setPlanFilter('program')}
+                  style={{
+                    padding: '0.3rem 0.75rem',
+                    borderRadius: '8px',
+                    fontSize: '0.75rem',
+                    fontWeight: 800,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: planFilter === 'program' ? '#0284C7' : 'rgba(255,255,255,0.12)',
+                    color: '#fff',
+                    boxShadow: planFilter === 'program' ? '0 2px 6px rgba(2,132,199,0.4)' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  🎓 البرامج والاعتمادات ({programCount})
+                </button>
+              )}
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             {isEditMode && (
               <button
                 onClick={() => setIsAddingRow(true)}
@@ -1210,7 +1411,7 @@ export default function PDPlanTab({
                   background: 'rgba(255,255,255,0.2)',
                   color: '#fff',
                   border: '1px solid rgba(255,255,255,0.3)',
-                  padding: '0.25rem 0.75rem',
+                  padding: '0.35rem 0.85rem',
                   borderRadius: '6px',
                   fontSize: '0.75rem',
                   fontWeight: 800,
@@ -1221,11 +1422,11 @@ export default function PDPlanTab({
                 }}
               >
                 <Plus size={14} />
-                <span>إضافة برنامج</span>
+                <span>إضافة بند يدوي</span>
               </button>
             )}
-            <span style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', padding: '0.2rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
-              إجمالي البرامج المدرجة: {activePlanRows.length} برنامج
+            <span style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', padding: '0.25rem 0.85rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+              المعروض: {displayedRows.length} من أصل {activePlanRows.length} بند
             </span>
           </div>
         </div>
@@ -1263,8 +1464,9 @@ export default function PDPlanTab({
               </tr>
             </thead>
             <tbody>
-              {activePlanRows.map((row, idx) => {
+              {displayedRows.map((row, idx) => {
                 const isEven = idx % 2 === 0;
+                const realIdx = activePlanRows.findIndex(r => r.id === row.id);
                 return (
                   <tr 
                     key={row.id} 
@@ -1281,7 +1483,24 @@ export default function PDPlanTab({
                       {idx + 1}
                     </td>
                     <td style={{ padding: '0.75rem 0.85rem', fontWeight: 800, color: '#0F2044', borderLeft: '1px solid #E2E8F0', lineHeight: 1.45 }}>
-                      {row.title}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                          {row.rowType === 'individual' ? (
+                            <span style={{ background: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0', fontSize: '0.66rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 800 }}>
+                              👤 تدريب فردي
+                            </span>
+                          ) : row.rowType === 'program' ? (
+                            <span style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A', fontSize: '0.66rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 800 }}>
+                              🎓 برنامج واعتمادات
+                            </span>
+                          ) : (
+                            <span style={{ background: '#E0F2FE', color: '#0369A1', border: '1px solid #BAE6FD', fontSize: '0.66rem', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: 800 }}>
+                              👥 ورشة جماعية
+                            </span>
+                          )}
+                          <span style={{ fontWeight: 800, color: '#0F2044', lineHeight: 1.45 }}>{row.title}</span>
+                        </div>
+                      </div>
                     </td>
                     <td style={{ padding: '0.75rem 0.85rem', fontWeight: 700, color: '#334155', borderLeft: '1px solid #E2E8F0', lineHeight: 1.35 }}>
                       {row.targetAudience}
@@ -1338,6 +1557,38 @@ export default function PDPlanTab({
                               <FileText size={12} />
                               <span>استعراض تقرير الورشة المعتمد ←</span>
                             </button>
+                          </div>
+                        )}
+
+                        {row.individualRecord && (
+                          <div className="no-print" style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            {onViewIndividualReport && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); onViewIndividualReport(row.individualRecord!); }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem',
+                                  background: '#ECFDF5',
+                                  color: '#065F46',
+                                  border: '1px solid #A7F3D0',
+                                  padding: '0.25rem 0.65rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.70rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                              >
+                                <FileText size={12} />
+                                <span>تقرير وإقرار التدريب الفردي ←</span>
+                              </button>
+                            )}
+                            {row.individualRecord.signatureStatus === 'تم التوقيع' && (
+                              <span style={{ color: '#059669', fontSize: '0.68rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                <CheckCircle2 size={12} /> معتمد وموقع
+                              </span>
+                            )}
                           </div>
                         )}
 
@@ -1401,25 +1652,25 @@ export default function PDPlanTab({
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.25rem', marginTop: '0.35rem' }}>
                           <button
-                            disabled={idx === 0}
-                            onClick={(e) => { e.stopPropagation(); handleMoveRow(idx, 'up'); }}
+                            disabled={realIdx <= 0}
+                            onClick={(e) => { e.stopPropagation(); handleMoveRow(realIdx, 'up'); }}
                             title="تحريك لأعلى"
                             style={{
                               background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '4px',
-                              padding: '0.2rem 0.35rem', cursor: idx === 0 ? 'not-allowed' : 'pointer',
-                              opacity: idx === 0 ? 0.4 : 1
+                              padding: '0.2rem 0.35rem', cursor: realIdx <= 0 ? 'not-allowed' : 'pointer',
+                              opacity: realIdx <= 0 ? 0.4 : 1
                             }}
                           >
                             <ArrowUp size={12} />
                           </button>
                           <button
-                            disabled={idx === activePlanRows.length - 1}
-                            onClick={(e) => { e.stopPropagation(); handleMoveRow(idx, 'down'); }}
+                            disabled={realIdx < 0 || realIdx >= activePlanRows.length - 1}
+                            onClick={(e) => { e.stopPropagation(); handleMoveRow(realIdx, 'down'); }}
                             title="تحريك لأسفل"
                             style={{
                               background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '4px',
-                              padding: '0.2rem 0.35rem', cursor: idx === activePlanRows.length - 1 ? 'not-allowed' : 'pointer',
-                              opacity: idx === activePlanRows.length - 1 ? 0.4 : 1
+                              padding: '0.2rem 0.35rem', cursor: (realIdx < 0 || realIdx >= activePlanRows.length - 1) ? 'not-allowed' : 'pointer',
+                              opacity: (realIdx < 0 || realIdx >= activePlanRows.length - 1) ? 0.4 : 1
                             }}
                           >
                             <ArrowDown size={12} />

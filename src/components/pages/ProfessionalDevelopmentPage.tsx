@@ -805,6 +805,8 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
             onViewReport={(w) => setReportingWorkshop(w)}
             onSelectWorkshop={(w) => setSelectedWorkshop(w)}
             onAddWorkshop={() => { setEditingWorkshop(null); setIsFormOpen(true); }}
+            onAddIndividual={() => { setEditingIndividual(null); setIsIndFormOpen(true); }}
+            onViewIndividualReport={(r) => setReportingIndividual(r)}
             canEdit={canEdit}
           />
         ) : (
