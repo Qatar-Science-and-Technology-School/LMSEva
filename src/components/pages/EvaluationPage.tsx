@@ -857,6 +857,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
       };
     });
     setCriteria(mappedCriteria);
+    setTeacherId(ev.teacherId); // تثبيت المعلم المحدد بدقة للتقييم
     setStrengths(ev.strengths || '');
     setImprove(ev.improvementAreas || '');
     setRecommend(ev.recommendations || '');
@@ -870,6 +871,10 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
     setYear(ev.academicYear);
     setEditingId(ev.id);
     setMainTab('form');
+    // الانتقال للنموذج بسلاسة
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
   function loadExisting() {
@@ -950,7 +955,8 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
     setSaving(true);
     setSaveError('');
     try {
-      const docId = editingId || generateId();
+      const docId = editingId || existingEval?.id || generateId();
+      const isUpdating = Boolean(editingId || existingEval);
       const evObj: Evaluation = {
         id: docId,
         teacherId,
@@ -971,7 +977,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
         hasWeeklyAssignment,
         evidenceLinks: evidence.split('\n').filter(Boolean),
         generalNotes: notes,
-        createdAt: editingId ? (existingEval?.createdAt || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+        createdAt: isUpdating ? (existingEval?.createdAt || allEvaluations.find(e => e.id === docId)?.createdAt || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
         updatedAt: new Date().toISOString().split('T')[0],
       };
       await saveDocument<Evaluation>(COLLECTIONS.evaluations, evObj);
@@ -982,11 +988,11 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
       setAllEvaluations(prev => {
         const idx = prev.findIndex(e => e.id === docId);
         if (idx !== -1) { const updated = [...prev]; updated[idx] = evObj; return updated; }
-        return [...prev, evObj];
+        return [evObj, ...prev];
       });
     } catch (err) {
       console.error('Save evaluation error:', err);
-      setSaveError('حدث خطأ أثناء الحفظ. يرجى المحاولة مرة أخرى.');
+      setSaveError('حدث خطأ أثناء حفظ أو تحديث التقييم. يرجى المحاولة مرة أخرى.');
     } finally {
       setSaving(false);
     }
@@ -1603,16 +1609,72 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                   </div>
                 </div>
 
+                {/* خيار تعديل التقييمات المسجلة للمعلم المحدد */}
+                {selectedTeacher && selectedTeacherEvals.length > 0 && (
+                  <div style={{ marginTop: '1rem', background: '#F8FAFC', border: '1.5px solid #E2E8F0', borderRadius: '10px', padding: '0.75rem 1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0F2044', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span>📋</span> التقييمات المسجلة لهذا المعلم ({selectedTeacherEvals.length} تقييم):
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                        انقر على أي تقييم لتعديله وتحديثه مباشرة
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {selectedTeacherEvals.map(ev => {
+                        const isCurrentActive = editingId === ev.id || (!editingId && existingEval?.id === ev.id && month === ev.month && year === ev.academicYear);
+                        const p = getPerformanceLevel(ev.totalScore || 0);
+                        return (
+                          <button
+                            key={ev.id}
+                            type="button"
+                            onClick={() => loadEvaluationObj(ev)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.45rem',
+                              padding: '0.4rem 0.75rem',
+                              borderRadius: '8px',
+                              border: isCurrentActive ? '1.5px solid #0284C7' : '1px solid #CBD5E1',
+                              background: isCurrentActive ? '#E0F2FE' : '#fff',
+                              color: isCurrentActive ? '#0369A1' : '#334155',
+                              fontSize: '0.78rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              boxShadow: isCurrentActive ? '0 2px 6px rgba(2,132,199,0.2)' : 'none',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <span>📅 {ev.month} ({ev.academicYear})</span>
+                            <span style={{ background: p.bg, color: p.color, padding: '0.1rem 0.45rem', borderRadius: '999px', fontSize: '0.72rem' }}>
+                              {ev.totalScore}%
+                            </span>
+                            <span style={{ color: '#0284C7', textDecoration: 'underline' }}>✏️ تعديل</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {existingEval && !editingId && (
-                  <div style={{ marginTop: '1rem', background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: '10px', padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#92400E', fontWeight: 700 }}>
-                      ⚠️ تم رصد تقييم مسبق لهذا المعلم في شهر ({existingEval.month}) بدرجة: {existingEval.totalScore}% ({existingEval.performanceLevel})
-                    </span>
+                  <div style={{ marginTop: '1rem', background: '#FEF3C7', border: '1.5px solid #F59E0B', borderRadius: '10px', padding: '0.85rem 1.1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                      <div>
+                        <div style={{ fontSize: '0.88rem', color: '#92400E', fontWeight: 800 }}>
+                          يوجد تقييم مسجل مسبقاً للمعلم ({selectedTeacher?.nameAr}) لشهر ({existingEval.month} {existingEval.academicYear}) بدرجة: {existingEval.totalScore}% ({existingEval.performanceLevel})
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#B45309', marginTop: '0.15rem' }}>
+                          اضغط على زر <strong>"✏️ تعديل وتحديث التقييم"</strong> لتحميل بياناته بالكامل والتعديل عليها، ثم اعتمادها بزر <strong>"تحديث التقييم"</strong> بالأسفل.
+                        </div>
+                      </div>
+                    </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button onClick={loadExisting} style={{ fontSize: '0.78rem', background: '#fff', border: '1px solid #D97706', color: '#B45309', borderRadius: '6px', padding: '0.35rem 0.8rem', fontWeight: 800, cursor: 'pointer' }}>
-                        ✏️ تحميل وتعديل التقييم
+                      <button onClick={loadExisting} style={{ fontSize: '0.82rem', background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)', border: 'none', color: '#fff', borderRadius: '8px', padding: '0.45rem 1rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 8px rgba(2,132,199,0.25)' }}>
+                        ✏️ تعديل هذا التقييم الآن
                       </button>
-                      <button onClick={() => deleteEval(existingEval.id)} disabled={deleting} style={{ fontSize: '0.78rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '6px', padding: '0.35rem 0.8rem', fontWeight: 800, cursor: 'pointer' }}>
+                      <button onClick={() => deleteEval(existingEval.id)} disabled={deleting} style={{ fontSize: '0.8rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '8px', padding: '0.45rem 0.85rem', fontWeight: 800, cursor: 'pointer' }}>
                         🗑️ حذف
                       </button>
                     </div>
@@ -1620,11 +1682,26 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                 )}
 
                 {editingId && (
-                  <div style={{ marginTop: '1rem', background: '#E0F2FE', border: '1px solid #0284C7', borderRadius: '10px', padding: '0.65rem 1rem', fontSize: '0.85rem', color: '#0C4A6E', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>✏️ وضع التعديل الفعّال على التقييم المسجل (ID: {editingId})</span>
-                    <button onClick={() => deleteEval(editingId)} disabled={deleting} style={{ fontSize: '0.78rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '6px', padding: '0.3rem 0.75rem', fontWeight: 800, cursor: 'pointer' }}>
-                      🗑️ حذف هذا التقييم
-                    </button>
+                  <div style={{ marginTop: '1rem', background: 'linear-gradient(90deg, #E0F2FE 0%, #F0F9FF 100%)', border: '1.5px solid #0284C7', borderRadius: '10px', padding: '0.85rem 1.1rem', fontSize: '0.88rem', color: '#0C4A6E', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '1.2rem' }}>✏️</span>
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#0369A1', fontSize: '0.92rem' }}>
+                          أنت الآن في وضع تعديل تقييم المعلم: <span style={{ color: '#0F2044', textDecoration: 'underline' }}>{selectedTeacher?.nameAr}</span> لشهر ({month} {year})
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#0284C7', marginTop: '0.15rem' }}>
+                          قم بتعديل الدرجات والمعايير أو الملاحظات، ثم اضغط على زر <strong>"🔄 تحديث التقييم"</strong> بالأسفل لحفظ واعتماد التعديلات فوراً.
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button onClick={resetForm} style={{ fontSize: '0.8rem', background: '#fff', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '0.4rem 0.85rem', fontWeight: 800, cursor: 'pointer' }}>
+                        ➕ إلغاء التعديل وبدء تقييم جديد
+                      </button>
+                      <button onClick={() => deleteEval(editingId)} disabled={deleting} style={{ fontSize: '0.8rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '8px', padding: '0.4rem 0.85rem', fontWeight: 800, cursor: 'pointer' }}>
+                        🗑️ حذف هذا التقييم
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1963,21 +2040,26 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                     onClick={saveEval}
                     disabled={saving || !teacherId}
                     style={{
-                      background: '#0F2044',
+                      background: (editingId || existingEval)
+                        ? 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)'
+                        : '#0F2044',
                       color: '#fff',
-                      padding: '0.75rem 1.75rem',
+                      padding: '0.75rem 1.85rem',
                       borderRadius: '10px',
-                      border: 'none',
-                      fontWeight: 800,
-                      fontSize: '0.95rem',
-                      cursor: 'pointer',
+                      border: (editingId || existingEval) ? '1.5px solid #38BDF8' : 'none',
+                      fontWeight: 900,
+                      fontSize: '0.98rem',
+                      cursor: (saving || !teacherId) ? 'not-allowed' : 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.5rem',
-                      boxShadow: '0 4px 12px rgba(15,32,68,0.2)'
+                      boxShadow: (editingId || existingEval)
+                        ? '0 4px 14px rgba(2,132,199,0.35)'
+                        : '0 4px 12px rgba(15,32,68,0.2)',
+                      transition: 'all 0.2s'
                     }}
                   >
-                    {saving ? '⏳ جاري الحفظ...' : editingId ? '🔄 تحديث التقييم' : '💾 حفظ التقييم'}
+                    {saving ? '⏳ جاري الحفظ والتحديث...' : (editingId || existingEval) ? '🔄 تحديث التقييم' : '💾 حفظ التقييم'}
                   </button>
                 ) : (
                   <div
@@ -1996,6 +2078,28 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                   >
                     <span>🔒 وضع المشاهدة والاطلاع فقط (الحفظ معطل)</span>
                   </div>
+                )}
+
+                {(editingId || existingEval) && canManageEvaluations && (
+                  <button
+                    onClick={resetForm}
+                    type="button"
+                    style={{
+                      background: '#F1F5F9',
+                      color: '#475569',
+                      padding: '0.75rem 1.25rem',
+                      borderRadius: '10px',
+                      border: '1.5px solid #CBD5E1',
+                      fontWeight: 800,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem'
+                    }}
+                  >
+                    ➕ تقييم جديد (إلغاء وضع التعديل)
+                  </button>
                 )}
 
                 <button
@@ -3195,24 +3299,52 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                           <td style={{ padding: '0.65rem', color: '#475569' }}>{t.subject}</td>
                           <td style={{ padding: '0.65rem', color: '#0284C7', direction: 'ltr', textAlign: 'right', fontSize: '0.75rem' }}>{t.email}</td>
                           <td style={{ padding: '0.65rem', textAlign: 'center' }}>
-                            <button
-                              onClick={() => {
-                                setTeacherId(t.id);
-                                setMainTab('form');
-                              }}
-                              style={{
-                                background: '#0F2044',
-                                color: '#fff',
-                                border: 'none',
-                                padding: '0.3rem 0.75rem',
-                                borderRadius: '6px',
-                                fontWeight: 800,
-                                fontSize: '0.75rem',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              📝 تقييم
-                            </button>
+                            <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                              <button
+                                onClick={() => {
+                                  setTeacherId(t.id);
+                                  setEditingId(null);
+                                  setMainTab('form');
+                                }}
+                                style={{
+                                  background: '#0F2044',
+                                  color: '#fff',
+                                  border: 'none',
+                                  padding: '0.3rem 0.65rem',
+                                  borderRadius: '6px',
+                                  fontWeight: 800,
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                📝 تقييم
+                              </button>
+                              {allEvaluations.some(e => e.teacherId === t.id) && (
+                                <button
+                                  onClick={() => {
+                                    const teacherEvals = allEvaluations
+                                      .filter(e => e.teacherId === t.id)
+                                      .sort((a, b) => b.academicYear.localeCompare(a.academicYear) || MONTHS.indexOf(b.month) - MONTHS.indexOf(a.month));
+                                    if (teacherEvals[0]) {
+                                      loadEvaluationObj(teacherEvals[0]);
+                                    }
+                                  }}
+                                  style={{
+                                    background: '#E0F2FE',
+                                    color: '#0369A1',
+                                    border: '1px solid #BAE6FE',
+                                    padding: '0.3rem 0.65rem',
+                                    borderRadius: '6px',
+                                    fontWeight: 800,
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer'
+                                  }}
+                                  title="تعديل أحدث تقييم لهذا المعلم"
+                                >
+                                  ✏️ تعديل
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))}
