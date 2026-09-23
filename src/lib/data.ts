@@ -2616,12 +2616,13 @@ export const db = {
     const non2627 = existing.filter((r: any) => r.academicYear !== '2026-2027');
     const existing2627 = existing.filter((r: any) => r.academicYear === '2026-2027');
 
-    let updated2627 = existing2627;
+    let updated2627 = [...existing2627];
     let hasChanged = false;
 
-    const is2627Valid = existing2627.length === 36 && existing2627.every((r: any) => r.id && r.id.startsWith('MEEE-2627-'));
-    if (!is2627Valid) {
-      updated2627 = SEED_MEEE_2627_RECORDS;
+    const existing2627Ids = new Set(existing2627.map((r: any) => r.id));
+    const missingSeed2627 = SEED_MEEE_2627_RECORDS.filter((r: any) => !existing2627Ids.has(r.id));
+    if (missingSeed2627.length > 0) {
+      updated2627.push(...missingSeed2627);
       hasChanged = true;
     }
 
