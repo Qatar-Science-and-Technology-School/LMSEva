@@ -237,6 +237,7 @@ interface RichBulletTextareaProps {
   disabled?: boolean;
   style?: React.CSSProperties;
   className?: string;
+  predefinedOptions?: { label: string; value: string }[];
 }
 
 const THEME_COLORS = {
@@ -269,7 +270,8 @@ export function RichBulletTextarea({
   showPreviewToggle = true,
   disabled = false,
   style = {},
-  className = 'form-textarea'
+  className = 'form-textarea',
+  predefinedOptions
 }: RichBulletTextareaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -458,6 +460,40 @@ export function RichBulletTextarea({
               flexWrap: 'wrap'
             }}
           >
+            {predefinedOptions && predefinedOptions.length > 0 && (
+              <select
+                onChange={(e) => {
+                  const selectedVal = e.target.value;
+                  if (!selectedVal) return;
+                  if (selectedVal === 'لا يوجد') {
+                    onChange('لا يوجد');
+                  } else {
+                    const currentVal = value ? value.trim() : '';
+                    const newVal = currentVal ? (currentVal === 'لا يوجد' ? `• ${selectedVal}` : `${currentVal}\\n• ${selectedVal}`) : `• ${selectedVal}`;
+                    onChange(newVal);
+                  }
+                  e.target.value = '';
+                }}
+                style={{
+                  fontSize: '0.72rem',
+                  padding: '0.15rem 0.4rem',
+                  borderRadius: '6px',
+                  border: '1px solid #CBD5E1',
+                  background: '#fff',
+                  color: '#1E293B',
+                  marginLeft: '0.5rem',
+                  maxWidth: '180px',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+                title="إضافة عبارة جاهزة"
+              >
+                <option value="">➕ إدراج عبارة جاهزة...</option>
+                {predefinedOptions.map((opt, i) => (
+                  <option key={i} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            )}
             <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748B', marginLeft: '0.2rem' }}>
               رموز ونقاط:
             </span>

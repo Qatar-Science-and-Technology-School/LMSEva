@@ -48,6 +48,30 @@ const PRESET_TOOLS = [
   { id: 'wordwall', name: 'Wordwall', icon: '🎮' },
 ];
 
+const PREDEFINED_STRENGTHS = [
+  { label: 'استخدام متميز لأدوات الذكاء الاصطناعي', value: 'الاستخدام المتميز لأدوات الذكاء الاصطناعي في التعليم' },
+  { label: 'تفاعل ومشاركة فعالة من الطلاب', value: 'التفاعل الإيجابي والمشاركة الفعالة من الطلاب' },
+  { label: 'دمج التقنية لخدمة أهداف الدرس', value: 'دمج التقنية بشكل يخدم أهداف الدرس (SAMR)' },
+  { label: 'إدارة فعالة للصف رقمياً', value: 'الإدارة الفعالة للصف وتوجيه الطلاب رقمياً' },
+  { label: 'تغذية راجعة فورية', value: 'التغذية الراجعة الفورية باستخدام أدوات التقويم الرقمية' },
+  { label: 'لا يوجد', value: 'لا يوجد' }
+];
+
+const PREDEFINED_IMPROVEMENTS = [
+  { label: 'تنويع أدوات التقويم', value: 'تنويع أدوات التقويم الرقمية لتشمل مستويات تفكير عليا' },
+  { label: 'إعطاء مساحة للمشاركة الرقمية', value: 'إعطاء مساحة أكبر للطلاب للتعبير والمشاركة الرقمية' },
+  { label: 'تفعيل التعاون الرقمي', value: 'تفعيل أدوات التعاون الرقمي بين الطلاب بشكل أعمق' },
+  { label: 'إدارة الوقت للأنشطة', value: 'إدارة الوقت المخصص للأنشطة الرقمية بشكل أفضل' },
+  { label: 'لا يوجد', value: 'لا يوجد' }
+];
+
+const PREDEFINED_RECOMMENDATIONS = [
+  { label: 'مشاركة الممارسات مع الزملاء', value: 'مشاركة الممارسات التقنية المتميزة مع زملاء القسم' },
+  { label: 'الاطلاع على مستجدات الذكاء الاصطناعي', value: 'الاطلاع على المستجدات في أدوات الذكاء الاصطناعي وتطبيقها' },
+  { label: 'تبادل الزيارات', value: 'تبادل الزيارات مع المعلمين المتميزين تقنياً' },
+  { label: 'لا يوجد', value: 'لا يوجد' }
+];
+
 const CRITERIA_DEFINITIONS = [
   {
     id: 'score1',
@@ -1743,13 +1767,13 @@ ${SCHOOL_NAME}`
           <div className="print-only landscape-print-doc" style={{ padding: '0', fontFamily: 'IBM Plex Sans Arabic, Arial, sans-serif', direction: 'rtl', fontSize: '8.5pt' }}>
             {/* Official Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4mm', borderBottom: '2px solid #0F2044', paddingBottom: '3mm' }}>
-              <img src="/ministry-logo.png" alt="وزارة التعليم والتعليم العالي" style={{ height: '58px', maxWidth: '140px', objectFit: 'contain' }} />
+              <img src="/ministry-logo.png" alt="وزارة التعليم والتعليم العالي" style={{ height: '75px', maxWidth: '170px', objectFit: 'contain' }} />
               <div style={{ textAlign: 'center', flex: 1, padding: '0 10px' }}>
                 <div style={{ background: '#0F2044', color: 'white', borderRadius: '6px', padding: '5px 18px', display: 'inline-block', fontSize: '9pt', fontWeight: 800 }}>
                   📅 جدول حصص التعليم الإلكتروني النموذجية - العام الأكاديمي {academicYear}
                 </div>
               </div>
-              <img src="/school-logo.png" alt="شعار المدرسة" style={{ height: '58px', maxWidth: '140px', objectFit: 'contain' }} />
+              <img src="/school-logo.png" alt="شعار المدرسة" style={{ height: '75px', maxWidth: '170px', objectFit: 'contain' }} />
             </div>
 
             {/* Meta Strip */}
@@ -1830,7 +1854,7 @@ ${SCHOOL_NAME}`
           <div className="print-only landscape-print-doc" style={{ padding: '0', fontFamily: 'IBM Plex Sans Arabic, Arial, sans-serif', direction: 'rtl', fontSize: '7.5pt' }}>
             {/* Letterhead with Ministry & School Logos */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #0F2044', paddingBottom: '3px', marginBottom: '3px' }}>
-              <img src="/ministry-logo.png" alt="وزارة التعليم والتعليم العالي" style={{ height: '52px', maxWidth: '130px', objectFit: 'contain' }} />
+              <img src="/ministry-logo.png" alt="وزارة التعليم والتعليم العالي" style={{ height: '65px', maxWidth: '160px', objectFit: 'contain' }} />
               
               <div style={{ textAlign: 'center', flex: 1, padding: '0 8px' }}>
                 <div style={{ background: '#0F2044', color: '#fff', borderRadius: '6px', padding: '4px 16px', display: 'inline-block', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
@@ -1840,7 +1864,7 @@ ${SCHOOL_NAME}`
                 </div>
               </div>
 
-              <img src="/school-logo.png" alt="شعار المدرسة" style={{ height: '52px', maxWidth: '130px', objectFit: 'contain' }} />
+              <img src="/school-logo.png" alt="شعار المدرسة" style={{ height: '65px', maxWidth: '160px', objectFit: 'contain' }} />
             </div>
 
             {/* Bilingual Metadata Table */}
@@ -1879,7 +1903,11 @@ ${SCHOOL_NAME}`
                     الأدوات الرقمية / Tools Used:
                   </th>
                   <td style={{ padding: '2.5px 5px', border: '1px solid #CBD5E1', fontWeight: 700, color: '#0F2044' }}>
-                    {selectedTools.length > 0 ? selectedTools.join(' • ') : 'لم تحدد أدوات'}
+                    {selectedTools.length > 0 ? (
+                      <ul style={{ margin: 0, padding: 0, paddingRight: '15px', listStyleType: 'disc' }}>
+                        {selectedTools.map((t, i) => <li key={i} style={{ marginBottom: '1px' }}>{t}</li>)}
+                      </ul>
+                    ) : 'لم تحدد أدوات'}
                   </td>
                   <th style={{ padding: '2.5px 5px', border: '1px solid #CBD5E1', background: '#E2E8F0', color: '#0F2044', fontWeight: 800, textAlign: 'right' }}>
                     الحضور / Attendees:
@@ -1948,10 +1976,10 @@ ${SCHOOL_NAME}`
                   </tbody>
                   <tfoot>
                     <tr style={{ background: '#0F2044', color: '#fff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
-                      <td colSpan={2} style={{ padding: '3px 6px', border: '1px solid #1e3a5f', fontWeight: 800, textAlign: 'right', fontSize: '7.5pt' }}>
+                      <td colSpan={2} style={{ padding: '3px 6px', border: '1px solid #1e3a5f', fontWeight: 800, textAlign: 'right', fontSize: '7.5pt', color: '#ffffff' }}>
                         المجموع الكلي من 60 / Total Score (out of 60)
                       </td>
-                      <td style={{ padding: '3px 4px', border: '1px solid #1e3a5f', textAlign: 'center', fontWeight: 900, fontSize: '8.5pt' }}>
+                      <td style={{ padding: '3px 4px', border: '1px solid #1e3a5f', textAlign: 'center', fontWeight: 900, fontSize: '8.5pt', color: '#ffffff' }}>
                         {criteriaScoreSum} / 60
                       </td>
                     </tr>
@@ -2069,7 +2097,7 @@ ${SCHOOL_NAME}`
                 gap: '0.75rem',
               }}
             >
-              <img src="/ministry-logo.png" alt="وزارة التعليم" style={{ height: '75px', maxWidth: '165px', objectFit: 'contain', flexShrink: 0 }} />
+              <img src="/ministry-logo.png" alt="وزارة التعليم" style={{ height: '95px', maxWidth: '200px', objectFit: 'contain', flexShrink: 0 }} />
               <div style={{ textAlign: 'center', flex: 1 }}>
                 <div style={{ background: 'linear-gradient(135deg, #0A1931 0%, #0F2044 100%)', color: '#ffffff', borderRadius: '8px', padding: '6px 20px', display: 'inline-block' } as any}>
                   <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.3 }}>
@@ -2080,7 +2108,7 @@ ${SCHOOL_NAME}`
                   </div>
                 </div>
               </div>
-              <img src="/school-logo.png" alt="شعار المدرسة" style={{ height: '75px', maxWidth: '165px', objectFit: 'contain', flexShrink: 0 }} />
+              <img src="/school-logo.png" alt="شعار المدرسة" style={{ height: '95px', maxWidth: '200px', objectFit: 'contain', flexShrink: 0 }} />
             </div>
 
             {/* Form Body */}
@@ -2668,6 +2696,7 @@ ${SCHOOL_NAME}`
                   }}
                 >
                   <RichBulletTextarea
+                    predefinedOptions={PREDEFINED_STRENGTHS}
                     label="جوانب القوة (Strengths)"
                     value={strengths}
                     onChange={val => setStrengths(val)}
@@ -2688,6 +2717,7 @@ ${SCHOOL_NAME}`
                   }}
                 >
                   <RichBulletTextarea
+                    predefinedOptions={PREDEFINED_IMPROVEMENTS}
                     label="جوانب تحتاج إلى تحسين (Areas for Improvement)"
                     value={improvements}
                     onChange={val => setImprovements(val)}
@@ -2708,6 +2738,7 @@ ${SCHOOL_NAME}`
                   }}
                 >
                   <RichBulletTextarea
+                    predefinedOptions={PREDEFINED_RECOMMENDATIONS}
                     label="توصيات (Recommendations)"
                     value={recommendations}
                     onChange={val => setRecommendations(val)}
