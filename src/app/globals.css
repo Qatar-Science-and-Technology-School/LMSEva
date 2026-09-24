@@ -885,3 +885,12 @@ tr:hover td { background: var(--gray-50); }
     break-after: auto !important;
   }
 }
+
+@media print {
+  .force-white-print, .force-white-print * {
+    color: white !important;
+  }
+}
+.force-white-print {
+  color: white !important;
+}
