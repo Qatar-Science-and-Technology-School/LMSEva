@@ -1975,13 +1975,17 @@ ${SCHOOL_NAME}`
                     })}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: '#0F2044', color: '#fff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
-                      <td colSpan={2} style={{ padding: '3px 6px', border: '1px solid #1e3a5f', fontWeight: 800, textAlign: 'right', fontSize: '7.5pt', color: '#ffffff' }}>
-                        المجموع الكلي من 60 / Total Score (out of 60)
-                      </td>
-                      <td style={{ padding: '3px 4px', border: '1px solid #1e3a5f', textAlign: 'center', fontWeight: 900, fontSize: '8.5pt', color: '#ffffff' }}>
-                        {criteriaScoreSum} / 60
-                      </td>
+                    <tr className="force-white-print text-white" style={{ background: '#0F2044', color: '#ffffff', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' } as any}>
+                      <th colSpan={2} style={{ padding: '3px 6px', border: '1px solid #1e3a5f', fontWeight: 800, textAlign: 'right', fontSize: '7.5pt', color: '#ffffff', background: '#0F2044' }} className="force-white-print text-white">
+                        <span className="force-white-print text-white" style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' } as any}>
+                          المجموع الكلي من 60 / Total Score (out of 60)
+                        </span>
+                      </th>
+                      <th style={{ padding: '3px 4px', border: '1px solid #1e3a5f', textAlign: 'center', fontWeight: 900, fontSize: '8.5pt', color: '#ffffff', background: '#0F2044' }} className="force-white-print text-white">
+                        <span className="force-white-print text-white" style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' } as any}>
+                          {criteriaScoreSum} / 60
+                        </span>
+                      </th>
                     </tr>
                   </tfoot>
                 </table>

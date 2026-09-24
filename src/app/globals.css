@@ -696,22 +696,26 @@ tr:hover td { background: var(--gray-50); }
     page-break-inside: auto !important;
   }
 
-  table:not(.print-master-table):not(.landscape-report-sheet *):not(.printable-report *) th, 
-  table:not(.print-master-table):not(.landscape-report-sheet *):not(.printable-report *) td {
+  table:not(.print-master-table):not(.landscape-report-sheet *):not(.printable-report *) th {
+    border: 1px solid #E2E8F0 !important;
+    padding: 5px 6px !important;
+    text-align: right !important;
+    font-size: 8pt !important;
+    word-break: break-word !important;
+    background-color: #0F2044 !important;
+    color: white !important;
+    font-weight: 700 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  table:not(.print-master-table):not(.landscape-report-sheet *):not(.printable-report *) td:not(.force-white-print):not(.text-white) {
     border: 1px solid #E2E8F0 !important;
     padding: 5px 6px !important;
     text-align: right !important;
     color: black !important;
     font-size: 8pt !important;
     word-break: break-word !important;
-  }
-
-  table:not(.print-master-table):not(.landscape-report-sheet *):not(.printable-report *) th {
-    background-color: #0F2044 !important;
-    color: white !important;
-    font-weight: 700 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 
   table:not(.print-master-table) tr {
@@ -887,10 +891,27 @@ tr:hover td { background: var(--gray-50); }
 }
 
 @media print {
-  .force-white-print, .force-white-print * {
-    color: white !important;
+  table tfoot,
+  table tfoot tr,
+  table tfoot th,
+  table tfoot td,
+  table tfoot span,
+  table tfoot div,
+  .force-white-print,
+  .force-white-print *,
+  table .force-white-print,
+  table td.force-white-print,
+  table th.force-white-print,
+  table tr.force-white-print td,
+  table tr.force-white-print th {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
-.force-white-print {
-  color: white !important;
+.force-white-print,
+.force-white-print * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
