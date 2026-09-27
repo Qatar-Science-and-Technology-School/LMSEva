@@ -223,19 +223,19 @@ function SignatureFooter() {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #E2E8F0' }}>
       <div style={{ textAlign: 'center', width: '160px' }}>
-        <p style={{ fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.82rem' }}>توقيع منسق التقييم</p>
-        <img src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" style={{ height: '36px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
-        <p style={{ fontSize: '0.82rem', fontWeight: 700 }}>م. أحمد عادل طبيشات</p>
+        <p style={{ fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.82rem' }}>منسق التقييم</p>
+        <p style={{ fontSize: '0.82rem', fontWeight: 700, margin: '0 0 4px' }}>م. أحمد عادل طبيشات</p>
+        <img src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" style={{ height: '36px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
       </div>
       <div style={{ textAlign: 'center', width: '160px' }}>
-        <p style={{ fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.82rem' }}>توقيع النائب الأكاديمي</p>
-        <img src="/signature-rani.png" alt="توقيع د. راني التوم" style={{ height: '36px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
-        <p style={{ fontSize: '0.82rem', fontWeight: 700 }}>د. راني التوم</p>
+        <p style={{ fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.82rem' }}>النائب الأكاديمي</p>
+        <p style={{ fontSize: '0.82rem', fontWeight: 700, margin: '0 0 4px' }}>د. راني التوم</p>
+        <img src="/signature-rani.png" alt="توقيع د. راني التوم" style={{ height: '36px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
       </div>
       <div style={{ textAlign: 'center', width: '160px' }}>
-        <p style={{ fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.82rem' }}>توقيع مدير المدرسة</p>
-        <div style={{ height: '36px', margin: '0 auto 4px' }} />
-        <p style={{ fontSize: '0.82rem', fontWeight: 700 }}>___________________</p>
+        <p style={{ fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontSize: '0.82rem' }}>مدير المدرسة</p>
+        <p style={{ fontSize: '0.82rem', fontWeight: 700, margin: '0 0 4px' }}>محمد علي مندني العمادي</p>
+        <img src="/principal-signature.png" alt="توقيع مدير المدرسة" style={{ height: '36px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
       </div>
     </div>
   );

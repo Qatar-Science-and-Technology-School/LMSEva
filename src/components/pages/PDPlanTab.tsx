@@ -1714,10 +1714,10 @@ export default function PDPlanTab({
           <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800, display: 'block', marginBottom: '4px' }}>
             مراجعة واعتماد الخطة
           </span>
-          <img src="/signature-rani.png" alt="توقيع د. راني التوم" style={{ height: '32px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
-          <span style={{ fontSize: '0.76rem', fontWeight: 900, color: '#0F2044', display: 'block' }}>
+          <span style={{ fontSize: '0.76rem', fontWeight: 900, color: '#0F2044', display: 'block', marginBottom: '4px' }}>
             د. راني التوم
           </span>
+          <img src="/signature-rani.png" alt="توقيع د. راني التوم" style={{ height: '32px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
           <span style={{ fontSize: '0.68rem', color: '#64748B' }}>النائب الأكاديمي</span>
         </div>
 
@@ -1725,10 +1725,10 @@ export default function PDPlanTab({
           <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800, display: 'block', marginBottom: '4px' }}>
             اعتماد مدير المدرسة
           </span>
-          <img src="/principal-signature.png" alt="توقيع مدير المدرسة" style={{ height: '32px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
-          <span style={{ fontSize: '0.76rem', fontWeight: 900, color: '#0F2044', display: 'block' }}>
+          <span style={{ fontSize: '0.76rem', fontWeight: 900, color: '#0F2044', display: 'block', marginBottom: '4px' }}>
             محمد علي مندني العمادي
           </span>
+          <img src="/principal-signature.png" alt="توقيع مدير المدرسة" style={{ height: '32px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
           <span style={{ fontSize: '0.68rem', color: '#64748B' }}>مدير المدرسة</span>
         </div>
       </div>

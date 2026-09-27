@@ -1395,6 +1395,9 @@ export function SingleWorkshopReport({ workshop, teachers = [], departments = []
               <p style={{ fontWeight: 800, margin: '0 0 0.15rem', fontSize: '0.68rem', color: '#0F2044', borderBottom: '1px solid #CBD5E1', paddingBottom: '0.15rem', width: '100%', textAlign: 'center' }}>
                 مدير المدرسة
               </p>
+              <p style={{ margin: '0 0 2px', fontSize: '0.72rem', fontWeight: 900, color: '#0F2044', textAlign: 'center' }}>
+                محمد علي مندني العمادي
+              </p>
               <div style={{ height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <img 
                   src="/principal-signature.png" 
@@ -1402,9 +1405,6 @@ export function SingleWorkshopReport({ workshop, teachers = [], departments = []
                   style={{ height: '32px', objectFit: 'contain', margin: '0 auto', display: 'block' }} 
                 />
               </div>
-              <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 900, color: '#0F2044', textAlign: 'center' }}>
-                محمد علي مندني العمادي
-              </p>
               <span style={{ fontSize: '0.60rem', color: '#64748B', textAlign: 'center' }}>مدير المدرسة</span>
             </div>
           </div>
@@ -2303,6 +2303,9 @@ export function SingleIndividualPDReport({ record, onClose, canEdit }: SingleInd
               <p style={{ fontWeight: 800, margin: '0 0 0.2rem', fontSize: '0.70rem', color: '#0F2044', borderBottom: '1px solid #CBD5E1', paddingBottom: '0.15rem', width: '100%', textAlign: 'center' }}>
                 اعتماد مدير المدرسة
               </p>
+              <p style={{ margin: '0 0 2px', fontSize: '0.72rem', fontWeight: 800, color: '#0F2044', textAlign: 'center' }}>
+                محمد علي مندني العمادي
+              </p>
               <div style={{ height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <img 
                   src="/principal-signature.png" 
@@ -2310,9 +2313,6 @@ export function SingleIndividualPDReport({ record, onClose, canEdit }: SingleInd
                   style={{ height: '34px', objectFit: 'contain', margin: '0 auto', display: 'block' }} 
                 />
               </div>
-              <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 800, color: '#0F2044', textAlign: 'center' }}>
-                محمد علي مندني العمادي
-              </p>
               <span style={{ fontSize: '0.62rem', color: '#64748B', textAlign: 'center' }}>مدير المدرسة</span>
             </div>
           </div>

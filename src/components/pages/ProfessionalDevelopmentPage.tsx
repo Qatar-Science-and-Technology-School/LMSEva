@@ -2986,18 +2986,18 @@ function ComprehensivePDReport({ workshops, individualRecords, meeeRecords, teac
         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginTop: '2.5rem', paddingTop: '1rem', borderTop: '1px solid #E2E8F0' }}>
           <div style={{ textAlign: 'center', width: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <p style={{ fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '0.4rem', marginBottom: '0.4rem', fontSize: '0.80rem', width: '100%', textAlign: 'center' }}>منسق المشاريع الإلكترونية</p>
-            <img src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" style={{ height: '36px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
-            <p style={{ fontSize: '0.80rem', fontWeight: 700, margin: 0, textAlign: 'center' }}>أحمد عادل طبيشات</p>
+            <p style={{ fontSize: '0.80rem', fontWeight: 700, margin: '0 0 4px', textAlign: 'center' }}>أحمد عادل طبيشات</p>
+            <img src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" style={{ height: '36px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
           </div>
           <div style={{ textAlign: 'center', width: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <p style={{ fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '0.4rem', marginBottom: '0.4rem', fontSize: '0.80rem', width: '100%', textAlign: 'center' }}>النائب الأكاديمي</p>
-            <img src="/signature-rani.png" alt="توقيع د. راني التوم" style={{ height: '36px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
-            <p style={{ fontSize: '0.80rem', fontWeight: 700, margin: 0, textAlign: 'center' }}>د. راني التوم</p>
+            <p style={{ fontSize: '0.80rem', fontWeight: 700, margin: '0 0 4px', textAlign: 'center' }}>د. راني التوم</p>
+            <img src="/signature-rani.png" alt="توقيع د. راني التوم" style={{ height: '36px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
           </div>
           <div style={{ textAlign: 'center', width: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             <p style={{ fontWeight: 800, borderBottom: '1px solid #000', paddingBottom: '0.4rem', marginBottom: '0.4rem', fontSize: '0.80rem', width: '100%', textAlign: 'center' }}>مدير المدرسة</p>
-            <img src="/principal-signature.png" alt="توقيع مدير المدرسة" style={{ height: '36px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
-            <p style={{ fontSize: '0.80rem', fontWeight: 700, margin: 0, textAlign: 'center' }}>محمد علي مندني العمادي</p>
+            <p style={{ fontSize: '0.80rem', fontWeight: 700, margin: '0 0 4px', textAlign: 'center' }}>محمد علي مندني العمادي</p>
+            <img src="/principal-signature.png" alt="توقيع مدير المدرسة" style={{ height: '36px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
           </div>
         </div>
       </div>

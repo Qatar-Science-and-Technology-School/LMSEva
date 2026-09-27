@@ -591,19 +591,19 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
 
         <div style={{ marginTop: '4rem', display: 'flex', justifyContent: 'space-between' }}>
           <div style={{ textAlign: 'center', width: '180px' }}>
-            <div style={{ fontWeight: 800, marginBottom: '0.5rem' }}>منسق المشاريع الإلكترونية</div>
-            <img src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" style={{ height: '38px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
-            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>م. أحمد عادل طبيشات</div>
+            <div style={{ fontWeight: 800, marginBottom: '0.4rem' }}>منسق المشاريع الإلكترونية</div>
+            <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '4px' }}>م. أحمد عادل طبيشات</div>
+            <img src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" style={{ height: '38px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
           </div>
           <div style={{ textAlign: 'center', width: '180px' }}>
-            <div style={{ fontWeight: 800, marginBottom: '0.5rem' }}>النائب الأكاديمي</div>
-            <img src="/signature-rani.png" alt="توقيع د. راني التوم" style={{ height: '38px', objectFit: 'contain', margin: '0 auto 4px', display: 'block' }} />
-            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>د. راني التوم</div>
+            <div style={{ fontWeight: 800, marginBottom: '0.4rem' }}>النائب الأكاديمي</div>
+            <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '4px' }}>د. راني التوم</div>
+            <img src="/signature-rani.png" alt="توقيع د. راني التوم" style={{ height: '38px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
           </div>
           <div style={{ textAlign: 'center', width: '180px' }}>
-            <div style={{ fontWeight: 800, marginBottom: '0.5rem' }}>مدير المدرسة</div>
-            <div style={{ height: '38px', margin: '0 auto 4px' }} />
-            <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>________________</div>
+            <div style={{ fontWeight: 800, marginBottom: '0.4rem' }}>مدير المدرسة</div>
+            <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '4px' }}>محمد علي مندني العمادي</div>
+            <img src="/principal-signature.png" alt="توقيع مدير المدرسة" style={{ height: '38px', objectFit: 'contain', margin: '0 auto', display: 'block' }} />
           </div>
         </div>
       </div>

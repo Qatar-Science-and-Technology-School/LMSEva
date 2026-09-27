@@ -36,7 +36,7 @@ export default function AppShell({ user, onLogout }: Props) {
     { id:'dashboard',  label:'لوحة المؤشرات',  icon:'📊', show:true },
     { id:'teachers',   label:'إدارة المعلمين',  icon:'👨‍🏫', show:true },
     { id:'evaluation', label:'تقييم نظام قطر للتعليم',  icon:'📝', show:true },
-    { id:'class_analysis', label:'تحليل الفصول / الشعب والمواد الدراسية', icon:'🏫', show:true },
+    { id:'class_analysis', label:'تحليل الشعب والمواد', icon:'🏫', show:true },
     { id:'model_lessons', label:'حصص التعليم الإلكتروني', icon:'💻', show:true },
     { id:'takreem',    label:'تكريم المعلمين',  icon:'🏆', show:true },
     { id:'achievements',label:'الإنجازات',      icon:'🌟', show:true },

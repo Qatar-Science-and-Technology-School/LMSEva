@@ -10,6 +10,7 @@ import {
   SEPTEMBER_2026_LMS_METRICS,
 } from '@/lib/data';
 import type { User } from '@/lib/data';
+import { printClassSubjectMonthlyReport } from '@/lib/classSubjectReportPrinter';
 import * as XLSX from 'xlsx';
 import {
   Download,
@@ -55,7 +56,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
   const currentYear = propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1];
 
   // Active sub-tab
-  const [activeTab, setActiveTab] = useState<'sections' | 'subjects' | 'grades' | 'matrix' | 'action_plan'>('sections');
+  const [activeTab, setActiveTab] = useState<'report' | 'sections' | 'subjects' | 'grades' | 'matrix' | 'action_plan'>('report');
 
   // Filters for sections table
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
@@ -249,6 +250,241 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
     }
   };
 
+  // Official Report Content Renderer (Used in Tab and Modal)
+  const renderOfficialReportContent = () => (
+    <div style={{ direction: 'rtl', color: '#1E293B', fontFamily: 'inherit' }}>
+      {/* Official Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2.5px solid #0F2044', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+        <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" style={{ height: '65px', objectFit: 'contain' }} />
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
+            مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
+          </h2>
+          <p style={{ fontSize: '0.85rem', color: '#0096C7', fontWeight: 800, margin: '0.2rem 0' }}>
+            قسم التعليم الإلكتروني والحلول الرقمية
+          </p>
+          <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, fontWeight: 700 }}>
+            التقرير الشهري الشامل لتحليل الشعب والمواد الدراسية — نظام قطر للتعليم (سبتمبر 2026)
+          </p>
+        </div>
+        <img src="/school-logo.png" alt="شعار مدرسة قطر للعلوم والتكنولوجيا" style={{ height: '65px', objectFit: 'contain' }} />
+      </div>
+
+      {/* Official Metadata Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.5rem 1rem', fontSize: '0.78rem', marginBottom: '1.25rem', color: '#475569', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <div>الفترة: <strong style={{ color: '#0F2044' }}>شهر سبتمبر 2026</strong></div>
+        <div>العام الأكاديمي: <strong style={{ color: '#0F2044' }}>2026-2027</strong></div>
+        <div>تاريخ الاعتماد: <strong style={{ color: '#0F2044' }}>27 سبتمبر 2026</strong></div>
+        <div>كود التقرير: <strong style={{ color: '#0F2044' }}>QES-SEC-SUB-2026-09</strong></div>
+      </div>
+
+      {/* KPI Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+        <div style={{ background: '#fff', padding: '0.65rem', borderRadius: '8px', border: '1.5px solid #0F2044' }}>
+          <div style={{ color: '#64748B', fontSize: '0.72rem', fontWeight: 700 }}>إجمالي الشعب</div>
+          <strong style={{ fontSize: '1.15rem', color: '#0F2044', display: 'block' }}>19 شعبة</strong>
+          <span style={{ fontSize: '0.65rem', color: '#94A3B8' }}>صفوف (7، 9، 10، 11، 12)</span>
+        </div>
+        <div style={{ background: '#fff', padding: '0.65rem', borderRadius: '8px', border: '1.5px solid #0284C7' }}>
+          <div style={{ color: '#64748B', fontSize: '0.72rem', fontWeight: 700 }}>المواد المرصودة</div>
+          <strong style={{ fontSize: '1.15rem', color: '#0284C7', display: 'block' }}>18 مادة</strong>
+          <span style={{ fontSize: '0.65rem', color: '#94A3B8' }}>تخصصية ومختبرات</span>
+        </div>
+        <div style={{ background: '#fff', padding: '0.65rem', borderRadius: '8px', border: '1.5px solid #10B981' }}>
+          <div style={{ color: '#64748B', fontSize: '0.72rem', fontWeight: 700 }}>التسليمات المحلولة</div>
+          <strong style={{ fontSize: '1.15rem', color: '#10B981', display: 'block' }}>2,440</strong>
+          <span style={{ fontSize: '0.65rem', color: '#94A3B8' }}>تسليم طلابي</span>
+        </div>
+        <div style={{ background: '#fff', padding: '0.65rem', borderRadius: '8px', border: '1.5px solid #0D9488' }}>
+          <div style={{ color: '#64748B', fontSize: '0.72rem', fontWeight: 700 }}>نسبة حل التقييمات</div>
+          <strong style={{ fontSize: '1.15rem', color: '#0D9488', display: 'block' }}>66.7%</strong>
+          <span style={{ fontSize: '0.65rem', color: '#94A3B8' }}>النسبة المرجحة</span>
+        </div>
+        <div style={{ background: '#fff', padding: '0.65rem', borderRadius: '8px', border: '1.5px solid #7C3AED' }}>
+          <div style={{ color: '#64748B', fontSize: '0.72rem', fontWeight: 700 }}>إنجاز التصحيح</div>
+          <strong style={{ fontSize: '1.15rem', color: '#7C3AED', display: 'block' }}>78.7%</strong>
+          <span style={{ fontSize: '0.65rem', color: '#94A3B8' }}>1,921 مصححاً</span>
+        </div>
+        <div style={{ background: '#fff', padding: '0.65rem', borderRadius: '8px', border: '1.5px solid #D97706' }}>
+          <div style={{ color: '#64748B', fontSize: '0.72rem', fontWeight: 700 }}>الدروس المفعلة</div>
+          <strong style={{ fontSize: '1.15rem', color: '#D97706', display: 'block' }}>54.5%</strong>
+          <span style={{ fontSize: '0.65rem', color: '#94A3B8' }}>796 من 1,460</span>
+        </div>
+      </div>
+
+      {/* 1. مؤشرات المراحل والصفوف الدراسية الخمسة */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h4 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.6rem', borderRight: '4px solid #0096C7', paddingRight: '0.5rem' }}>
+          أولاً: تحليل مؤشرات التفاعل حسب الصفوف والمراحل الدراسية:
+        </h4>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
+          <thead>
+            <tr style={{ background: '#0F2044', color: '#fff' }}>
+              <th style={{ padding: '0.5rem' }}>م</th>
+              <th style={{ padding: '0.5rem' }}>الصف الدراسي</th>
+              <th style={{ padding: '0.5rem', textAlign: 'center' }}>الشعب</th>
+              <th style={{ padding: '0.5rem', textAlign: 'center' }}>التسليمات</th>
+              <th style={{ padding: '0.5rem', textAlign: 'center' }}>نسبة الحل</th>
+              <th style={{ padding: '0.5rem', textAlign: 'center' }}>نسبة التصحيح</th>
+              <th style={{ padding: '0.5rem', textAlign: 'center' }}>تغطية التقييمات</th>
+              <th style={{ padding: '0.5rem', textAlign: 'center' }}>تفعيل الدروس</th>
+              <th style={{ padding: '0.5rem' }}>الحالة والملاحظات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {GRADE_LEVEL_LMS_STATS.map((g, idx) => (
+              <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0', background: idx % 2 === 0 ? '#fff' : '#F8FAFC' }}>
+                <td style={{ padding: '0.45rem', fontWeight: 800 }}>{idx + 1}</td>
+                <td style={{ padding: '0.45rem', fontWeight: 900, color: '#0F2044' }}>{g.grade}</td>
+                <td style={{ padding: '0.45rem', textAlign: 'center' }}>{g.sectionsCount} شعب</td>
+                <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 800 }}>{g.submissions}</td>
+                <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 900, color: g.solveRate >= 70 ? '#16A34A' : g.solveRate >= 50 ? '#0284C7' : '#DC2626' }}>{g.solveRate}%</td>
+                <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 800 }}>{g.gradingRate}%</td>
+                <td style={{ padding: '0.45rem', textAlign: 'center' }}>{g.evalRatio} ({g.evalPercent}%)</td>
+                <td style={{ padding: '0.45rem', textAlign: 'center' }}>{g.lessonsRatio} ({g.lessonVisibilityRate}%)</td>
+                <td style={{ padding: '0.45rem', fontSize: '0.72rem', color: g.grade.includes('الثاني عشر') ? '#DC2626' : '#475569', fontWeight: g.grade.includes('الثاني عشر') ? 700 : 400 }}>
+                  {g.grade.includes('الثاني عشر') ? '⚠️ يتطلب تدخلاً ميدانياً عاجلاً لرفع تسليمات الطلاب' : 'مؤشرات مستقرة مع استمرار المتابعة الأسبوعية'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 2. ترتيب الشعب الـ 19 كاملة */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h4 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.6rem', borderRight: '4px solid #10B981', paddingRight: '0.5rem' }}>
+          ثانياً: ترتيب الشعب الدراسية الـ 19 حسب نسبة حل التقييمات:
+        </h4>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
+            <thead>
+              <tr style={{ background: '#0F2044', color: '#fff' }}>
+                <th style={{ padding: '0.5rem', textAlign: 'center' }}>الترتيب</th>
+                <th style={{ padding: '0.5rem' }}>الشعبة</th>
+                <th style={{ padding: '0.5rem' }}>الصف</th>
+                <th style={{ padding: '0.5rem', textAlign: 'center' }}>الطلاب</th>
+                <th style={{ padding: '0.5rem', textAlign: 'center' }}>التسليمات</th>
+                <th style={{ padding: '0.5rem', textAlign: 'center' }}>نسبة الحل</th>
+                <th style={{ padding: '0.5rem', textAlign: 'center' }}>نسبة التصحيح</th>
+                <th style={{ padding: '0.5rem', textAlign: 'center' }}>الدروس المرئية</th>
+                <th style={{ padding: '0.5rem' }}>المادة الأضعف</th>
+                <th style={{ padding: '0.5rem', textAlign: 'center' }}>التصنيف الأكاديمي</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...SECTIONS_LMS_STATS].sort((a, b) => a.rank - b.rank).map(s => (
+                <tr key={s.section} style={{ borderBottom: '1px solid #E2E8F0', background: s.rank % 2 === 0 ? '#F8FAFC' : '#fff' }}>
+                  <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 800, color: s.rank <= 3 ? '#D97706' : '#64748B' }}>
+                    {s.rank === 1 ? '🥇 1' : s.rank === 2 ? '🥈 2' : s.rank === 3 ? '🥉 3' : `#${s.rank}`}
+                  </td>
+                  <td style={{ padding: '0.45rem', fontWeight: 900, color: '#0F2044' }}>شعبة {s.section}</td>
+                  <td style={{ padding: '0.45rem' }}>{s.grade}</td>
+                  <td style={{ padding: '0.45rem', textAlign: 'center' }}>{s.studentsCount}</td>
+                  <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 800 }}>{s.submissions}</td>
+                  <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 900, color: s.solveRate >= 75 ? '#16A34A' : s.solveRate >= 60 ? '#0284C7' : '#DC2626' }}>{s.solveRate}%</td>
+                  <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 800 }}>{s.gradingRate}%</td>
+                  <td style={{ padding: '0.45rem', textAlign: 'center' }}>{s.lessonVisiblePercent}%</td>
+                  <td style={{ padding: '0.45rem', fontSize: '0.72rem', color: s.solveRate < 60 ? '#DC2626' : '#475569' }}>{s.weakestEvalSubject}</td>
+                  <td style={{ padding: '0.45rem', textAlign: 'center' }}>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '4px',
+                      fontWeight: 800,
+                      fontSize: '0.72rem',
+                      background: s.solveRate >= 75 ? '#DCFCE7' : s.solveRate >= 60 ? '#E0F2FE' : '#FEE2E2',
+                      color: s.solveRate >= 75 ? '#166534' : s.solveRate >= 60 ? '#0369A1' : '#991B1B',
+                    }}>
+                      {s.evalClass}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 3. المواد الدراسية الـ 18 */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h4 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.6rem', borderRight: '4px solid #0284C7', paddingRight: '0.5rem' }}>
+          ثالثاً: تحليل مؤشرات المواد الدراسية الـ 18:
+        </h4>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.65rem' }}>
+          {SUBJECTS_LMS_STATS.map((sub, idx) => (
+            <div key={idx} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.65rem 0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong style={{ fontSize: '0.85rem', color: '#0F2044', display: 'block' }}>{sub.name}</strong>
+                <span style={{ fontSize: '0.72rem', color: '#64748B' }}>{sub.submissions} تسليماً | تصحيح {sub.gradingRate}%</span>
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 900, color: sub.solveRate >= 75 ? '#16A34A' : sub.solveRate >= 60 ? '#0284C7' : '#DC2626' }}>
+                  {sub.solveRate}%
+                </span>
+                <div style={{ fontSize: '0.65rem', color: '#94A3B8' }}>نسبة الحل</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 4. خطة التدخل العاجل لشعب الصف الثاني عشر */}
+      <div style={{ marginBottom: '1.75rem', background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: '10px', padding: '1rem' }}>
+        <h4 style={{ fontSize: '0.92rem', fontWeight: 900, color: '#991B1B', margin: '0 0 0.5rem' }}>
+          🚨 رابعاً: خطة التدخل العاجل لشعب الصف الثاني عشر (الأولوية القصوى)
+        </h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.78rem' }}>
+          {SECTIONS_LMS_STATS.filter(s => s.grade.includes('الثاني عشر')).map(s => (
+            <div key={s.section} style={{ background: '#fff', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #FCA5A5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
+              <div>
+                <strong style={{ color: '#0F2044' }}>شعبة {s.section} ({s.grade})</strong>
+                <span style={{ margin: '0 0.5rem', color: '#DC2626', fontWeight: 800 }}>الحل الحالي: {s.solveRate}%</span>
+                <span style={{ color: '#64748B' }}>المادة الأضعف: {s.weakestEvalSubject}</span>
+              </div>
+              <span style={{ background: '#FEE2E2', color: '#991B1B', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: 800, fontSize: '0.72rem' }}>
+                المستهدف: 85% فما فوق
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 5. Signatures: STRICTLY Muhammad Ali Mandani Al-Emadi with signature UNDERNEATH */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1.25rem', borderTop: '2px solid #0F2044', flexWrap: 'wrap', gap: '1rem' }}>
+        {/* Ahmad */}
+        <div style={{ textAlign: 'center', width: '220px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.75rem' }}>
+          <p style={{ margin: '0 0 0.2rem', fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>إعداد وتدقيق التقرير:</p>
+          <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 900, color: '#0F2044' }}>م. أحمد عادل طبيشات</p>
+          <p style={{ margin: '0.15rem 0 0.4rem', fontSize: '0.7rem', color: '#64748B' }}>منسق المشاريع والتعليم الإلكتروني</p>
+          <div style={{ height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/signature-ahmad.png" alt="توقيع م. أحمد" style={{ height: '38px', objectFit: 'contain' }} />
+          </div>
+        </div>
+
+        {/* Rani */}
+        <div style={{ textAlign: 'center', width: '220px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.75rem' }}>
+          <p style={{ margin: '0 0 0.2rem', fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>مراجعة واعتماد:</p>
+          <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 900, color: '#0F2044' }}>د. راني التوم</p>
+          <p style={{ margin: '0.15rem 0 0.4rem', fontSize: '0.7rem', color: '#64748B' }}>النائب الأكاديمي للمدرسة</p>
+          <div style={{ height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/signature-rani.png" alt="توقيع د. راني" style={{ height: '38px', objectFit: 'contain' }} />
+          </div>
+        </div>
+
+        {/* Principal: Mohammad Ali Mandani Al-Emadi */}
+        <div style={{ textAlign: 'center', width: '220px', background: '#F8FAFC', border: '1.5px solid #0F2044', borderRadius: '10px', padding: '0.75rem' }}>
+          <p style={{ margin: '0 0 0.2rem', fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>يعتمد، مدير المدرسة:</p>
+          <p style={{ margin: 0, fontSize: '0.92rem', fontWeight: 900, color: '#0F2044' }}>محمد علي مندني العمادي</p>
+          <p style={{ margin: '0.15rem 0 0.4rem', fontSize: '0.7rem', color: '#64748B' }}>مدير مدرسة قطر للعلوم والتكنولوجيا</p>
+          <div style={{ height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/principal-signature.png" alt="توقيع مدير المدرسة محمد علي مندني العمادي" style={{ height: '38px', objectFit: 'contain' }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ padding: '1.5rem', direction: 'rtl', minHeight: '100vh', background: '#F8FAFC' }}>
       
@@ -277,7 +513,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '1.8rem' }}>🏫</span>
             <h1 style={{ fontSize: '1.55rem', fontWeight: 900, margin: 0, color: '#fff', letterSpacing: '-0.3px' }}>
-              تحليل الفصول / الشعب والمواد الدراسية
+              تحليل الشعب والمواد
             </h1>
             <span
               style={{
@@ -312,7 +548,10 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
         {/* Action Buttons */}
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', zIndex: 1 }}>
           <button
-            onClick={() => setShowReportModal(true)}
+            onClick={() => {
+              setActiveTab('report');
+              setShowReportModal(true);
+            }}
             style={{
               background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
               color: '#fff',
@@ -355,7 +594,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           </button>
 
           <button
-            onClick={() => window.print()}
+            onClick={() => printClassSubjectMonthlyReport()}
             style={{
               background: 'rgba(255,255,255,0.15)',
               color: '#fff',
@@ -371,7 +610,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             }}
           >
             <Printer size={16} />
-            <span>طباعة فورية</span>
+            <span>طباعة التقرير الرسمي</span>
           </button>
         </div>
       </div>
@@ -476,6 +715,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
         }}
       >
         {[
+          { id: 'report', label: 'التقرير الشهري الشامل (الرسمي)', icon: '📑', badge: 'معتمد' },
           { id: 'sections', label: 'تحليل الشعب (19 شعبة)', icon: '🏫', badge: `${SECTIONS_LMS_STATS.length}` },
           { id: 'subjects', label: 'تحليل المواد الدراسية (18 مادة)', icon: '📚', badge: `${SUBJECTS_LMS_STATS.length}` },
           { id: 'grades', label: 'مقارنة الصفوف الدراسية', icon: '📊', badge: '5 صفوف' },
@@ -524,6 +764,71 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       </div>
 
       {/* ── 4. Sub-Tab Content ── */}
+
+      {/* ══════════════════════════════════════════════════════════════
+          TAB 0: 📑 التقرير الشهري الشامل (الرسمي المعتمد)
+      ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'report' && (
+        <div style={{ marginBottom: '2rem' }}>
+          {/* Top Actions Bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '1rem 1.25rem', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '1.25rem', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.4rem' }}>📑</span>
+              <div>
+                <strong style={{ fontSize: '1rem', color: '#0F2044', display: 'block' }}>التقرير الشهري الشامل المعتمد لتحليل الشعب والمواد</strong>
+                <span style={{ fontSize: '0.75rem', color: '#64748B' }}>المستند الرسمي المعتمد من إدارة مدرسة قطر للعلوم والتكنولوجيا وقسم التعليم الإلكتروني</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              <button
+                onClick={handleExportExcel}
+                style={{
+                  background: '#0284C7',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '0.55rem 1rem',
+                  borderRadius: '8px',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                }}
+              >
+                <Download size={14} />
+                <span>تصدير Excel</span>
+              </button>
+              <button
+                onClick={() => printClassSubjectMonthlyReport()}
+                style={{
+                  background: '#0F2044',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '0.55rem 1.15rem',
+                  borderRadius: '8px',
+                  fontWeight: 800,
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 4px 12px rgba(15,32,68,0.25)',
+                }}
+              >
+                <Printer size={14} />
+                <span>طباعة رسمية معتمدة (PDF / A4)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Official Document Paper Container */}
+          <div style={{ background: '#fff', borderRadius: '16px', border: '1.5px solid #CBD5E1', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', padding: '2rem' }}>
+            {renderOfficialReportContent()}
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════════════
           TAB 1: 🏫 تحليل الشعب الدراسية (19 شعبة)
@@ -1407,7 +1712,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                 <span style={{ fontSize: '1.5rem' }}>📑</span>
                 <div>
                   <h3 style={{ fontSize: '1.15rem', fontWeight: 900, margin: 0, color: '#fff' }}>
-                    التقرير الشهري الشامل لتحليل الفصول والمواد الدراسية
+                    التقرير الشهري الشامل لتحليل الشعب والمواد
                   </h3>
                   <p style={{ margin: 0, color: '#BAE6FD', fontSize: '0.75rem' }}>
                     تقرير رسمي معتمد - مدرسة قطر للعلوم والتكنولوجيا (سبتمبر 2026)
@@ -1433,7 +1738,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
               </button>
             </div>
 
-            {/* Modal Body (Scrollable printable content) */}
+            {/* Modal Body (Scrollable official report view) */}
             <div
               id="printable-monthly-report"
               style={{
@@ -1441,112 +1746,10 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                 overflowY: 'auto',
                 flex: 1,
                 direction: 'rtl',
-                color: '#1E293B',
+                background: '#fff',
               }}
             >
-              {/* Official Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2.5px solid #0F2044', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-                <img src="/ministry-logo.png" alt="وزارة التربية والتعليم" style={{ height: '65px', objectFit: 'contain' }} />
-                <div style={{ textAlign: 'center' }}>
-                  <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
-                    مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
-                  </h2>
-                  <p style={{ fontSize: '0.85rem', color: '#0096C7', fontWeight: 800, margin: '0.2rem 0' }}>
-                    قسم التعليم الإلكتروني والحلول الرقمية
-                  </p>
-                  <p style={{ fontSize: '0.72rem', color: '#64748B', margin: 0 }}>
-                    التقرير الشهري لمتابعة مؤشرات الفصول والشعب والمواد - سبتمبر 2026
-                  </p>
-                </div>
-                <img src="/school-logo.png" alt="شعار المدرسة" style={{ height: '65px', objectFit: 'contain' }} />
-              </div>
-
-              {/* Executive Summary */}
-              <div style={{ background: '#F8FAFC', borderRadius: '10px', padding: '1rem', border: '1px solid #E2E8F0', marginBottom: '1.5rem' }}>
-                <h4 style={{ fontSize: '0.9rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.5rem' }}>
-                  الملخص التنفيذي للمؤشرات العامة:
-                </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', textAlign: 'center', fontSize: '0.75rem' }}>
-                  <div style={{ background: '#fff', padding: '0.5rem', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ color: '#64748B' }}>إجمالي الشعب</div>
-                    <strong style={{ fontSize: '1.1rem', color: '#0F2044' }}>19 شعبة</strong>
-                  </div>
-                  <div style={{ background: '#fff', padding: '0.5rem', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ color: '#64748B' }}>التسليمات المحلولة</div>
-                    <strong style={{ fontSize: '1.1rem', color: '#16A34A' }}>2,440 (66.7%)</strong>
-                  </div>
-                  <div style={{ background: '#fff', padding: '0.5rem', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ color: '#64748B' }}>إنجاز التصحيح</div>
-                    <strong style={{ fontSize: '1.1rem', color: '#1E40AF' }}>78.7%</strong>
-                  </div>
-                  <div style={{ background: '#fff', padding: '0.5rem', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ color: '#64748B' }}>الدروس الظاهرة</div>
-                    <strong style={{ fontSize: '1.1rem', color: '#D97706' }}>796 (54.5%)</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Top & Bottom Sections Table */}
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.6rem' }}>
-                أولاً: ترتيب الشعب الدراسية الـ 19 حسب نسبة حل التقييمات:
-              </h4>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', marginBottom: '1.5rem', textAlign: 'right' }}>
-                <thead>
-                  <tr style={{ background: '#0F2044', color: '#fff' }}>
-                    <th style={{ padding: '0.5rem' }}>الترتيب</th>
-                    <th style={{ padding: '0.5rem' }}>الشعبة</th>
-                    <th style={{ padding: '0.5rem' }}>الصف</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>الطلاب</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>التسليمات</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>نسبة الحل</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>نسبة التصحيح</th>
-                    <th style={{ padding: '0.5rem' }}>المادة الأضعف</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>التصنيف</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {SECTIONS_LMS_STATS.map(s => (
-                    <tr key={s.section} style={{ borderBottom: '1px solid #E2E8F0' }}>
-                      <td style={{ padding: '0.45rem', fontWeight: 800 }}>#{s.rank}</td>
-                      <td style={{ padding: '0.45rem', fontWeight: 900 }}>شعبة {s.section}</td>
-                      <td style={{ padding: '0.45rem' }}>{s.grade}</td>
-                      <td style={{ padding: '0.45rem', textAlign: 'center' }}>{s.studentsCount}</td>
-                      <td style={{ padding: '0.45rem', textAlign: 'center' }}>{s.submissions}</td>
-                      <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 800, color: s.solveRate >= 70 ? '#16A34A' : '#DC2626' }}>{s.solveRate}%</td>
-                      <td style={{ padding: '0.45rem', textAlign: 'center' }}>{s.gradingRate}%</td>
-                      <td style={{ padding: '0.45rem', fontSize: '0.7rem' }}>{s.weakestEvalSubject}</td>
-                      <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 700 }}>{s.evalClass}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Signatures */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1.25rem', borderTop: '2px solid #E2E8F0' }}>
-                <div style={{ textAlign: 'center', width: '220px' }}>
-                  <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', color: '#64748B', fontWeight: 700 }}>إعداد وتدقيق التقرير:</p>
-                  <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 900, color: '#0F2044' }}>م. أحمد عادل طبيشات</p>
-                  <p style={{ margin: '0.2rem 0 0.5rem', fontSize: '0.72rem', color: '#64748B' }}>منسق المشاريع والتعليم الإلكتروني</p>
-                  <img src="/signature-ahmad.png" alt="توقيع م. أحمد" style={{ height: '42px', objectFit: 'contain' }} />
-                </div>
-
-                <div style={{ textAlign: 'center', width: '220px' }}>
-                  <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', color: '#64748B', fontWeight: 700 }}>مراجعة واعتماد:</p>
-                  <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 900, color: '#0F2044' }}>أ. راني التوم</p>
-                  <p style={{ margin: '0.2rem 0 0.5rem', fontSize: '0.72rem', color: '#64748B' }}>النائب الأكاديمي للمدرسة</p>
-                  <img src="/signature-rani.png" alt="توقيع أ. راني" style={{ height: '42px', objectFit: 'contain' }} />
-                </div>
-
-                <div style={{ textAlign: 'center', width: '220px' }}>
-                  <p style={{ margin: '0 0 0.4rem', fontSize: '0.8rem', color: '#64748B', fontWeight: 700 }}>يعتمد، مدير المدرسة:</p>
-                  <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 900, color: '#0F2044' }}>أ. خالد راشد الهاجري</p>
-                  <p style={{ margin: '0.2rem 0 0.5rem', fontSize: '0.72rem', color: '#64748B' }}>مدير مدرسة قطر للعلوم والتكنولوجيا</p>
-                  <div style={{ height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: '0.75rem' }}>
-                    ختم المدرسة الرسمي
-                  </div>
-                </div>
-              </div>
-
+              {renderOfficialReportContent()}
             </div>
 
             {/* Modal Footer */}
@@ -1561,7 +1764,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
               }}
             >
               <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
-                نظام متابعة وتقييم نظام قطر للتعليم والمنصات التعليمية الرقمية
+                نظام متابعة وتقييم نظام قطر للتعليم والمنصات التعليمية الرقمية (QES)
               </span>
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button
@@ -1584,7 +1787,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                   <span>تصدير Excel</span>
                 </button>
                 <button
-                  onClick={() => window.print()}
+                  onClick={() => printClassSubjectMonthlyReport()}
                   style={{
                     background: '#0F2044',
                     color: '#fff',
@@ -1597,10 +1800,11 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.4rem',
+                    boxShadow: '0 4px 12px rgba(15,32,68,0.25)',
                   }}
                 >
                   <Printer size={14} />
-                  <span>طباعة رسمية</span>
+                  <span>طباعة رسمية معتمدة (A4 / PDF)</span>
                 </button>
               </div>
             </div>

@@ -3052,24 +3052,24 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                     <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid #CBD5E1', paddingTop: '0.75rem' }}>
                       <div style={{ textAlign: 'center', width: '30%' }}>
                         <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#0F2044' }}>منسق المشاريع الإلكترونية</div>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>م. أحمد عادل طبيشات</div>
                         <div style={{ height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <img src="/signature-ahmad.png" alt="م. أحمد طبيشات" style={{ height: '30px', objectFit: 'contain' }} />
                         </div>
-                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>م. أحمد طبيشات</div>
                       </div>
                       <div style={{ textAlign: 'center', width: '30%' }}>
                         <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#0F2044' }}>النائب الأكاديمي</div>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>د. راني التوم</div>
                         <div style={{ height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <img src="/signature-rani.png" alt="د. راني التوم" style={{ height: '30px', objectFit: 'contain' }} />
                         </div>
-                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>د. راني التوم</div>
                       </div>
                       <div style={{ textAlign: 'center', width: '30%' }}>
                         <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#0F2044' }}>مدير المدرسة</div>
+                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>محمد علي مندني العمادي</div>
                         <div style={{ height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <img src="/principal-signature.png" alt="محمد علي مندني العمادي" style={{ height: '36px', objectFit: 'contain' }} />
                         </div>
-                        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>محمد علي مندني العمادي</div>
                       </div>
                     </div>
                   </div>

@@ -1468,6 +1468,7 @@ export default function MeeeCertifiedReportModal({
                   </div>
                   <div style={{ border: '1px solid #CBD5E1', borderRadius: '6px', padding: '0.35rem', textAlign: 'center' }}>
                     <p style={{ fontSize: '0.62rem', color: '#64748B', fontWeight: 800, margin: '0 0 0.1rem 0' }}>مصادقة: مدير المدرسة</p>
+                    <p style={{ fontSize: '0.68rem', color: '#0F2044', fontWeight: 900, margin: '0 0 0.15rem 0' }}>محمد علي مندني العمادي</p>
                     <img src="/principal-signature.png" alt="محمد علي مندني العمادي" style={{ maxHeight: '30px', maxWidth: '85px', objectFit: 'contain' }} />
                   </div>
                 </div>

@@ -9,6 +9,9 @@ import {
   FOLLOWUP_PARTIAL_TEACHERS,
   UNASSIGNED_EVAL_TEACHERS,
   ZERO_LESSON_TEACHERS,
+  SECTIONS_LMS_STATS,
+  SUBJECTS_LMS_STATS,
+  DEPARTMENT_CHAMPIONS_10,
 } from './data';
 
 interface PrintReportOptions {
@@ -25,19 +28,8 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
     return;
   }
 
-  // Department Champions
-  const deptChampions = [
-    { rank: 1, department: 'اللغة العربية', teacherName: 'ابراهيم حلمى ابراهيم جمعه', score: 95.00, title: 'فارس قسم اللغة العربية', achievement: 'تصدر القسم والمدرسة بنسبة تصحيح 100% (122 تسليماً) واستيفاء كامل للدروس 100% (66/66) ونسبة حل 84.7%.' },
-    { rank: 2, department: 'التربية الإسلامية', teacherName: 'الحسن علي محمد علي', score: 81.25, title: 'فارس قسم التربية الإسلامية', achievement: 'تغطية تقييمات كاملة 100% لجميع الشعب الأربع، وتصحيح 86 تسليماً بنسبة 100%، ونسبة حل 76.8%.' },
-    { rank: 3, department: 'مختبر الطاقة', teacherName: 'انس عبدالكريم موسى جرادات', score: 76.25, title: 'فارس مختبر الطاقة التخصصي', achievement: 'تقدير إداري ممتاز، وتغطية كاملة لسجلات المختبر بالتقييمات والدروس، وتصحيح 100% للتسليمات.' },
-    { rank: 4, department: 'الدراسات الاجتماعية', teacherName: 'فيصل محمد مسلم الحضري', score: 72.00, title: 'فارس قسم الدراسات الاجتماعية', achievement: 'تغطية كاملة 100% لجميع السجلات الستة بالتقييمات، وتصحيح 100% لجميع التسليمات (39 تسليماً).' },
-    { rank: 5, department: 'الحاسوب وتكنولوجيا المعلومات', teacherName: 'خالد عصام بارودي', score: 74.23, title: 'فارس قسم الحاسوب', achievement: 'تغطية تقييمات كاملة لجميع الشعب الأربع، وتصحيح 43 تسليماً، ورفع كامل للدروس المستوفية.' },
-    { rank: 6, department: 'مختبر التصنيع الرقمي (Fab Lab)', teacherName: 'اياد أحمد سلمان عبدالقادر', score: 59.90, title: 'فارس مختبر التصنيع الرقمي', achievement: 'تقدير إداري ممتاز، وتغطية 100% لرفع الدروس، وتصحيح 29 تسليماً بمختبر الفاب لاب.' },
-    { rank: 7, department: 'العلوم والتكنولوجيا (STEM)', teacherName: 'عمران كاشف محمد حسين اسد', score: 80.00, title: 'فارس قسم STEM', achievement: 'تغطية تقييمات كاملة 100%، وتصحيح 100% لجميع التسليمات المسجلة، ونسبة حل متميزة 81.3%.' },
-    { rank: 8, department: 'اللغة الإنجليزية', teacherName: 'محمد سيد ميردادي', score: 57.49, title: 'فارس قسم اللغة الإنجليزية', achievement: 'المركز الأول في رفع الدروس بقسم اللغة الإنجليزية (54 درساً) وتصحيح 52 تسليماً.' },
-    { rank: 9, department: 'التصميم التكنولوجي', teacherName: 'احمد اسامه صقر المعاني', score: 43.11, title: 'فارس قسم التصميم التكنولوجي', achievement: 'تقدير إداري معتمد جيد جداً، وتغطية أعلى حجم تكليف بالمدرسة (21 سجلاً تعليمياً و74 درساً).' },
-    { rank: 10, department: 'الرياضيات', teacherName: 'جعفر ياشلي', score: 60.00, title: 'فارس قسم الرياضيات', achievement: 'تغطية كاملة لرفع الدروس لجميع الشعب الثلاث (12 درساً) وتنسيق فعال لأنشطة الرياضيات.' },
-  ];
+  // Department Champions (Official 27 Sep 2026)
+  const deptChampions = DEPARTMENT_CHAMPIONS_10;
 
   // Split teachers into 2 groups for A3 Landscape pages (26 each)
   const teachersPage1 = SEPTEMBER_2026_LMS_TEACHERS.slice(0, 26);
@@ -414,29 +406,29 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
             <!-- Executive Summary KPI Cards -->
             <div class="kpi-grid">
               <div class="kpi-card" style="border-top-color: #3B82F6;">
-                <div class="kpi-label">نطاق الكادر الفعلي بالمدرسة</div>
-                <div class="kpi-value">52 <span style="font-size: 12px; color: #64748B;">/ 61</span></div>
-                <div class="kpi-sub">43 ببيانات مباشرة + 9 دون بيانات نشاط</div>
+                <div class="kpi-label">نطاق الكادر الأكاديمي والنشط</div>
+                <div class="kpi-value">42 <span style="font-size: 12px; color: #64748B;">/ 63</span></div>
+                <div class="kpi-sub">26 بالتقييمات + 42 بالدروس (100% نشاط)</div>
               </div>
               <div class="kpi-card" style="border-top-color: #10B981;">
-                <div class="kpi-label">التقديرات الإدارية المعتمدة</div>
-                <div class="kpi-value" style="color: #047857;">28 <span style="font-size: 12px; color: #64748B;">معلماً</span></div>
-                <div class="kpi-sub">7 ممتاز (مهندسون ومختبرات) + 21 جيد جداً</div>
+                <div class="kpi-label">تحليل الشعب والمواد الدراسية</div>
+                <div class="kpi-value" style="color: #047857;">19 <span style="font-size: 12px; color: #64748B;">شعبة</span></div>
+                <div class="kpi-sub">5 صفوف (7، 9، 10، 11، 12) · 18 مادة</div>
               </div>
               <div class="kpi-card" style="border-top-color: #8B5CF6;">
-                <div class="kpi-label">تغطية التقييمات على مستوى المدرسة</div>
-                <div class="kpi-value" style="color: #6D28D9;">43.1%</div>
-                <div class="kpi-sub">81 من أصل 188 سجلاً مستوفى</div>
+                <div class="kpi-label">إجمالي تسليمات التقييمات</div>
+                <div class="kpi-value" style="color: #6D28D9;">2,440</div>
+                <div class="kpi-sub">1,921 مصححاً (78.7%) + 519 قيد الانتظار</div>
               </div>
               <div class="kpi-card" style="border-top-color: #00B4D8;">
-                <div class="kpi-label">إجمالي الدروس المرفوعة</div>
-                <div class="kpi-value" style="color: #0284C7;">1,006</div>
-                <div class="kpi-sub">581 درساً ظاهراً للطلاب + 425 مخفياً</div>
+                <div class="kpi-label">نسبة حل التقييمات العامة</div>
+                <div class="kpi-value" style="color: #0284C7;">66.7%</div>
+                <div class="kpi-sub">249 تقييماً مسنداً للطلبة (100% نسبة إسناد)</div>
               </div>
               <div class="kpi-card" style="border-top-color: #F59E0B;">
-                <div class="kpi-label">نسبة تصحيح التسليمات</div>
-                <div class="kpi-value" style="color: #B45309;">78.2%</div>
-                <div class="kpi-sub">875 تسليماً مصححاً من أصل 1,119</div>
+                <div class="kpi-label">إجمالي الدروس المفعلة</div>
+                <div class="kpi-value" style="color: #B45309;">1,460</div>
+                <div class="kpi-sub">796 ظاهراً (54.5%) · 99% مستوفية للأقسام</div>
               </div>
             </div>
 
@@ -551,7 +543,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
                 </tr>
               </thead>
               <tbody>
-                ${deptChampions.map(d => `
+                ${deptChampions.map((d: any) => `
                   <tr>
                     <td class="text-center font-bold">${d.rank}</td>
                     <td class="font-bold text-navy">${d.department}</td>
@@ -565,7 +557,123 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
           </div>
 
           <!-- ══════════════════════════════════════════════════════════
-               PAGE 3: ترتيب الأقسام الأكاديمية والتقديرات الإدارية (A3 Landscape)
+               PAGE 3: المرصد التشخيصي الأكاديمي — تحليل الشعب والمواد الدراسية (A3 Landscape)
+          ══════════════════════════════════════════════════════════ -->
+          <div class="page-break avoid-break">
+            <div class="section-title">
+              <span>🏫</span> المرصد التشخيصي الأكاديمي الشامل: تحليل الشعب الدراسية الـ 19 والمواد الـ 18 (${monthName} ${academicYear})
+            </div>
+
+            <!-- 2-Column: 19 Sections Table + 18 Subjects Table & Action Plan -->
+            <div style="display: grid; grid-template-columns: 1.28fr 0.95fr; gap: 12px; margin-bottom: 8px;">
+              
+              <!-- Column 1: 19 Sections Table -->
+              <div>
+                <div style="font-weight: 800; font-size: 11px; color: #0F2044; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+                  <span>📋 كشف ترتيب ومؤشرات أداء الشعب الدراسية الـ 19:</span>
+                  <span style="background: #DCFCE7; color: #166534; padding: 1px 6px; border-radius: 4px; font-size: 9.5px; font-weight: 800;">
+                    أفضل 5 شعب: 9/1 (89%) · 7/1 (84.4%) · 10/4 (84%) · 11/4 (81.3%) · 11/2 (80.8%)
+                  </span>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 28px;" class="text-center">#</th>
+                      <th style="width: 52px;">الشعبة</th>
+                      <th style="width: 52px;">الصف</th>
+                      <th class="text-center" style="width: 38px;">الطلاب</th>
+                      <th class="text-center" style="width: 48px;">التقييمات</th>
+                      <th class="text-center" style="width: 50px;">التسليمات</th>
+                      <th class="text-center" style="width: 52px;">نسبة الحل</th>
+                      <th class="text-center" style="width: 52px;">التصحيح</th>
+                      <th class="text-center" style="width: 40px;">معلق</th>
+                      <th>المادة الأضعف حلًا</th>
+                      <th class="text-center" style="width: 58px;">ظهور الدروس</th>
+                      <th class="text-center" style="width: 65px;">التصنيف</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${SECTIONS_LMS_STATS.map(s => `
+                      <tr>
+                        <td class="text-center font-bold">${s.rank}</td>
+                        <td class="font-bold text-navy" style="font-size: 10px;">شعبة ${s.section}</td>
+                        <td style="font-size: 9px; color: #475569;">${s.grade}</td>
+                        <td class="text-center font-bold">${s.studentsCount}</td>
+                        <td class="text-center">${s.evalCount}</td>
+                        <td class="text-center font-bold text-blue">${s.submissions}</td>
+                        <td class="text-center font-bold" style="color: ${s.solveRate >= 80 ? '#166534' : s.solveRate >= 65 ? '#1E40AF' : s.solveRate >= 50 ? '#B45309' : '#DC2626'};">
+                          ${s.solveRate}%
+                        </td>
+                        <td class="text-center font-bold">${s.gradingRate}%</td>
+                        <td class="text-center font-bold" style="color: ${s.ungraded > 0 ? '#DC2626' : '#16A34A'};">${s.ungraded > 0 ? s.ungraded : '0 ✓'}</td>
+                        <td style="font-size: 8.5px; color: #475569;">${s.weakestEvalSubject}</td>
+                        <td class="text-center font-bold" style="font-size: 9px;">${s.lessonVisiblePercent}%</td>
+                        <td class="text-center">
+                          <span class="${s.evalClass === 'متميزة' ? 'badge-excellent' : s.evalClass === 'جيدة' ? 'badge-verygood' : s.evalClass === 'مقبولة' ? 'badge-gold' : 'badge-gold'}" style="font-size: 8.5px; padding: 1px 5px; ${s.evalClass === 'تحتاج تحسين' ? 'background: #FEE2E2; color: #991B1B;' : ''}">
+                            ${s.evalClass}
+                          </span>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Column 2: 18 Subjects & Grade 12 Intervention Plan -->
+              <div>
+                <div style="font-weight: 800; font-size: 11px; color: #0F2044; margin-bottom: 4px;">
+                  📚 كشف مؤشرات المواد الدراسية الـ 18 على المنصة:
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 25px;" class="text-center">م</th>
+                      <th>المادة الدراسية</th>
+                      <th class="text-center" style="width: 36px;">الكادر</th>
+                      <th class="text-center" style="width: 42px;">التقييمات</th>
+                      <th class="text-center" style="width: 48px;">التسليمات</th>
+                      <th class="text-center" style="width: 52px;">نسبة الحل</th>
+                      <th class="text-center" style="width: 52px;">التصحيح</th>
+                      <th class="text-center" style="width: 38px;">معلق</th>
+                      <th class="text-center" style="width: 55px;">ظهور الدروس</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${SUBJECTS_LMS_STATS.map((sub, i) => `
+                      <tr>
+                        <td class="text-center font-bold">${i + 1}</td>
+                        <td class="font-bold text-navy" style="font-size: 9.5px;">${sub.name}</td>
+                        <td class="text-center">${sub.teachersCount}</td>
+                        <td class="text-center">${sub.evalsCount}</td>
+                        <td class="text-center font-bold text-blue">${sub.submissions}</td>
+                        <td class="text-center font-bold" style="color: ${sub.solveRate >= 80 ? '#166534' : sub.solveRate >= 65 ? '#1E40AF' : '#DC2626'}; font-size: 9.5px;">${sub.solveRate}%</td>
+                        <td class="text-center font-bold">${sub.gradingRate}%</td>
+                        <td class="text-center font-bold" style="color: ${sub.ungraded > 0 ? '#DC2626' : '#16A34A'};">${sub.ungraded > 0 ? sub.ungraded : '0 ✓'}</td>
+                        <td class="text-center font-bold" style="font-size: 9px;">${sub.lessonVisibilityRate}%</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+
+                <!-- Grade 12 Intervention & Diagnostic Plan -->
+                <div style="background: #FFF5F5; border: 1.5px solid #FCA5A5; border-radius: 8px; padding: 7px 10px; margin-top: 6px;">
+                  <div style="font-weight: 900; font-size: 10.5px; color: #991B1B; margin-bottom: 3px; display: flex; justify-content: space-between;">
+                    <span>🚨 خطة التدخل والتوجيه الأكاديمي لشعب الصف الثاني عشر (12/1 - 12/5):</span>
+                    <span>نسبة الحل: 43.3% | المعلق: 78</span>
+                  </div>
+                  <div style="font-size: 9px; color: #7F1D1D; line-height: 1.45;">
+                    • <b>تشخيص الأداء:</b> سجل الصف الثاني عشر 141 تسليماً فقط بنسبة حل 43.3% ونسبة تصحيح 44.7%، واختفاء 293 درساً (63.6% خفية).<br/>
+                    • <b>الإجراءات المعتمدة:</b> (1) إرسال رسائل SMS فورية لأولياء أمور الطلبة المتأخرين عبر نظام E-Learning SMS. (2) إلزام معلمي مواد التربية الإسلامية والفيزياء بتصفير المتأخرات فوراً. (3) إظهار الدروس الخفية لدعم تحصيل الطلبة.
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ══════════════════════════════════════════════════════════
+               PAGE 4: ترتيب الأقسام الأكاديمية والتقديرات الإدارية (A3 Landscape)
           ══════════════════════════════════════════════════════════ -->
           <div class="page-break avoid-break">
             <div class="section-title">
@@ -668,7 +776,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
           </div>
 
           <!-- ══════════════════════════════════════════════════════════
-               PAGE 4: أولويات المتابعة الميدانية والتدخل الأكاديمي (A3 Landscape 2x2 Grid)
+               PAGE 5: أولويات المتابعة الميدانية والتدخل الأكاديمي (A3 Landscape 2x2 Grid)
           ══════════════════════════════════════════════════════════ -->
           <div class="page-break avoid-break">
             <div class="section-title" style="border-right-color: #EF4444;">
@@ -795,7 +903,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
           </div>
 
           <!-- ══════════════════════════════════════════════════════════
-               PAGE 5: الكشف الشامل لكادر المعلمين - الجزء الأول (1 إلى 26) (A3 Landscape)
+               PAGE 6: الكشف الشامل لكادر المعلمين - الجزء الأول (1 إلى 26) (A3 Landscape)
           ══════════════════════════════════════════════════════════ -->
           <div class="page-break avoid-break">
             <div class="section-title">
@@ -892,27 +1000,27 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
             <!-- Signatures Section -->
             <div class="avoid-break report-footer">
               <div class="sig-box">
-                <div class="sig-title">منسق المشاريع الإلكترونية</div>
+                <div class="sig-title">منسق المشاريع والتعليم الإلكتروني</div>
+                <div class="sig-name">م. أحمد عادل طبيشات</div>
                 <div class="sig-img-container">
                   <img class="sig-img" src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" />
                 </div>
-                <div class="sig-name">م. أحمد طبيشات</div>
               </div>
 
               <div class="sig-box">
                 <div class="sig-title">نائب المدير للشؤون الأكاديمية</div>
+                <div class="sig-name">د. راني التوم</div>
                 <div class="sig-img-container">
                   <img class="sig-img" src="/signature-rani.png" alt="توقيع د. راني التوم" />
                 </div>
-                <div class="sig-name">د. راني التوم</div>
               </div>
 
               <div class="sig-box">
                 <div class="sig-title">مدير المدرسة</div>
+                <div class="sig-name">محمد علي مندني العمادي</div>
                 <div class="sig-img-container">
                   <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة" />
                 </div>
-                <div class="sig-name">محمد علي مندني العمادي</div>
               </div>
             </div>
           </div>

@@ -1105,12 +1105,12 @@ export default function ElearningSmsPage({ currentUser, selectedYear: propYear }
                   <span style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 800, display: 'block', marginBottom: '2px' }}>
                     مدير المدرسة
                   </span>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 900, color: '#0F2044', display: 'block', marginBottom: '3px' }}>محمد علي مندني العمادي</span>
                   <img
                     src="/principal-signature.png"
                     alt="توقيع مدير المدرسة"
                     style={{ height: '36px', objectFit: 'contain', margin: '0 auto', display: 'block' }}
                   />
-                  <span style={{ fontSize: '0.74rem', fontWeight: 900, color: '#0F2044', display: 'block' }}>محمد علي مندني العمادي</span>
                 </div>
               </div>
 
