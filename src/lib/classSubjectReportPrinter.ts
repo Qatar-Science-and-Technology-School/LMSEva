@@ -52,19 +52,36 @@ const COMMON_A3_STYLES = `
     break-inside: avoid;
   }
 
-  /* Official Header */
+  /* Official Header (Centered & Organized) */
   .official-header {
     display: flex;
-    justifyContent: space-between;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
+    text-align: center;
     border-bottom: 2.5px solid #0F2044;
-    padding-bottom: 8px;
+    padding-bottom: 10px;
     margin-bottom: 12px;
+    gap: 6px;
+  }
+
+  .header-logos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 3px;
   }
 
   .header-logo {
-    height: 65px;
+    height: 58px;
     object-fit: contain;
+  }
+
+  .header-logos-divider {
+    width: 1px;
+    height: 40px;
+    background: #CBD5E1;
   }
 
   .header-text {
@@ -79,7 +96,7 @@ const COMMON_A3_STYLES = `
   }
 
   .header-text .school-title {
-    font-size: 15px;
+    font-size: 15.5px;
     font-weight: 900;
     color: #0F2044;
     letter-spacing: -0.2px;
@@ -96,11 +113,11 @@ const COMMON_A3_STYLES = `
     font-weight: 900;
     color: #0F2044;
     background: #F1F5F9;
-    padding: 3px 14px;
+    padding: 3px 18px;
     border-radius: 999px;
     display: inline-block;
     margin-top: 4px;
-    border: 1px solid #CBD5E1;
+    border: 1.5px solid #CBD5E1;
   }
 
   .meta-bar {
@@ -376,16 +393,19 @@ export function printClassSubjectMonthlyReport(options: PrintReportOptions = {})
   const grade12Sections = sortedSections.filter(s => s.grade.includes('الثاني عشر'));
 
   const content = `
-    <!-- Header -->
+    <!-- Header (Centered & Organized) -->
     <div class="official-header">
-      <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+      <div class="header-logos">
+        <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+        <div class="header-logos-divider"></div>
+        <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
+      </div>
       <div class="header-text">
         <div class="country-title">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
         <div class="school-title">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
         <div class="dept-title">قسم التعليم الإلكتروني والحلول الرقمية</div>
         <div class="doc-title">التقرير الشهري الشامل لتحليل الشعب والمواد الدراسية (QES)</div>
       </div>
-      <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
     </div>
 
     <!-- Metadata Bar -->
@@ -564,16 +584,19 @@ export function printSectionsReport(options: PrintReportOptions = {}) {
   const bottomSections = sortedSections.slice(-5).reverse();
 
   const content = `
-    <!-- Header -->
+    <!-- Header (Centered & Organized) -->
     <div class="official-header">
-      <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+      <div class="header-logos">
+        <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+        <div class="header-logos-divider"></div>
+        <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
+      </div>
       <div class="header-text">
         <div class="country-title">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
         <div class="school-title">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
         <div class="dept-title">قسم التعليم الإلكتروني والحلول الرقمية</div>
         <div class="doc-title">التقرير التحليلي الشامل لأداء الشعب الدراسية الـ 19 (نظام قطر للتعليم)</div>
       </div>
-      <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
     </div>
 
     <!-- Metadata Bar -->
@@ -749,16 +772,19 @@ export function printSubjectsReport(options: PrintReportOptions = {}) {
   const { monthName = 'سبتمبر 2026', academicYear = '2026-2027' } = options;
 
   const content = `
-    <!-- Header -->
+    <!-- Header (Centered & Organized) -->
     <div class="official-header">
-      <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+      <div class="header-logos">
+        <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+        <div class="header-logos-divider"></div>
+        <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
+      </div>
       <div class="header-text">
         <div class="country-title">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
         <div class="school-title">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
         <div class="dept-title">قسم التعليم الإلكتروني والحلول الرقمية</div>
         <div class="doc-title">التقرير التحليلي الشامل لأداء المواد الدراسية الـ 18 (نظام قطر للتعليم)</div>
       </div>
-      <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
     </div>
 
     <!-- Metadata Bar -->
@@ -859,16 +885,19 @@ export function printGradesReport(options: PrintReportOptions = {}) {
   const { monthName = 'سبتمبر 2026', academicYear = '2026-2027' } = options;
 
   const content = `
-    <!-- Header -->
+    <!-- Header (Centered & Organized) -->
     <div class="official-header">
-      <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+      <div class="header-logos">
+        <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+        <div class="header-logos-divider"></div>
+        <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
+      </div>
       <div class="header-text">
         <div class="country-title">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
         <div class="school-title">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
         <div class="dept-title">قسم التعليم الإلكتروني والحلول الرقمية</div>
         <div class="doc-title">التقرير التحليلي المقارن للصفوف والمراحل الدراسية (نظام قطر للتعليم)</div>
       </div>
-      <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
     </div>
 
     <!-- Metadata Bar -->
@@ -952,16 +981,19 @@ export function printMatrixReport(options: PrintReportOptions = {}) {
   const { monthName = 'سبتمبر 2026', academicYear = '2026-2027' } = options;
 
   const content = `
-    <!-- Header -->
+    <!-- Header (Centered & Organized) -->
     <div class="official-header">
-      <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+      <div class="header-logos">
+        <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+        <div class="header-logos-divider"></div>
+        <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
+      </div>
       <div class="header-text">
         <div class="country-title">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
         <div class="school-title">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
         <div class="dept-title">قسم التعليم الإلكتروني والحلول الرقمية</div>
         <div class="doc-title">مصفوفة الرصد البصري والتقاطع الأكاديمي للشعب والمواد (Heatmap Matrix)</div>
       </div>
-      <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
     </div>
 
     <!-- Metadata Bar -->
@@ -1025,16 +1057,19 @@ export function printActionPlanReport(options: PrintReportOptions = {}) {
   const grade12Sections = SECTIONS_LMS_STATS.filter(s => s.grade === 'الصف 12');
 
   const content = `
-    <!-- Header -->
+    <!-- Header (Centered & Organized) -->
     <div class="official-header">
-      <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+      <div class="header-logos">
+        <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
+        <div class="header-logos-divider"></div>
+        <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
+      </div>
       <div class="header-text">
         <div class="country-title">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
         <div class="school-title">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
         <div class="dept-title">قسم التعليم الإلكتروني والحلول الرقمية</div>
         <div class="doc-title">التقرير التنفيذي لخطة التدخل الميداني العاجل لطلبة الصف الثاني عشر</div>
       </div>
-      <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
     </div>
 
     <!-- Metadata Bar -->

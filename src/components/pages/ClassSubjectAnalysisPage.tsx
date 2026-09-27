@@ -62,6 +62,23 @@ interface Props {
 export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: propYear }: Props) {
   const currentYear = propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1];
 
+  // Academic Year & Month Selectors
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(propYear || '2026-2027');
+  const [selectedMonth, setSelectedMonth] = useState<string>('سبتمبر 2026');
+
+  const AVAILABLE_MONTHS = [
+    { id: 'سبتمبر 2026', label: 'سبتمبر 2026 (البيانات المعتمدة)', hasData: true },
+    { id: 'أكتوبر 2026', label: 'أكتوبر 2026', hasData: false },
+    { id: 'نوفمبر 2026', label: 'نوفمبر 2026', hasData: false },
+    { id: 'ديسمبر 2026', label: 'ديسمبر 2026', hasData: false },
+    { id: 'يناير 2027', label: 'يناير 2027', hasData: false },
+    { id: 'فبراير 2027', label: 'فبراير 2027', hasData: false },
+    { id: 'مارس 2027', label: 'مارس 2027', hasData: false },
+    { id: 'أبريل 2027', label: 'أبريل 2027', hasData: false },
+    { id: 'مايو 2027', label: 'مايو 2027', hasData: false },
+    { id: 'يونيو 2027', label: 'يونيو 2027', hasData: false },
+  ];
+
   // Active sub-tab
   const [activeTab, setActiveTab] = useState<'report' | 'sections' | 'subjects' | 'grades' | 'matrix' | 'action_plan'>('report');
 
@@ -260,27 +277,37 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
   // Official Report Content Renderer (Used in Tab and Modal)
   const renderOfficialReportContent = () => (
     <div style={{ direction: 'rtl', color: '#1E293B', fontFamily: 'inherit' }}>
-      {/* Official Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2.5px solid #0F2044', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-        <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" style={{ height: '65px', objectFit: 'contain' }} />
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
+      {/* Official Header (Centered & Organized) */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', borderBottom: '2.5px solid #0F2044', paddingBottom: '1.25rem', marginBottom: '1.25rem', gap: '0.65rem' }}>
+        {/* Logos in Center */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2rem' }}>
+          <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" style={{ height: '62px', objectFit: 'contain' }} />
+          <div style={{ width: '1px', height: '42px', background: '#CBD5E1' }} />
+          <img src="/school-logo.png" alt="شعار مدرسة قطر للعلوم والتكنولوجيا" style={{ height: '62px', objectFit: 'contain' }} />
+        </div>
+        {/* Title & Details in Center */}
+        <div>
+          <p style={{ fontSize: '0.82rem', color: '#64748B', fontWeight: 800, margin: '0 0 0.15rem' }}>
+            دولة قطر — وزارة التربية والتعليم والتعليم العالي
+          </p>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
             مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
           </h2>
-          <p style={{ fontSize: '0.85rem', color: '#0096C7', fontWeight: 800, margin: '0.2rem 0' }}>
+          <p style={{ fontSize: '0.88rem', color: '#0096C7', fontWeight: 800, margin: '0.2rem 0' }}>
             قسم التعليم الإلكتروني والحلول الرقمية
           </p>
-          <p style={{ fontSize: '0.78rem', color: '#64748B', margin: 0, fontWeight: 700 }}>
-            التقرير الشهري الشامل لتحليل الشعب والمواد الدراسية — نظام قطر للتعليم (سبتمبر 2026)
-          </p>
+          <div style={{ display: 'inline-block', background: '#F1F5F9', border: '1.5px solid #CBD5E1', padding: '0.25rem 1.25rem', borderRadius: '999px', marginTop: '0.35rem' }}>
+            <span style={{ fontSize: '0.85rem', color: '#0F2044', fontWeight: 900 }}>
+              التقرير الشهري الشامل لتحليل الشعب والمواد الدراسية — نظام قطر للتعليم ({selectedMonth})
+            </span>
+          </div>
         </div>
-        <img src="/school-logo.png" alt="شعار مدرسة قطر للعلوم والتكنولوجيا" style={{ height: '65px', objectFit: 'contain' }} />
       </div>
 
       {/* Official Metadata Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.5rem 1rem', fontSize: '0.78rem', marginBottom: '1.25rem', color: '#475569', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div>الفترة: <strong style={{ color: '#0F2044' }}>شهر سبتمبر 2026</strong></div>
-        <div>العام الأكاديمي: <strong style={{ color: '#0F2044' }}>2026-2027</strong></div>
+        <div>الفترة: <strong style={{ color: '#0F2044' }}>شهر {selectedMonth}</strong></div>
+        <div>العام الأكاديمي: <strong style={{ color: '#0F2044' }}>{selectedAcademicYear}</strong></div>
         <div>تاريخ الاعتماد: <strong style={{ color: '#0F2044' }}>27 سبتمبر 2026</strong></div>
         <div>كود التقرير: <strong style={{ color: '#0F2044' }}>QES-SEC-SUB-2026-09</strong></div>
       </div>
@@ -607,21 +634,77 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                 border: '1px solid rgba(255, 255, 255, 0.35)',
               }}
             >
-              نظام قطر للتعليم (سبتمبر 2026)
+              نظام قطر للتعليم ({selectedMonth})
             </span>
           </div>
           <p style={{ margin: 0, color: '#BAE6FD', fontSize: '0.88rem', lineHeight: 1.5 }}>
             المرصد التشخيصي الأكاديمي الشامل لتحليل أداء 19 شعبة دراسية و 18 مادة تخصصية عبر الصفوف (7، 9، 10، 11، 12) بمدرسة قطر للعلوم والتكنولوجيا.
           </p>
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.85rem', flexWrap: 'wrap', fontSize: '0.78rem' }}>
-            <span style={{ background: 'rgba(15, 32, 68, 0.4)', padding: '0.25rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)' }}>
-              📅 تاريخ التقرير: <strong>27 سبتمبر 2026</strong>
-            </span>
-            <span style={{ background: 'rgba(15, 32, 68, 0.4)', padding: '0.25rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)' }}>
-              🎯 الشعب المتميزة: <strong>5 شعب</strong>
-            </span>
-            <span style={{ background: 'rgba(15, 32, 68, 0.4)', padding: '0.25rem 0.65rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.15)' }}>
-              ⚠️ شعب الثاني عشر بحاجة لتدخل: <strong>5 شعب</strong>
+
+          {/* Academic Year and Month Selectors */}
+          <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* Year Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(15, 32, 68, 0.45)', padding: '0.25rem 0.65rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <span style={{ fontSize: '0.75rem', color: '#BAE6FD', fontWeight: 800 }}>📅 العام الأكاديمي:</span>
+              <select
+                value={selectedAcademicYear}
+                onChange={e => setSelectedAcademicYear(e.target.value)}
+                style={{
+                  background: '#0F2044',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '6px',
+                  padding: '0.2rem 0.5rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  outline: 'none',
+                  cursor: 'pointer',
+                  direction: 'ltr',
+                }}
+              >
+                <option value="2026-2027">2026-2027</option>
+                <option value="2025-2026">2025-2026</option>
+              </select>
+            </div>
+
+            {/* Month Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(15, 32, 68, 0.45)', padding: '0.25rem 0.65rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)' }}>
+              <span style={{ fontSize: '0.75rem', color: '#BAE6FD', fontWeight: 800 }}>🗓️ الشهر المرصود:</span>
+              <select
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(e.target.value)}
+                style={{
+                  background: '#0F2044',
+                  color: '#00B4D8',
+                  border: '1px solid rgba(0,180,216,0.5)',
+                  borderRadius: '6px',
+                  padding: '0.2rem 0.6rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                {AVAILABLE_MONTHS.map(m => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <span
+              style={{
+                background: selectedMonth === 'سبتمبر 2026' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)',
+                color: selectedMonth === 'سبتمبر 2026' ? '#A7F3D0' : '#FDE68A',
+                padding: '0.25rem 0.65rem',
+                borderRadius: '6px',
+                border: `1px solid ${selectedMonth === 'سبتمبر 2026' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                fontSize: '0.75rem',
+                fontWeight: 800,
+              }}
+            >
+              {selectedMonth === 'سبتمبر 2026' ? '✓ البيانات معتمدة ومرفوعة' : '⏳ بانتظار رفع تقارير هذا الشهر'}
             </span>
           </div>
         </div>
@@ -675,7 +758,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           </button>
 
           <button
-            onClick={() => printClassSubjectMonthlyReport()}
+            onClick={() => printClassSubjectMonthlyReport({ monthName: selectedMonth, academicYear: selectedAcademicYear })}
             style={{
               background: 'rgba(255,255,255,0.15)',
               color: '#fff',
@@ -695,6 +778,54 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           </button>
         </div>
       </div>
+
+      {/* Notice Banner for Future Months */}
+      {selectedMonth !== 'سبتمبر 2026' && (
+        <div
+          className="no-print"
+          style={{
+            background: '#FEF3C7',
+            border: '2px solid #F59E0B',
+            borderRadius: '14px',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            boxShadow: '0 4px 12px rgba(245,158,11,0.15)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '2rem' }}>⏳</span>
+            <div>
+              <h4 style={{ fontSize: '0.98rem', fontWeight: 900, color: '#92400E', margin: '0 0 0.25rem' }}>
+                بيانات شهر {selectedMonth} للعام الأكاديمي {selectedAcademicYear} قيد الرفع والاعتماد
+              </h4>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: '#B45309', lineHeight: 1.5 }}>
+                بانتظار استخراج تقارير نظام قطر للتعليم (QES) الرسمية لهذا الشهر ورفعها للمنظومة. يمكنك حالياً استعراض تحليلات شهر سبتمبر 2026 المعتمدة.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setSelectedMonth('سبتمبر 2026')}
+            style={{
+              background: '#0F2044',
+              color: '#fff',
+              border: 'none',
+              padding: '0.55rem 1.15rem',
+              borderRadius: '8px',
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            العودة لبيانات شهر سبتمبر 2026 ✓
+          </button>
+        </div>
+      )}
 
       {/* ── 2. KPI Metric Summary Cards ── */}
       <div
@@ -882,7 +1013,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                 <span>تصدير Excel</span>
               </button>
               <button
-                onClick={() => printClassSubjectMonthlyReport()}
+                onClick={() => printClassSubjectMonthlyReport({ monthName: selectedMonth, academicYear: selectedAcademicYear })}
                 style={{
                   background: '#0F2044',
                   color: '#fff',
@@ -919,7 +1050,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           {renderTabActionHeader({
             title: 'التقرير التحليلي الشامل لأداء الشعب الدراسية الـ 19',
             subtitle: 'متابعة نسب الحل والتصحيح ورصد ترتيب الشعب وتصنيفها على مستوى المدرسة',
-            onPrint: () => printSectionsReport(),
+            onPrint: () => printSectionsReport({ monthName: selectedMonth, academicYear: selectedAcademicYear }),
             printLabel: 'طباعة تقرير الشعب (A3 - 0 Margins)',
           })}
 
@@ -1302,7 +1433,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           {renderTabActionHeader({
             title: 'التقرير التحليلي الشامل لأداء المواد الدراسية الـ 18',
             subtitle: 'متابعة نسب حل التقييمات، إنجاز المعلمين، وتفعيل الدروس عبر كافة التخصصات',
-            onPrint: () => printSubjectsReport(),
+            onPrint: () => printSubjectsReport({ monthName: selectedMonth, academicYear: selectedAcademicYear }),
             printLabel: 'طباعة تقرير المواد (A3 - 0 Margins)',
           })}
 
@@ -1485,7 +1616,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           {renderTabActionHeader({
             title: 'التقرير التحليلي المقارن للمراحل والصفوف الدراسية',
             subtitle: 'مقارنة معيارية شاملة لمؤشرات الصفوف (7، 9، 10، 11، 12)',
-            onPrint: () => printGradesReport(),
+            onPrint: () => printGradesReport({ monthName: selectedMonth, academicYear: selectedAcademicYear }),
             printLabel: 'طباعة تقرير الصفوف (A3 - 0 Margins)',
           })}
 
@@ -1600,7 +1731,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           {renderTabActionHeader({
             title: 'مصفوفة الرصد البصري والتقاطع الأكاديمي للشعب والمواد (Heatmap)',
             subtitle: 'الخريطة الحرارية المعتمدة لتشخيص مواطن القوة ونقاط الضعف التي تحتاج لتدخل سريع',
-            onPrint: () => printMatrixReport(),
+            onPrint: () => printMatrixReport({ monthName: selectedMonth, academicYear: selectedAcademicYear }),
             printLabel: 'طباعة مصفوفة الشعب والمواد (A3 - 0 Margins)',
           })}
 
@@ -1695,7 +1826,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           {renderTabActionHeader({
             title: 'التقرير التنفيذي لخطة التدخل الميداني العاجل لطلبة الصف الثاني عشر',
             subtitle: 'خطة المعالجة الميدانية العاجلة لرفع تفاعل طلبة الثاني عشر وتصفير المعلقات وإلزام المعلمين',
-            onPrint: () => printActionPlanReport(),
+            onPrint: () => printActionPlanReport({ monthName: selectedMonth, academicYear: selectedAcademicYear }),
             printLabel: 'طباعة تقرير خطة التدخل (A3 - 0 Margins)',
           })}
 
@@ -1846,7 +1977,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                     التقرير الشهري الشامل لتحليل الشعب والمواد
                   </h3>
                   <p style={{ margin: 0, color: '#BAE6FD', fontSize: '0.75rem' }}>
-                    تقرير رسمي معتمد - مدرسة قطر للعلوم والتكنولوجيا (سبتمبر 2026)
+                    تقرير رسمي معتمد - مدرسة قطر للعلوم والتكنولوجيا ({selectedMonth} {selectedAcademicYear})
                   </p>
                 </div>
               </div>
@@ -1918,7 +2049,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                   <span>تصدير Excel</span>
                 </button>
                 <button
-                  onClick={() => printClassSubjectMonthlyReport()}
+                  onClick={() => printClassSubjectMonthlyReport({ monthName: selectedMonth, academicYear: selectedAcademicYear })}
                   style={{
                     background: '#0F2044',
                     color: '#fff',
