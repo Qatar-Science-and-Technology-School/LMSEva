@@ -59,7 +59,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
 
           @page {
             size: A3 landscape;
-            margin: 8mm 12mm 8mm 12mm;
+            margin: 0 !important;
           }
 
           body {
@@ -69,6 +69,8 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
             direction: rtl;
             font-size: 11px;
             line-height: 1.4;
+            margin: 0 !important;
+            padding: 10mm 14mm !important;
           }
 
           .page-break {

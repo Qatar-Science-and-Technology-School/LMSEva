@@ -10,7 +10,14 @@ import {
   SEPTEMBER_2026_LMS_METRICS,
 } from '@/lib/data';
 import type { User } from '@/lib/data';
-import { printClassSubjectMonthlyReport } from '@/lib/classSubjectReportPrinter';
+import {
+  printClassSubjectMonthlyReport,
+  printSectionsReport,
+  printSubjectsReport,
+  printGradesReport,
+  printMatrixReport,
+  printActionPlanReport,
+} from '@/lib/classSubjectReportPrinter';
 import * as XLSX from 'xlsx';
 import {
   Download,
@@ -451,7 +458,14 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       </div>
 
       {/* 5. Signatures: STRICTLY Muhammad Ali Mandani Al-Emadi with signature UNDERNEATH */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1.25rem', borderTop: '2px solid #0F2044', flexWrap: 'wrap', gap: '1rem' }}>
+      {renderOfficialSignaturesBlock()}
+    </div>
+  );
+
+  // Reusable Official Signatures Block (For tabs & reports)
+  function renderOfficialSignaturesBlock() {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2.5rem', paddingTop: '1.25rem', borderTop: '2px solid #0F2044', flexWrap: 'wrap', gap: '1rem' }}>
         {/* Ahmad */}
         <div style={{ textAlign: 'center', width: '220px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.75rem' }}>
           <p style={{ margin: '0 0 0.2rem', fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>إعداد وتدقيق التقرير:</p>
@@ -482,8 +496,75 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Reusable Tab Action Header
+  function renderTabActionHeader({
+    title,
+    subtitle,
+    onPrint,
+    printLabel = 'طباعة التقرير الرسمي (A3 - 0 Margins)',
+  }: {
+    title: string;
+    subtitle: string;
+    onPrint: () => void;
+    printLabel?: string;
+  }) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', padding: '1rem 1.25rem', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '1.25rem', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span style={{ fontSize: '1.4rem' }}>📑</span>
+          <div>
+            <strong style={{ fontSize: '1rem', color: '#0F2044', display: 'block' }}>{title}</strong>
+            <span style={{ fontSize: '0.75rem', color: '#64748B' }}>{subtitle}</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+          <button
+            onClick={handleExportExcel}
+            style={{
+              background: '#0284C7',
+              color: '#fff',
+              border: 'none',
+              padding: '0.55rem 1rem',
+              borderRadius: '8px',
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+            }}
+          >
+            <Download size={14} />
+            <span>تصدير Excel</span>
+          </button>
+          <button
+            onClick={onPrint}
+            style={{
+              background: '#0F2044',
+              color: '#fff',
+              border: 'none',
+              padding: '0.55rem 1.15rem',
+              borderRadius: '8px',
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              boxShadow: '0 4px 12px rgba(15,32,68,0.25)',
+            }}
+          >
+            <Printer size={14} />
+            <span>{printLabel}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '1.5rem', direction: 'rtl', minHeight: '100vh', background: '#F8FAFC' }}>
@@ -818,7 +899,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                 }}
               >
                 <Printer size={14} />
-                <span>طباعة رسمية معتمدة (PDF / A4)</span>
+                <span>طباعة التقرير الشامل (A3 - 0 Margins)</span>
               </button>
             </div>
           </div>
@@ -835,6 +916,13 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'sections' && (
         <div>
+          {renderTabActionHeader({
+            title: 'التقرير التحليلي الشامل لأداء الشعب الدراسية الـ 19',
+            subtitle: 'متابعة نسب الحل والتصحيح ورصد ترتيب الشعب وتصنيفها على مستوى المدرسة',
+            onPrint: () => printSectionsReport(),
+            printLabel: 'طباعة تقرير الشعب (A3 - 0 Margins)',
+          })}
+
           {/* Top 5 & Bottom 5 Highlights */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
             
@@ -1200,6 +1288,9 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             </div>
 
           </div>
+
+          {/* Official Signatures */}
+          {renderOfficialSignaturesBlock()}
         </div>
       )}
 
@@ -1208,6 +1299,13 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'subjects' && (
         <div>
+          {renderTabActionHeader({
+            title: 'التقرير التحليلي الشامل لأداء المواد الدراسية الـ 18',
+            subtitle: 'متابعة نسب حل التقييمات، إنجاز المعلمين، وتفعيل الدروس عبر كافة التخصصات',
+            onPrint: () => printSubjectsReport(),
+            printLabel: 'طباعة تقرير المواد (A3 - 0 Margins)',
+          })}
+
           {/* Top Subjects vs Subjects Needing Attention */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
             
@@ -1373,6 +1471,9 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             </div>
 
           </div>
+
+          {/* Official Signatures */}
+          {renderOfficialSignaturesBlock()}
         </div>
       )}
 
@@ -1381,6 +1482,13 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'grades' && (
         <div>
+          {renderTabActionHeader({
+            title: 'التقرير التحليلي المقارن للمراحل والصفوف الدراسية',
+            subtitle: 'مقارنة معيارية شاملة لمؤشرات الصفوف (7، 9، 10، 11، 12)',
+            onPrint: () => printGradesReport(),
+            printLabel: 'طباعة تقرير الصفوف (A3 - 0 Margins)',
+          })}
+
           {/* Grade Comparison Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
             {GRADE_LEVEL_LMS_STATS.map(g => {
@@ -1478,6 +1586,9 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             </div>
 
           </div>
+
+          {/* Official Signatures */}
+          {renderOfficialSignaturesBlock()}
         </div>
       )}
 
@@ -1485,7 +1596,15 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           TAB 4: 🗺️ مصفوفة الشعب والمواد (Heatmap Matrix)
       ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'matrix' && (
-        <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        <div>
+          {renderTabActionHeader({
+            title: 'مصفوفة الرصد البصري والتقاطع الأكاديمي للشعب والمواد (Heatmap)',
+            subtitle: 'الخريطة الحرارية المعتمدة لتشخيص مواطن القوة ونقاط الضعف التي تحتاج لتدخل سريع',
+            onPrint: () => printMatrixReport(),
+            printLabel: 'طباعة مصفوفة الشعب والمواد (A3 - 0 Margins)',
+          })}
+
+          <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <div style={{ marginBottom: '1.25rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
               مصفوفة الرصد البصري لأداء الشعب الـ 19 والمادة الأضعف
@@ -1562,14 +1681,24 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             })}
           </div>
         </div>
-      )}
+
+        {/* Official Signatures */}
+        {renderOfficialSignaturesBlock()}
+      </div>
+    )}
 
       {/* ══════════════════════════════════════════════════════════════
           TAB 5: 🚨 خطة التدخل والتحسين لشعب الثاني عشر
       ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'action_plan' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          
+          {renderTabActionHeader({
+            title: 'التقرير التنفيذي لخطة التدخل الميداني العاجل لطلبة الصف الثاني عشر',
+            subtitle: 'خطة المعالجة الميدانية العاجلة لرفع تفاعل طلبة الثاني عشر وتصفير المعلقات وإلزام المعلمين',
+            onPrint: () => printActionPlanReport(),
+            printLabel: 'طباعة تقرير خطة التدخل (A3 - 0 Margins)',
+          })}
+
           {/* Diagnostic Alert Box */}
           <div
             style={{
@@ -1665,6 +1794,8 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             </div>
           </div>
 
+          {/* Official Signatures */}
+          {renderOfficialSignaturesBlock()}
         </div>
       )}
 
@@ -1804,7 +1935,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                   }}
                 >
                   <Printer size={14} />
-                  <span>طباعة رسمية معتمدة (A4 / PDF)</span>
+                  <span>طباعة التقرير الشامل (A3 - 0 Margins)</span>
                 </button>
               </div>
             </div>
