@@ -15,8 +15,9 @@ import ProfessionalDevelopmentPage from './pages/ProfessionalDevelopmentPage';
 import ModelLessonsEvaluationPage from './pages/ModelLessonsEvaluationPage';
 import ElearningSmsPage from './pages/ElearningSmsPage';
 import ClassSubjectAnalysisPage from './pages/ClassSubjectAnalysisPage';
+import EventsMeetingsPage from './pages/EventsMeetingsPage';
 
-type Page = 'dashboard'|'teachers'|'evaluation'|'class_analysis'|'model_lessons'|'profile'|'analytics'|'reports'|'settings'|'takreem'|'achievements'|'professional_development'|'elearning_sms';
+type Page = 'dashboard'|'teachers'|'evaluation'|'class_analysis'|'model_lessons'|'events_meetings'|'profile'|'analytics'|'reports'|'settings'|'takreem'|'achievements'|'professional_development'|'elearning_sms';
 
 interface Props { user: User; onLogout: () => void; }
 
@@ -38,6 +39,7 @@ export default function AppShell({ user, onLogout }: Props) {
     { id:'evaluation', label:'تقييم نظام قطر للتعليم',  icon:'📝', show:true },
     { id:'class_analysis', label:'تحليل الشعب والمواد', icon:'🏫', show:true },
     { id:'model_lessons', label:'حصص التعليم الإلكتروني', icon:'💻', show:true },
+    { id:'events_meetings', label:'الفعاليات والاجتماعات', icon:'📅', show:true },
     { id:'takreem',    label:'تكريم المعلمين',  icon:'🏆', show:true },
     { id:'achievements',label:'الإنجازات',      icon:'🌟', show:true },
     { id:'professional_development', label:'التطوير المهني', icon:'🎓', show:true },
@@ -194,6 +196,7 @@ export default function AppShell({ user, onLogout }: Props) {
           {page === 'evaluation' && <EvaluationPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
           {page === 'class_analysis' && <ClassSubjectAnalysisPage currentUser={user} selectedYear={selectedYear} onNavigate={setPage} />}
           {page === 'model_lessons' && <ModelLessonsEvaluationPage currentUser={user} selectedYear={selectedYear} />}
+          {page === 'events_meetings' && <EventsMeetingsPage currentUser={user} selectedYear={selectedYear} />}
           {page === 'profile'    && selectedTeacherId && <TeacherProfilePage teacherId={selectedTeacherId} currentUser={user} onBack={() => setPage('teachers')} selectedYear={selectedYear} />}
           {page === 'takreem'    && <TakreemPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
           {page === 'analytics'  && <AnalyticsPage currentUser={user} selectedYear={selectedYear} />}
