@@ -11,6 +11,7 @@ import {
   getMonthlyDepartmentHonorees,
   TOP_10_INDEX_TEACHERS,
   SEPTEMBER_2026_LMS_TEACHERS,
+  SECTIONS_LMS_STATS,
 } from '@/lib/data';
 import type { User, Evaluation, Teacher, Department } from '@/lib/data';
 import { printTeacherCertificate, printBatchCertificates } from '@/lib/certificatePrinter';
@@ -26,117 +27,117 @@ interface Props {
 // Available months
 const APPROVED_MONTHS = ['سبتمبر', 'أكتوبر', 'نوفمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'];
 
-// Top 10 Department Champions (One Best Teacher from Each of the 10 Departments)
+// Top 10 Department Champions (One Best Teacher from Each of the 10 Departments based on official 27 Sep 2026 report)
 export const DEPARTMENT_CHAMPIONS_10 = [
   {
     rank: 1,
     department: 'اللغة العربية',
     teacherName: 'ابراهيم حلمى ابراهيم جمعه',
-    score: 95.00,
-    evalScore: 100.00,
-    lessonsScore: 90.00,
+    score: 98.40,
+    evalScore: 96.70,
+    lessonsScore: 100.00,
     sectionsCount: 3,
-    title: 'فارس قسم اللغة العربية',
-    achievement: 'تصدر القسم والمدرسة بنسبة تصحيح 100% (122 تسليماً) واستيفاء كامل للدروس 100% (66/66) ونسبة حل 84.7%.',
+    title: 'فارس قسم اللغة العربية وبطل المدرسة الأول',
+    achievement: 'المركز الأول على مستوى المدرسة بمؤشر تقييمات 96.7%، وتفعيل كامل للدروس 100% (78 درساً منها 45 ظاهرة)، وتصحيح 100% لـ 171 تسليماً، ونسبة حل 89.1%، والتزام 4 تقييمات لكل شعبة.',
   },
   {
     rank: 2,
     department: 'التربية الإسلامية',
-    teacherName: 'الحسن علي محمد علي',
-    score: 81.25,
-    evalScore: 100.00,
-    lessonsScore: 62.50,
-    sectionsCount: 4,
+    teacherName: 'علاء حسني محمد موسى',
+    score: 91.65,
+    evalScore: 83.30,
+    lessonsScore: 100.00,
+    sectionsCount: 2,
     title: 'فارس قسم التربية الإسلامية',
-    achievement: 'تغطية تقييمات كاملة 100% لجميع الشعب الأربع، وتصحيح 86 تسليماً بنسبة 100%، ونسبة حل 76.8%.',
+    achievement: 'تصدر القسم بنسبة حل مرتفعة 88% وتصحيح كامل 100% للتسليمات، وتفعيل كامل للدروس 100% (34 درساً منها 18 ظاهرة) بجميع أقسامها.',
   },
   {
     rank: 3,
-    department: 'مختبر الطاقة',
-    teacherName: 'انس عبدالكريم موسى جرادات',
-    score: 76.25,
-    evalScore: 92.50,
-    lessonsScore: 60.00,
+    department: 'العلوم والتكنولوجيا (STEM)',
+    teacherName: 'امجد سهيل عزيز',
+    score: 89.45,
+    evalScore: 78.90,
+    lessonsScore: 100.00,
     sectionsCount: 4,
-    title: 'فارس مختبر الطاقة التخصصي',
-    achievement: 'تقدير إداري ممتاز، وتغطية كاملة لسجلات المختبر بالتقييمات والدروس، وتصحيح 100% للتسليمات.',
+    title: 'فارس قسم العلوم والتكنولوجيا (STEM)',
+    achievement: 'المركز الأول في قسم STEM، التزام بـ 4.75 تقييم لكل شعبة (19 تقييماً مسنداً)، وتصحيح 110 تسليمات، وتفعيل كامل للدروس 100% (16 درساً مستوفية لجميع الشعب الأربع).',
   },
   {
     rank: 4,
-    department: 'الدراسات الاجتماعية',
-    teacherName: 'فيصل محمد مسلم الحضري',
-    score: 72.00,
-    evalScore: 100.00,
-    lessonsScore: 44.00,
-    sectionsCount: 6,
-    title: 'فارس قسم الدراسات الاجتماعية',
-    achievement: 'تغطية كاملة 100% لجميع السجلات الستة بالتقييمات، وتصحيح 100% لجميع التسليمات (39 تسليماً).',
+    department: 'المختبرات التخصصية',
+    teacherName: 'على سالم على سالمين الصيعري',
+    score: 84.65,
+    evalScore: 88.90,
+    lessonsScore: 80.40,
+    sectionsCount: 7,
+    title: 'فارس المختبرات التخصصية ومختبر التصنيع',
+    achievement: 'تصدر معلمي المختبرات بالمدرسة بمؤشر تقييمات 88.9%، وإسناد 32 تقييماً مسنداً بمعدل 4.6 تقييم لكل شعبة، وتصحيح 291 تسليماً (87.4%)، ورفع 29 درساً مستوفية.',
   },
   {
     rank: 5,
-    department: 'الحاسوب وتكنولوجيا المعلومات',
-    teacherName: 'خالد عصام بارودي',
-    score: 74.23,
-    evalScore: 88.46,
-    lessonsScore: 60.00,
-    sectionsCount: 4,
-    title: 'فارس قسم الحاسوب',
-    achievement: 'تغطية تقييمات كاملة لجميع الشعب الأربع، وتصحيح 43 تسليماً، ورفع كامل للدروس المستوفية.',
+    department: 'الدراسات الاجتماعية',
+    teacherName: 'فيصل محمد مسلم الحضري',
+    score: 66.25,
+    evalScore: 85.00,
+    lessonsScore: 47.50,
+    sectionsCount: 6,
+    title: 'فارس قسم الدراسات الاجتماعية',
+    achievement: 'تحقيق المركز الخامس على مستوى المدرسة في التقييمات بمؤشر 85%، والالتزام بـ 4 تقييمات لكل شعبة بإجمالي 24 تقييماً، وتصحيح 224 تسليماً بنسبة 81.8% ونسبة حل 71.4%.',
   },
   {
     rank: 6,
-    department: 'مختبر التصنيع الرقمي (Fab Lab)',
-    teacherName: 'اياد أحمد سلمان عبدالقادر',
-    score: 59.90,
-    evalScore: 70.00,
-    lessonsScore: 60.00,
-    sectionsCount: 3,
-    title: 'فارس مختبر التصنيع الرقمي',
-    achievement: 'تقدير إداري ممتاز، وتغطية 100% لرفع الدروس، وتصحيح 29 تسليماً بمختبر الفاب لاب.',
+    department: 'الرياضيات',
+    teacherName: 'محمد عماد ازكول',
+    score: 85.95,
+    evalScore: 71.90,
+    lessonsScore: 100.00,
+    sectionsCount: 1,
+    title: 'فارس قسم الرياضيات',
+    achievement: 'تصدر القسم بنسبة حل متميزة بلغت 93.8%، وتصحيح 100% للتسليمات، وتفعيل كامل للدروس 100% لجميع الشعب (19 درساً مستوفية دون أي نواقص).',
   },
   {
     rank: 7,
-    department: 'العلوم والتكنولوجيا (STEM)',
-    teacherName: 'عمران كاشف محمد حسين اسد',
-    score: 80.00,
+    department: 'الفيزياء',
+    teacherName: 'ضرار حسن صادق ملاح',
+    score: 100.00,
     evalScore: 100.00,
-    lessonsScore: 60.00,
-    sectionsCount: 1,
-    title: 'فارس قسم STEM',
-    achievement: 'تغطية تقييمات كاملة 100%، وتصحيح 100% لجميع التسليمات المسجلة، ونسبة حل متميزة 81.3%.',
+    lessonsScore: 100.00,
+    sectionsCount: 2,
+    title: 'فارس قسم الفيزياء (مقررات AP)',
+    achievement: 'تحقيق مؤشر تفعيل الدروس كاملاً 100% لجميع الشعب المسندة لمقرر الفيزياء 1 AP (12 درساً ظاهراً مستوفياً بجميع الأقسام الرقمية).',
   },
   {
     rank: 8,
-    department: 'اللغة الإنجليزية',
-    teacherName: 'محمد سيد ميردادي',
-    score: 57.49,
-    evalScore: 52.86,
-    lessonsScore: 79.16,
+    department: 'تكنولوجيا التصميم',
+    teacherName: 'احمد اسامه صقر المعاني',
+    score: 89.70,
+    evalScore: 89.70,
+    lessonsScore: 89.70,
     sectionsCount: 7,
-    title: 'فارس قسم اللغة الإنجليزية',
-    achievement: 'المركز الأول في رفع الدروس بقسم اللغة الإنجليزية (54 درساً) وتصحيح 52 تسليماً.',
+    title: 'فارس قسم تكنولوجيا التصميم',
+    achievement: 'المركز الأول في القسم بمؤشر تفعيل دروس 89.7%، وإتاحة 75 درساً ظاهراً للطلبة عبر 7 سجلات لشعب الصفين التاسع والعاشر.',
   },
   {
     rank: 9,
-    department: 'التصميم التكنولوجي',
-    teacherName: 'احمد اسامه صقر المعاني',
-    score: 43.11,
-    evalScore: 45.24,
-    lessonsScore: 60.00,
-    sectionsCount: 21,
-    title: 'فارس قسم التصميم التكنولوجي',
-    achievement: 'تقدير إداري معتمد جيد جداً، وتغطية أعلى حجم تكليف بالمدرسة (21 سجلاً تعليمياً و74 درساً).',
+    department: 'علم الحاسوب',
+    teacherName: 'امداد علي',
+    score: 60.95,
+    evalScore: 74.40,
+    lessonsScore: 47.50,
+    sectionsCount: 2,
+    title: 'فارس قسم علم الحاسوب',
+    achievement: 'تصدر القسم في التقييمات بمؤشر 74.4%، والالتزام بمعدل 5 تقييمات أسبوعية لكل شعبة (10 تقييمات)، وتصحيح 59 تسليماً ونسبة حل 70%.',
   },
   {
     rank: 10,
-    department: 'الرياضيات',
-    teacherName: 'جعفر ياشلي',
-    score: 60.00,
-    evalScore: 60.00,
-    lessonsScore: 60.00,
-    sectionsCount: 3,
-    title: 'فارس قسم الرياضيات',
-    achievement: 'تغطية كاملة لرفع الدروس لجميع الشعب الثلاث (12 درساً) وتنسيق فعال لأنشطة الرياضيات.',
+    department: 'اللغة الإنجليزية',
+    teacherName: 'محمد ورسامي عمر',
+    score: 90.00,
+    evalScore: 90.00,
+    lessonsScore: 90.00,
+    sectionsCount: 7,
+    title: 'فارس قسم اللغة الإنجليزية',
+    achievement: 'تصدر القسم بمؤشر تفعيل دروس 90%، وإتاحة 26 درساً ظاهراً للطلبة بنسبة 100% استيفاء عبر 7 سجلات لشعب الصفين السابع والعاشر.',
   },
 ];
 
@@ -824,6 +825,111 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Section 3: Top Distinguished Sections */}
+          <div style={{ ...cardStyle, borderRight: '4px solid #10B981', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span>🏫</span> الشعب الدراسية المتصدرة في تفعيل نظام قطر للتعليم وحل التقييمات
+                </h2>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#64748B' }}>
+                  أفضل 5 شعب دراسية حققت أعلى نسب إنجاز وحل للتقييمات المسندة لشهر سبتمبر 2026
+                </p>
+              </div>
+              {onNavigateToPage && (
+                <button
+                  onClick={() => onNavigateToPage('class_analysis')}
+                  style={{
+                    background: '#F0FDF4',
+                    color: '#15803D',
+                    border: '1px solid #BBF7D0',
+                    padding: '0.45rem 0.85rem',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                  }}
+                >
+                  <span>📊</span> عرض تحليل الـ 19 شعبة بالتفصيل
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+              {SECTIONS_LMS_STATS.slice(0, 5).map((sec, idx) => {
+                const medal = idx === 0 ? '🥇 المركز الأول' : idx === 1 ? '🥈 المركز الثاني' : idx === 2 ? '🥉 المركز الثالث' : `المركز ${idx + 1}`;
+                return (
+                  <div
+                    key={sec.section}
+                    style={{
+                      background: idx < 3 ? 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)' : '#F8FAFC',
+                      border: idx < 3 ? '1.5px solid #86EFAC' : '1px solid #E2E8F0',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                        <span style={{ background: idx < 3 ? '#16A34A' : '#0F2044', color: '#fff', fontSize: '0.7rem', fontWeight: 800, padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                          {medal}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 700 }}>
+                          {sec.grade}
+                        </span>
+                      </div>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.35rem' }}>
+                        شعبة {sec.section}
+                      </h3>
+                      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                        <span style={{ background: '#DCFCE7', color: '#15803D', fontSize: '0.72rem', fontWeight: 900, padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                          حل: {sec.solveRate}%
+                        </span>
+                        <span style={{ background: '#EFF6FF', color: '#1E40AF', fontSize: '0.72rem', fontWeight: 800, padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                          تسليمات: {sec.submissions}
+                        </span>
+                        <span style={{ background: '#F1F5F9', color: '#334155', fontSize: '0.72rem', fontWeight: 700, padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                          تصحيح: {sec.gradingRate}%
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handlePrintCertificate({
+                        teacherNameAr: `طلاب ومعلمي شعبة ${sec.section}`,
+                        departmentName: sec.grade,
+                        totalScore: sec.solveRate,
+                        recognitionReason: `شهادة شكر وتقدير لتصدر شعبة ${sec.section} (${sec.grade}) وحصولها على ${medal} على مستوى مدرسة قطر للعلوم والتكنولوجيا بنسبة حل تقييمات بلغت ${sec.solveRate}% لشهر سبتمبر 2026.`,
+                        badgeTitle: `الشعبة المتميزة - ${medal}`,
+                      })}
+                      style={{
+                        background: '#0F2044',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.45rem 0.75rem',
+                        fontWeight: 800,
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                        marginTop: '0.5rem',
+                      }}
+                    >
+                      <span>🎖️</span> طباعة شهادة تكريم الشعبة
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
             </>

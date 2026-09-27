@@ -218,24 +218,24 @@ export default function PlatformReportTab({
             </div>
           </div>
           <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.85rem' }}>
-            تاريخ الإعداد: 20 سبتمبر 2026 · مدرسة قطر للعلوم والتكنولوجيا الإعدادية الثانوية للبنين · مؤشرات مستندة إلى
-            ملفات المنصة الرسمية
+            تاريخ الإصدار: 27 سبتمبر 2026 · مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين · مؤشرات رسمية مستندة إلى
+            ملفي متابعة التقييمات والدروس الإلكترونية المعتمدين
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              👥 52 معلماً داخل النطاق (43 ببيانات + 9 دون بيانات)
+              👥 42 معلماً بالدروس · 26 معلماً بالتقييمات
             </span>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              🎖️ 28 تقديراً إدارياً معتمداً (7 ممتاز + 21 جيد جداً)
+              🏫 19 شعبة · 158 سجل دروس · 84 سجل تقييمات
             </span>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              🏫 19 شعبة · 188 سجلاً
+              💻 1,460 درساً (796 ظاهرة 54.5% + 664 مخفية · 99% بأقسام)
             </span>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              💻 1,006 دروس (581 ظاهرة + 425 مخفية)
+              📝 2,440 تسليماً (1,921 مصححة 78.7% · 519 معلقاً)
             </span>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              📝 1,119 تسليماً (875 مصححة بنسبة 78.2%)
+              🎯 249 تقييماً مسنداً (متوسط 3.0 لكل شعبة-مادة)
             </span>
           </div>
         </div>
@@ -510,62 +510,62 @@ export default function PlatformReportTab({
             }}
           >
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #3B82F6' }}>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>نطاق الكادر الفعلي</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>نطاق المعلمين المشمولين</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F2044', margin: '0.2rem 0' }}>
-            52 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>/ 61 اسماً</span>
+            42 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>/ 63 كادراً</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#3B82F6' }}>
-            43 ببيانات نشاط + 9 دون بيانات نشاط + 9 خارج النطاق
+            42 معلماً بالدروس (15 حققوا 100%) · 26 بالتقييمات (5 متميزون)
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #10B981' }}>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>التقديرات الإدارية المعتمدة</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>التقييمات الإلكترونية المسندة</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#047857', margin: '0.2rem 0' }}>
-            28 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>تقديراً معتمداً</span>
+            249 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>تقييماً مسنداً</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#10B981' }}>
-            7 ممتاز (مهندسون ومختبرات) · 21 جيد جداً (تصميم، صف 12، دون بيانات)
+            بمعدل 3.0 لكل شعبة-مادة · 8 معلمين حققوا المعدل الأسبوعي (4 فأكثر)
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #8B5CF6' }}>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>تغطية التقييمات</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>متوسط نسبة حل الطلبة</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#5B21B6', margin: '0.2rem 0' }}>
-            43.1% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>(81 / 188)</span>
+            66.7% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>/ المستهدف 80%</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#8B5CF6' }}>
-            14 تغطية كاملة · 9 جزئية · 107 سجلات تحتاج تحققاً
+            39 شعبة-مادة حققت المستهدف (46.4%) · الصف 10 الأعلى (73.2%)
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #00B4D8' }}>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>إسناد التقييمات وحلها</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>إتمام تصحيح التسليمات</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F2044', margin: '0.2rem 0' }}>
-            58.1% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>حل مرجح</span>
+            78.7% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>(1,921 / 2,440)</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#00B4D8' }}>
-            124 مسنداً من 147 (84.4%) · 23 تقييماً غير مسند
+            13 معلماً أتموا 100% · 519 تسليماً غير مصحح في 40 شعبة-مادة
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #F59E0B' }}>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>نسبة تصحيح التسليمات</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>الدروس الإلكترونية الظاهرة</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#92400E', margin: '0.2rem 0' }}>
-            78.2% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>(875 / 1,119)</span>
+            54.5% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>(796 / 1,460)</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#B45309' }}>
-            244 تسليماً معلقاً (199 منها لدى أعلى 6 معلمين)
+            796 درساً ظاهراً · 664 درساً مخفياً · 75 سجلاً حقق المستهدف الأسبوعي
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #EC4899' }}>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>الدروس المسجلة والمستوفية</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>اكتمال بنية الدروس (أقسام)</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#831843', margin: '0.2rem 0' }}>
-            62.5% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>(629 / 1,006)</span>
+            99% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>(1,445 / 1,460)</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#DB2777' }}>
-            581 درساً ظاهراً · 425 مخفياً · 33 سجلاً بلا دروس
+            1,445 درساً تحتوي أقساماً · 15 درساً فقط دون أقسام لدى 6 معلمين
           </div>
         </div>
       </div>

@@ -318,6 +318,7 @@ export default function Dashboard({ currentUser, onViewTeacher, onNavigate, sele
         {[
           { label: 'الكادر الأكاديمي النشط', value: `${activeTeachers.length} كادر`, sub: 'معلمون ومهندسون معتمدون', icon: '👨‍🏫', color: '#0F2044', borderTop: '#0F2044', page: 'teachers' },
           { label: 'تقييمات نظام قطر للتعليم', value: filtered.length, sub: `متوسط الأداء: ${avgScore}%`, icon: '📝', color: '#0096C7', borderTop: '#0096C7', page: 'evaluation' },
+          { label: 'تحليل الشعب والمواد', value: '19 شعبة / 18 مادة', sub: 'نسبة الحل 66.7% | 2,440 تسليماً', icon: '🏫', color: '#0284C7', borderTop: '#0284C7', page: 'class_analysis' },
           { label: 'حصص التعليم الإلكتروني', value: `${filteredModelLessons.length} حصة`, sub: `متوسط التقييم: ${modelLessonAvg} / 10`, icon: '💻', color: '#4338CA', borderTop: '#4338CA', page: 'model_lessons' },
           { label: 'المتميزون والمكرمون', value: `${takreemHonorees.data.length} مكرم`, sub: `لشهر ${takreemHonorees.month}`, icon: '🏆', color: '#D97706', borderTop: '#D97706', page: 'takreem' },
           { label: 'الإنجازات والمسابقات', value: `${achievements.length} إنجاز`, sub: 'مشاركات وجوائز موثقة', icon: '🌟', color: '#059669', borderTop: '#059669', page: 'achievements' },

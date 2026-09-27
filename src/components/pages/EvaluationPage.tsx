@@ -1012,12 +1012,18 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
     setSyncSuccessMsg('');
     try {
       const generated = generateSeptember2026Evaluations(teachers);
-      // Filter out any previous 2026-2027 September evals and append the official ones
-      const otherEvals = allEvaluations.filter(e => !(e.academicYear === '2026-2027' && e.month === 'سبتمبر'));
+      const generatedTeacherIds = new Set(generated.map(g => g.teacherId));
+      // Keep evaluations of any teacher not mentioned in the official report as is
+      const otherEvals = allEvaluations.filter(e => {
+        if (e.academicYear === '2026-2027' && e.month === 'سبتمبر') {
+          return !generatedTeacherIds.has(e.teacherId);
+        }
+        return true;
+      });
       const updatedEvals = [...otherEvals, ...generated];
       await db.saveEvaluations(updatedEvals);
       setAllEvaluations(updatedEvals);
-      setSyncSuccessMsg('✅ تم بنجاح تعبئة وتحديث تقييمات المعلمين لشهر سبتمبر 2026 بناءً على التقرير الرسمي المعتمد!');
+      setSyncSuccessMsg('✅ تم بنجاح تحديث تقييمات المعلمين لشهر سبتمبر 2026 بناءً على التقرير الرسمي المعتمد (مع الاحتفاظ بتقييم أي معلم لم يرد اسمه بالتقرير)!');
       setTimeout(() => setSyncSuccessMsg(''), 6000);
     } catch (err: any) {
       console.error(err);
