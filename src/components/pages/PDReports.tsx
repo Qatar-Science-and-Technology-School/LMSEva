@@ -150,25 +150,25 @@ export async function downloadReportAsPdf(
       await document.fonts.ready;
     }
 
-    // Standard A4 Landscape: 297mm width x 210mm height
+    // Official A3 Landscape: 420mm width x 297mm height (0 margins)
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
-      format: 'a4',
+      format: 'a3',
       compress: true
     });
 
-    const pageWidth = 297;  // A4 Landscape mm width
-    const pageHeight = 210; // A4 Landscape mm height
-    const margin = 7;       // 7mm border margin
+    const pageWidth = 420;  // A3 Landscape mm width
+    const pageHeight = 297; // A3 Landscape mm height
+    const margin = 0;       // 0 margin
 
-    const availableWidth = pageWidth - (margin * 2);   // 283 mm
-    const availableHeight = pageHeight - (margin * 2); // 196 mm
+    const availableWidth = pageWidth;
+    const availableHeight = pageHeight;
 
     for (let i = 0; i < pagesToRender.length; i++) {
       const el = pagesToRender[i];
       if (i > 0) {
-        pdf.addPage('a4', 'landscape');
+        pdf.addPage('a3', 'landscape');
       }
 
       // High resolution rasterization of the exact visible DOM element
@@ -764,18 +764,20 @@ export function SingleWorkshopReport({ workshop, teachers = [], departments = []
 
   return (
     <div className={`single-workshop-report-container ${printMode === 'page1' ? 'print-page1-only' : ''}`} style={{ direction: 'rtl', background: '#F8FAFC', minHeight: '100vh', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: "'IBM Plex Sans Arabic', 'Segoe UI', Arial, sans-serif" }}>
-      {/* Embedded Landscape Print Rules */}
+      {/* Embedded Landscape Print Rules (A3 0 Margins) */}
       <style dangerouslySetInnerHTML={{ __html: `
         @page {
-          size: A4 landscape !important;
-          margin: 6mm !important;
+          size: A3 landscape !important;
+          margin: 0 !important;
         }
         @media print {
           html, body {
-            width: 297mm !important;
-            height: 210mm !important;
+            width: 420mm !important;
+            margin: 0 !important;
+            padding: 10mm 14mm !important;
+            box-sizing: border-box !important;
             background: #ffffff !important;
-            font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Arial, sans-serif !important;
+            font-family: 'Cairo', 'IBM Plex Sans Arabic', 'Segoe UI', Arial, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
@@ -1847,18 +1849,20 @@ export function SingleIndividualPDReport({ record, onClose, canEdit }: SingleInd
 
   return (
     <div className="single-ind-report-container" style={{ direction: 'rtl', background: '#F8FAFC', minHeight: '100vh', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: "'IBM Plex Sans Arabic', 'Segoe UI', Arial, sans-serif" }}>
-      {/* Embedded Landscape Print Rules */}
+      {/* Embedded Landscape Print Rules (A3 0 Margins) */}
       <style dangerouslySetInnerHTML={{ __html: `
         @page {
-          size: A4 landscape !important;
-          margin: 6mm !important;
+          size: A3 landscape !important;
+          margin: 0 !important;
         }
         @media print {
           html, body {
-            width: 297mm !important;
-            height: 210mm !important;
+            width: 420mm !important;
+            margin: 0 !important;
+            padding: 10mm 14mm !important;
+            box-sizing: border-box !important;
             background: #ffffff !important;
-            font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Arial, sans-serif !important;
+            font-family: 'Cairo', 'IBM Plex Sans Arabic', 'Segoe UI', Arial, sans-serif !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }

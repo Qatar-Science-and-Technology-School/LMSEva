@@ -1745,7 +1745,7 @@ export default function PDPlanTab({
       <style dangerouslySetInnerHTML={{ __html: `
         @page {
           size: A3 landscape !important;
-          margin: 10mm 12mm 10mm 12mm !important;
+          margin: 0 !important;
         }
 
         @media screen {
@@ -1771,7 +1771,8 @@ export default function PDPlanTab({
             print-color-adjust: exact !important;
             font-size: 9.5pt !important;
             margin: 0 !important;
-            padding: 0 !important;
+            padding: 10mm 12mm !important;
+            box-sizing: border-box !important;
           }
 
           * {

@@ -1103,9 +1103,9 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
 
       const pageWidth = 420;
       const pageHeight = 297;
-      const margin = 8;
-      const availableWidth = pageWidth - (margin * 2);
-      const availableHeight = pageHeight - (margin * 2);
+      const margin = 0;
+      const availableWidth = pageWidth;
+      const availableHeight = pageHeight;
 
       const pageElements = Array.from(el.querySelectorAll('.qes-report-page')) as HTMLElement[];
 
@@ -2495,10 +2495,14 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                   @media print {
                     @page {
                       size: A3 landscape !important;
-                      margin: 8mm 12mm !important;
+                      margin: 0 !important;
                     }
-                    body {
+                    html, body {
+                      width: 420mm !important;
                       background: white !important;
+                      margin: 0 !important;
+                      padding: 10mm 14mm !important;
+                      box-sizing: border-box !important;
                       -webkit-print-color-adjust: exact !important;
                       print-color-adjust: exact !important;
                     }
@@ -2507,7 +2511,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                     }
                     .printable-report {
                       width: 100% !important;
-                      max-width: 410mm !important;
+                      max-width: 420mm !important;
                       margin: 0 auto !important;
                       padding: 0 !important;
                       box-shadow: none !important;

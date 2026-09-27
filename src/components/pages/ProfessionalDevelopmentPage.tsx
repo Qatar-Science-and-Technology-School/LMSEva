@@ -943,8 +943,16 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
         .btn-primary-gradient:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(15,32,68,0.2); }
         .table-row:hover { background: #F8FAFC; }
         @media print {
-          @page { size: portrait; margin: 8mm !important; }
+          @page { size: A3 landscape; margin: 0 !important; }
           .no-print, header, aside, .topbar, .sidebar, nav { display: none !important; }
+          html, body {
+            width: 420mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           .single-workshop-report-container, .single-ind-report-container {
             padding: 0 !important;
             margin: 0 !important;
@@ -956,18 +964,15 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
             box-shadow: none !important;
             border: none !important;
             width: 100% !important;
-            max-width: 100% !important;
-            padding: 0 !important;
-            margin: 0 !important;
+            max-width: 420mm !important;
+            padding: 10mm 15mm !important;
+            margin: 0 auto !important;
             position: relative !important;
             min-height: auto !important;
             box-sizing: border-box !important;
           }
           .printable-report * {
             visibility: visible !important;
-          }
-          body {
-            background: #fff !important;
           }
         }
       `}</style>
@@ -2708,9 +2713,14 @@ function ComprehensivePDReport({ workshops, individualRecords, meeeRecords, teac
       {/* ===== PRINTABLE REPORT ===== */}
       <div id="comprehensive-pd-report-container" className="printable-report" style={{ border: '1px solid #CBD5E1', padding: '1.5rem', background: '#ffffff', minHeight: '1000px' }}>
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <img src="/ministry-logo.png" alt="وزارة التعليم والتعليم العالي" style={{ height: '85px', maxWidth: '175px', objectFit: 'contain' }} />
-          <img src="/school-logo.png" alt="شعار المدرسة" style={{ height: '85px', maxWidth: '175px', objectFit: 'contain' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+          <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" style={{ height: '80px', maxWidth: '175px', objectFit: 'contain' }} />
+          <div style={{ textAlign: 'center', flex: 1, padding: '0 1rem' }}>
+            <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F2044' }}>دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
+            <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#0284C7', marginTop: '0.2rem' }}>مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', marginTop: '0.15rem' }}>قسم المشاريع والتعليم الإلكتروني — خطة التطوير المهني والتمكين الرقمي</div>
+          </div>
+          <img src="/school-logo.png" alt="شعار المدرسة" style={{ height: '80px', maxWidth: '175px', objectFit: 'contain' }} />
         </div>
         <div style={{ background: '#0F2044', borderRadius: '10px', padding: '0.75rem 1.5rem', marginBottom: '1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap', textAlign: 'center', printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}>
           <h1 style={{ fontSize: '1rem', fontWeight: 900, color: '#fff', margin: 0, textAlign: 'center' }}>التقرير الشامل السنوي — التطوير المهني والتمكين الرقمي</h1>
