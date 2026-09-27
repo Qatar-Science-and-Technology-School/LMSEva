@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "lmseva-qstss",
     "public": "out",
     "ignore": [
       "firebase.json",

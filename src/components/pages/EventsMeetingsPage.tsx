@@ -11,6 +11,7 @@ import {
   EVENT_TYPE_CONFIG,
   EVENT_NATURE_CONFIG,
   EVENT_STATUS_CONFIG,
+  EVENT_LOCATIONS,
   loadEventsMeetings,
   saveEventsMeetings,
 } from '@/lib/eventsMeetingsData';
@@ -46,6 +47,7 @@ import {
   ChevronRight,
   ShieldCheck,
   Building,
+  Laptop,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -79,6 +81,7 @@ export default function EventsMeetingsPage({
   const [selectedType, setSelectedType] = useState<'all' | EventType>('all');
   const [selectedNature, setSelectedNature] = useState<'all' | EventNature>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | EventStatus>('all');
+  const [selectedLocation, setSelectedLocation] = useState<'all' | string>('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table' | 'timeline'>('cards');
   const [showCharts, setShowCharts] = useState(true);
 
@@ -111,7 +114,7 @@ export default function EventsMeetingsPage({
     nature: 'اجتماع عمل',
     date: new Date().toISOString().split('T')[0],
     time: '09:00 ص - 10:30 ص',
-    location: 'قاعة الاجتماعات الرئيسية',
+    location: 'مقر المدرسة',
     targetAudience: 'منسقو الأقسام والمعلمون',
     participantsCount: 10,
     organizer: 'قسم التعليم الإلكتروني والحلول الرقمية',
@@ -147,6 +150,18 @@ export default function EventsMeetingsPage({
       if (selectedStatus !== 'all' && item.status !== selectedStatus) {
         return false;
       }
+      // Location filter
+      if (selectedLocation !== 'all') {
+        const itemLoc = (item.location || '').toLowerCase();
+        const selLoc = selectedLocation.toLowerCase();
+        if (selectedLocation === 'اون لاين') {
+          if (!itemLoc.includes('اون لاين') && !itemLoc.includes('online') && item.type !== 'عن بعد') {
+            return false;
+          }
+        } else if (!itemLoc.includes(selLoc)) {
+          return false;
+        }
+      }
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -161,7 +176,7 @@ export default function EventsMeetingsPage({
       }
       return true;
     });
-  }, [items, selectedCategory, selectedType, selectedNature, selectedStatus, searchQuery]);
+  }, [items, selectedCategory, selectedType, selectedNature, selectedStatus, selectedLocation, searchQuery]);
 
   // Statistics Calculations
   const stats = useMemo(() => {
@@ -173,6 +188,7 @@ export default function EventsMeetingsPage({
     const externalAndVisits = items.filter(
       i => i.type === 'خارجي' || i.type === 'زيارة لمعرض' || i.type === 'زيارة تبادل خبرات' || i.type === 'مشاركة لمسابقة'
     ).length;
+    const remoteCount = items.filter(i => i.type === 'عن بعد' || i.location.includes('اون لاين')).length;
     const totalBeneficiaries = items.reduce((sum, curr) => sum + (curr.participantsCount || 0), 0);
     const completed = items.filter(i => i.status === 'مكتملة').length;
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -184,6 +200,7 @@ export default function EventsMeetingsPage({
       studentSupervision,
       workMeetings,
       externalAndVisits,
+      remoteCount,
       totalBeneficiaries,
       completed,
       completionRate,
@@ -195,6 +212,7 @@ export default function EventsMeetingsPage({
     const counts: Record<string, number> = {
       'داخلي': 0,
       'خارجي': 0,
+      'عن بعد': 0,
       'زيارة تبادل خبرات': 0,
       'زيارة لمعرض': 0,
       'مشاركة لمسابقة': 0,
@@ -224,25 +242,63 @@ export default function EventsMeetingsPage({
   }, [items]);
 
   // Handle Form Open (New)
-  function handleOpenAdd() {
+  function handleOpenAdd(preset?: 'remote_meeting' | 'remote_event') {
     setEditingItem(null);
-    setFormData({
-      title: '',
-      category: 'اجتماع',
-      type: 'داخلي',
-      nature: 'اجتماع عمل',
-      date: new Date().toISOString().split('T')[0],
-      time: '09:00 ص - 10:30 ص',
-      location: 'قاعة الاجتماعات الرئيسية',
-      targetAudience: 'منسقو الأقسام الأكاديمية ومعلمو المواد',
-      participantsCount: 10,
-      organizer: 'قسم التعليم الإلكتروني والحلول الرقمية',
-      objectivesText: '',
-      agendaText: '',
-      outcomesText: '',
-      status: 'قادمة',
-      notes: '',
-    });
+    if (preset === 'remote_meeting') {
+      setFormData({
+        title: 'اجتماع تنسيقي عن بعد عبر منصة Teams لمتابعة مؤشرات الأداء',
+        category: 'اجتماع',
+        type: 'عن بعد',
+        nature: 'اجتماع عمل',
+        date: new Date().toISOString().split('T')[0],
+        time: '04:00 م - 05:15 م',
+        location: 'اون لاين',
+        targetAudience: 'النائب الأكاديمي، منسق المشاريع، ومعلمو المواد الأكاديمية',
+        participantsCount: 15,
+        organizer: 'قسم التعليم الإلكتروني والحلول الرقمية بالتعاون مع الإدارة الأكاديمية',
+        objectivesText: '- مراجعة مؤشرات تفاعل الطلاب مع نظام قطر للتعليم وتصفير المعلقات\n- التنسيق لتقديم الدعم والتدخل الأكاديمي للطلاب الضعاف\n- مناقشة التحديات والحلول الرقمية المتاحة',
+        agendaText: '- كلمة افتتاحية واستعراض نسب الإنجاز\n- مناقشة آليات الدعم الفردي للطلاب\n- التوصيات والقرارات الختامية',
+        outcomesText: '- اعتماد جدول حصص التقوية الافتراضية عبر منصة Teams\n- تحديث سجل المتابعة الإلكتروني للواجبات',
+        status: 'قادمة',
+        notes: 'اجتماع افتراضي مسائي بتقنية الاتصال المرئي عن بعد عبر Microsoft Teams.',
+      });
+    } else if (preset === 'remote_event') {
+      setFormData({
+        title: 'ورشة تدريبية وتفاعلية عن بعد: استراتيجيات التعلم الرقمي والذكاء الاصطناعي',
+        category: 'فعالية',
+        type: 'عن بعد',
+        nature: 'إشراف على طلاب',
+        date: new Date().toISOString().split('T')[0],
+        time: '05:00 م - 06:30 م',
+        location: 'اون لاين',
+        targetAudience: 'طلبة المرحلة الثانوية والكوادر التدريسية المهتمة',
+        participantsCount: 35,
+        organizer: 'قسم المشاريع والتعليم الإلكتروني ومختبر الذكاء الاصطناعي',
+        objectivesText: '- صقل مهارات الطلاب في التفكير الحاسوبي واستخدام الذكاء الاصطناعي\n- التدريب على بيئات الحوسبة السحابية والتصميم الهندسي الرقمي\n- تعزيز التعلم الذاتي التفاعلي خارج أوقات الدوام الرسمي',
+        agendaText: '- مقدمة نظرية تفاعلية حول النماذج الذكية\n- تطبيق عملي وتشاركي مباشر مع الطلاب عبر المنصة\n- فقرة الأسئلة والتقييم الختامي',
+        outcomesText: '- إنجاز 35 مشروعاً مصغراً وتوزيع شهادات المشاركة الرقمية',
+        status: 'قادمة',
+        notes: 'فعالية تدريبية افتراضية عن بعد مفتوحة لكافة المنتسبين عبر الرابط المعتمد.',
+      });
+    } else {
+      setFormData({
+        title: '',
+        category: 'اجتماع',
+        type: 'داخلي',
+        nature: 'اجتماع عمل',
+        date: new Date().toISOString().split('T')[0],
+        time: '09:00 ص - 10:30 ص',
+        location: 'مقر المدرسة',
+        targetAudience: 'منسقو الأقسام الأكاديمية ومعلمو المواد',
+        participantsCount: 10,
+        organizer: 'قسم التعليم الإلكتروني والحلول الرقمية',
+        objectivesText: '',
+        agendaText: '',
+        outcomesText: '',
+        status: 'قادمة',
+        notes: '',
+      });
+    }
     setShowAddEditModal(true);
   }
 
@@ -401,6 +457,7 @@ export default function EventsMeetingsPage({
     setSelectedType('all');
     setSelectedNature('all');
     setSelectedStatus('all');
+    setSelectedLocation('all');
   }
 
   return (
@@ -465,7 +522,7 @@ export default function EventsMeetingsPage({
         {/* Top Action Buttons */}
         <div style={{ display: 'flex', gap: '0.65rem', zIndex: 1, flexWrap: 'wrap' }}>
           <button
-            onClick={handleOpenAdd}
+            onClick={() => handleOpenAdd()}
             style={{
               background: '#10B981',
               color: '#fff',
@@ -487,6 +544,28 @@ export default function EventsMeetingsPage({
           </button>
 
           <button
+            onClick={() => handleOpenAdd('remote_meeting')}
+            style={{
+              background: '#0284C7',
+              color: '#fff',
+              border: 'none',
+              padding: '0.65rem 1.15rem',
+              borderRadius: '10px',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              boxShadow: '0 4px 14px rgba(2,132,199,0.35)',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Laptop size={16} />
+            <span>+ عن بعد (Online)</span>
+          </button>
+
+          <button
             onClick={() => printComprehensiveEventsMeetingsReport(filteredItems, { academicYear: selectedYear })}
             style={{
               background: '#0F2044',
@@ -504,7 +583,7 @@ export default function EventsMeetingsPage({
             }}
           >
             <Printer size={16} />
-            <span>طباعة التقرير الشامل (A3)</span>
+            <span>طباعة التقرير الشامل (أفقي A3)</span>
           </button>
 
           <button
@@ -748,7 +827,7 @@ export default function EventsMeetingsPage({
             </select>
           </div>
 
-          {/* Filter: Type (الأنواع الـ 6) */}
+          {/* Filter: Type (الأنواع الـ 7) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>النوع:</span>
             <select
@@ -765,13 +844,41 @@ export default function EventsMeetingsPage({
                 outline: 'none',
               }}
             >
-              <option value="all">كافة الأنواع (6)</option>
-              <option value="داخلي">داخلي</option>
-              <option value="خارجي">خارجي</option>
-              <option value="زيارة تبادل خبرات">زيارة تبادل خبرات</option>
-              <option value="زيارة لمعرض">زيارة لمعرض</option>
-              <option value="مشاركة لمسابقة">مشاركة لمسابقة</option>
-              <option value="فعالية">فعالية</option>
+              <option value="all">كافة الأنواع (7)</option>
+              <option value="داخلي">🏢 داخلي</option>
+              <option value="خارجي">🌐 خارجي</option>
+              <option value="عن بعد">💻 عن بعد (Online)</option>
+              <option value="زيارة تبادل خبرات">🤝 زيارة تبادل خبرات</option>
+              <option value="زيارة لمعرض">🏛️ زيارة لمعرض</option>
+              <option value="مشاركة لمسابقة">🏆 مشاركة لمسابقة</option>
+              <option value="فعالية">🎉 فعالية</option>
+            </select>
+          </div>
+
+          {/* Filter: Location (المقر والمكان) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>المكان / المقر:</span>
+            <select
+              value={selectedLocation}
+              onChange={e => setSelectedLocation(e.target.value)}
+              style={{
+                padding: '0.45rem 0.65rem',
+                borderRadius: '8px',
+                border: '1px solid #CBD5E1',
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: '#0F2044',
+                background: '#F8FAFC',
+                outline: 'none',
+              }}
+            >
+              <option value="all">كافة الأماكن والمقرات (8)</option>
+              {EVENT_LOCATIONS.map(loc => (
+                <option key={loc} value={loc}>
+                  {loc === 'اون لاين' ? '💻 ' : loc === 'مقر المدرسة' ? '🏫 ' : loc === 'وزارة التربية والتعليم والتعليم العالي' ? '🏛️ ' : loc === 'QNCC' ? '🏢 ' : loc === 'النادي العلمي القطري' ? '🔬 ' : loc === 'فندق' ? '🏨 ' : loc === 'مؤتمر' ? '🎤 ' : '⚡ '}
+                  {loc}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -824,7 +931,7 @@ export default function EventsMeetingsPage({
           </div>
 
           {/* Reset button */}
-          {(searchQuery || selectedCategory !== 'all' || selectedType !== 'all' || selectedNature !== 'all' || selectedStatus !== 'all') && (
+          {(searchQuery || selectedCategory !== 'all' || selectedType !== 'all' || selectedNature !== 'all' || selectedStatus !== 'all' || selectedLocation !== 'all') && (
             <button
               onClick={handleResetFilters}
               style={{
@@ -921,7 +1028,7 @@ export default function EventsMeetingsPage({
             يرجى تجربة تغيير معايير البحث أو تصفية البيانات، أو إضافة فعالية جديدة.
           </p>
           <button
-            onClick={handleOpenAdd}
+            onClick={() => handleOpenAdd()}
             style={{
               background: '#0F2044',
               color: '#fff',
@@ -1102,7 +1209,7 @@ export default function EventsMeetingsPage({
                       }}
                     >
                       <Printer size={12} />
-                      <span>طباعة رسمية</span>
+                      <span>طباعة (أفقي)</span>
                     </button>
                   </div>
 
@@ -1208,7 +1315,7 @@ export default function EventsMeetingsPage({
                         <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center' }}>
                           <button
                             onClick={() => printSingleEventMeetingReport(item)}
-                            title="طباعة محضر رسمي"
+                            title="طباعة محضر رسمي أفقي (Landscape)"
                             style={{ background: '#0F2044', color: '#fff', border: 'none', borderRadius: '4px', padding: '0.25rem 0.45rem', cursor: 'pointer' }}
                           >
                             <Printer size={12} />
@@ -1297,7 +1404,7 @@ export default function EventsMeetingsPage({
                         }}
                       >
                         <Printer size={12} />
-                        <span>طباعة</span>
+                        <span>طباعة (أفقي)</span>
                       </button>
                     </div>
                   </div>
@@ -1425,6 +1532,66 @@ export default function EventsMeetingsPage({
             {/* Modal Body */}
             <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               
+              {/* Quick Template Selector */}
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.75rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0F2044', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Sparkles size={14} color="#0284C7" />
+                  <span>تعبئة سريعة بالنمط:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    category: 'اجتماع',
+                    type: 'داخلي',
+                    location: 'مقر المدرسة',
+                    nature: 'اجتماع عمل',
+                  })}
+                  style={{ background: '#fff', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '0.3rem 0.65rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', color: '#0F2044' }}
+                >
+                  💼 اجتماع عمل حضوري
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    category: 'اجتماع',
+                    type: 'عن بعد',
+                    location: 'اون لاين',
+                    nature: 'اجتماع عمل',
+                  })}
+                  style={{ background: '#E0F2FE', border: '1px solid #BAE6FD', borderRadius: '6px', padding: '0.3rem 0.65rem', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', color: '#0369A1' }}
+                >
+                  💻 اجتماع عن بعد (Online)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    category: 'فعالية',
+                    type: 'فعالية',
+                    location: 'مقر المدرسة',
+                    nature: 'إشراف على طلاب',
+                  })}
+                  style={{ background: '#fff', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '0.3rem 0.65rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', color: '#7C3AED' }}
+                >
+                  🎉 فعالية حضورية
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData,
+                    category: 'فعالية',
+                    type: 'عن بعد',
+                    location: 'اون لاين',
+                    nature: 'إشراف على طلاب',
+                  })}
+                  style={{ background: '#EDE9FE', border: '1px solid #DDD6FE', borderRadius: '6px', padding: '0.3rem 0.65rem', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', color: '#6D28D9' }}
+                >
+                  🌐 فعالية / ورشة عن بعد (Online)
+                </button>
+              </div>
+
               {/* Row 1: Category & Nature & Type */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
                 {/* Category: اجتماع أو فعالية */}
@@ -1450,14 +1617,21 @@ export default function EventsMeetingsPage({
                   </select>
                 </div>
 
-                {/* Type: الأنواع الـ 6 */}
+                {/* Type: الأنواع الـ 7 */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#0F2044', marginBottom: '0.35rem' }}>
                     نوع الفعالية / الاجتماع: *
                   </label>
                   <select
                     value={formData.type}
-                    onChange={e => setFormData({ ...formData, type: e.target.value as EventType })}
+                    onChange={e => {
+                      const newType = e.target.value as EventType;
+                      setFormData({
+                        ...formData,
+                        type: newType,
+                        location: newType === 'عن بعد' && (formData.location === 'مقر المدرسة' || !formData.location) ? 'اون لاين' : formData.location,
+                      });
+                    }}
                     style={{
                       width: '100%',
                       padding: '0.55rem',
@@ -1470,6 +1644,7 @@ export default function EventsMeetingsPage({
                   >
                     <option value="داخلي">🏢 داخلي</option>
                     <option value="خارجي">🌐 خارجي</option>
+                    <option value="عن بعد">💻 عن بعد (Online / افتراضي)</option>
                     <option value="زيارة تبادل خبرات">🤝 زيارة تبادل خبرات</option>
                     <option value="زيارة لمعرض">🏛️ زيارة لمعرض</option>
                     <option value="مشاركة لمسابقة">🏆 مشاركة لمسابقة</option>
@@ -1585,12 +1760,53 @@ export default function EventsMeetingsPage({
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#0F2044', marginBottom: '0.35rem' }}>
-                    المكان والمقر: *
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>
+                      المكان والمقر: *
+                    </label>
+                    <span style={{ fontSize: '0.7rem', color: '#64748B' }}>اختر من القائمة أو حدد مخصصاً</span>
+                  </div>
+
+                  {/* Dropdown for standard locations */}
+                  <select
+                    value={EVENT_LOCATIONS.includes(formData.location as any) ? formData.location : 'custom'}
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val !== 'custom') {
+                        setFormData({
+                          ...formData,
+                          location: val,
+                          type: val === 'اون لاين' ? 'عن بعد' : formData.type,
+                        });
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem',
+                      borderRadius: '8px',
+                      border: '1.5px solid #CBD5E1',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      outline: 'none',
+                      marginBottom: '0.4rem',
+                      background: '#F8FAFC',
+                    }}
+                  >
+                    <option value="custom">✏️ مكان أو تفصيل مخصص (اكتبه أدناه)</option>
+                    <option value="مقر المدرسة">🏫 مقر المدرسة</option>
+                    <option value="وزارة التربية والتعليم والتعليم العالي">🏛️ وزارة التربية والتعليم والتعليم العالي</option>
+                    <option value="QNCC">🏢 QNCC (مركز قطر الوطني للمؤتمرات)</option>
+                    <option value="النادي العلمي القطري">🔬 النادي العلمي القطري</option>
+                    <option value="اون لاين">💻 اون لاين (عن بعد / Microsoft Teams)</option>
+                    <option value="فندق">🏨 فندق</option>
+                    <option value="مؤتمر">🎤 مؤتمر</option>
+                    <option value="كهرماء">⚡ كهرماء</option>
+                  </select>
+
+                  {/* Editable text input */}
                   <input
                     type="text"
-                    placeholder="مثال: مركز قطر الوطني للمؤتمرات (QNCC)"
+                    placeholder="مثال: مقر المدرسة - قاعة الاجتماعات..."
                     value={formData.location}
                     onChange={e => setFormData({ ...formData, location: e.target.value })}
                     style={{
@@ -1602,6 +1818,41 @@ export default function EventsMeetingsPage({
                       outline: 'none',
                     }}
                   />
+
+                  {/* Quick Pill Chips for Locations */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.4rem' }}>
+                    {EVENT_LOCATIONS.map(loc => {
+                      const isSelected = formData.location === loc;
+                      return (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => setFormData({
+                            ...formData,
+                            location: loc,
+                            type: loc === 'اون لاين' ? 'عن بعد' : formData.type,
+                          })}
+                          style={{
+                            background: isSelected ? '#0F2044' : '#F1F5F9',
+                            color: isSelected ? '#fff' : '#334155',
+                            border: `1px solid ${isSelected ? '#0F2044' : '#CBD5E1'}`,
+                            borderRadius: '6px',
+                            padding: '0.2rem 0.5rem',
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.25rem',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          <span>{loc === 'اون لاين' ? '💻' : loc === 'مقر المدرسة' ? '🏫' : loc === 'وزارة التربية والتعليم والتعليم العالي' ? '🏛️' : loc === 'QNCC' ? '🏢' : loc === 'النادي العلمي القطري' ? '🔬' : loc === 'فندق' ? '🏨' : loc === 'مؤتمر' ? '🎤' : '⚡'}</span>
+                          <span>{loc}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -1879,6 +2130,27 @@ export default function EventsMeetingsPage({
             {/* Content Body */}
             <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
+              {/* Centered Official Header inside Modal Preview */}
+              <div style={{ textAlign: 'center', borderBottom: '2px solid #0F2044', paddingBottom: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.25rem' }}>
+                  <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" style={{ height: '42px', objectFit: 'contain' }} />
+                  <div style={{ width: '1px', height: '30px', background: '#CBD5E1' }} />
+                  <img src="/school-logo.png" alt="مدرسة قطر للعلوم والتكنولوجيا" style={{ height: '42px', objectFit: 'contain' }} />
+                </div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#0F2044' }}>
+                  دولة قطر — وزارة التربية والتعليم والتعليم العالي
+                </div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044' }}>
+                  مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
+                </div>
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0096C7' }}>
+                  قسم المشاريع والتعليم الإلكتروني والحلول الرقمية
+                </div>
+                <div style={{ display: 'inline-block', background: '#F1F5F9', border: '1px solid #CBD5E1', padding: '0.2rem 0.85rem', borderRadius: '999px', fontSize: '0.8rem', fontWeight: 900, color: '#0F2044', marginTop: '0.2rem' }}>
+                  {viewingItem.category === 'اجتماع' ? 'محضر اجتماع رسمي' : 'تقرير توثيق فعالية مدرسية'} ({viewingItem.id})
+                </div>
+              </div>
+
               {/* Info Badges */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem', background: '#F8FAFC', padding: '1rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
                 <div>
@@ -2016,7 +2288,7 @@ export default function EventsMeetingsPage({
                 }}
               >
                 <Printer size={15} />
-                <span>طباعة المحضر الرسمي (A4)</span>
+                <span>طباعة المحضر الرسمي (أفقي Landscape)</span>
               </button>
             </div>
           </div>
