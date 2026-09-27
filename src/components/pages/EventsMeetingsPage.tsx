@@ -62,6 +62,8 @@ import {
   PieChart,
   Pie,
   Cell,
+  LabelList,
+  Label,
   AreaChart,
   Area,
 } from 'recharts';
@@ -223,39 +225,230 @@ export default function EventsMeetingsPage({
     };
   }, [items]);
 
-  // Chart Data: Type Distribution
-  const typeChartData = useMemo(() => {
-    const counts: Record<string, number> = {
-      'داخلي': 0,
-      'خارجي': 0,
-      'عن بعد': 0,
-      'زيارة تبادل خبرات': 0,
-      'زيارة لمعرض': 0,
-      'مشاركة لمسابقة': 0,
-      'فعالية': 0,
-    };
-    items.forEach(i => {
-      if (counts[i.type] !== undefined) {
-        counts[i.type]++;
-      }
-    });
+  // 1. Chart Data: Category Distribution (Bar Chart)
+  const categoryChartData = useMemo(() => {
+    const total = items.length || 1;
+    const cats: { key: EventCategory; label: string; icon: string; color: string }[] = [
+      { key: 'اجتماع', label: 'اجتماعات', icon: '💼', color: '#0284C7' },
+      { key: 'فعالية', label: 'فعاليات', icon: '🎉', color: '#7C3AED' },
+      { key: 'مهمة', label: 'مهام وتكليفات', icon: '📋', color: '#475569' },
+      { key: 'زيارة', label: 'زيارات خبرات', icon: '🤝', color: '#0D9488' },
+      { key: 'ورشة', label: 'ورش تدريبية', icon: '💡', color: '#D97706' },
+      { key: 'مسابقة', label: 'مسابقات', icon: '🏆', color: '#DC2626' },
+    ];
 
-    return Object.entries(counts).map(([name, count]) => ({
-      name,
-      count,
-      color: EVENT_TYPE_CONFIG[name as EventType]?.color || '#0F2044',
-    }));
+    return cats.map(c => {
+      const count = items.filter(i => i.category === c.key).length;
+      const percent = Math.round((count / total) * 100);
+      return {
+        name: c.label,
+        category: c.key,
+        icon: c.icon,
+        count,
+        percent: `${percent}%`,
+        color: c.color,
+      };
+    });
   }, [items]);
 
-  // Chart Data: Nature Distribution (Pie)
-  const natureChartData = useMemo(() => {
-    const studentCount = items.filter(i => i.nature === 'إشراف على طلاب').length;
-    const workCount = items.filter(i => i.nature === 'اجتماع عمل').length;
+  // 2. Chart Data: Status Distribution (Donut Chart)
+  const statusChartData = useMemo(() => {
+    const total = items.length || 1;
+    const statuses: { key: EventStatus; label: string; color: string; icon: string }[] = [
+      { key: 'منفذة', label: 'منفذة وموثقة', color: '#16A34A', icon: '✓' },
+      { key: 'بحاجة لتأكيد', label: 'بحاجة لتأكيد', color: '#EA580C', icon: '⚠️' },
+      { key: 'جارية', label: 'جارية حالياً', color: '#D97706', icon: '⚡' },
+      { key: 'قادمة', label: 'قادمة ومجدولة', color: '#0284C7', icon: '⏳' },
+    ];
+
+    return statuses.map(s => {
+      const count = items.filter(i => i.status === s.key || (s.key === 'منفذة' && i.status === 'مكتملة')).length;
+      const percent = Math.round((count / total) * 100);
+      return {
+        name: s.label,
+        status: s.key,
+        value: count,
+        percent: `${percent}%`,
+        color: s.color,
+        icon: s.icon,
+      };
+    }).filter(d => d.value > 0);
+  }, [items]);
+
+  // 3. Chart Data: Scope (داخلي بالمدرسة vs خارجي وزاري وعن بعد)
+  const scopeChartData = useMemo(() => {
+    const total = items.length || 1;
+    const internalCount = items.filter(i =>
+      i.type === 'داخلي' ||
+      i.type === 'زيارة تبادل خبرات' ||
+      i.type === 'ورشة تعريفية' ||
+      i.type === 'مراجعة فنية' ||
+      i.id === 'EVT-04' ||
+      i.id === 'EVT-05' ||
+      i.id === 'EVT-08' ||
+      i.id === 'EVT-09' ||
+      i.id === 'EVT-11' ||
+      i.id === 'EVT-17' ||
+      i.id === 'EVT-18' ||
+      i.id === 'EVT-19' ||
+      i.id === 'EVT-20'
+    ).length;
+    const externalCount = items.length - internalCount;
+
     return [
-      { name: 'إشراف على طلاب', value: studentCount, color: '#10B981' },
-      { name: 'اجتماع عمل', value: workCount, color: '#0F2044' },
+      {
+        name: 'داخلي بالمدرسة',
+        shortName: 'داخلي',
+        value: internalCount,
+        percent: `${Math.round((internalCount / total) * 100)}%`,
+        color: '#0284C7',
+        icon: '🏢',
+      },
+      {
+        name: 'خارجي وزاري / عن بعد',
+        shortName: 'خارجي',
+        value: externalCount,
+        percent: `${Math.round((externalCount / total) * 100)}%`,
+        color: '#4338CA',
+        icon: '🌐',
+      },
     ];
   }, [items]);
+
+  // 4. Chart Data: Nature Distribution (Pie)
+  const natureChartData = useMemo(() => {
+    const total = items.length || 1;
+    const workCount = items.filter(i => i.nature === 'اجتماع عمل').length;
+    const studentCount = items.filter(i => i.nature === 'إشراف على طلاب').length;
+    return [
+      {
+        name: 'اجتماعات عمل وتنسيق',
+        shortName: 'عمل وتنسيق',
+        value: workCount,
+        percent: `${Math.round((workCount / total) * 100)}%`,
+        color: '#0F2044',
+        icon: '💼',
+      },
+      {
+        name: 'إشراف ومسابقات طلابية',
+        shortName: 'إشراف طلاب',
+        value: studentCount,
+        percent: `${Math.round((studentCount / total) * 100)}%`,
+        color: '#10B981',
+        icon: '👨‍🎓',
+      },
+    ];
+  }, [items]);
+
+  // ── Custom SVG Renderers for Charts (Numbers & Texts INSIDE and ON TOP) ──
+  const RADIAN = Math.PI / 180;
+
+  // Custom label inside Donut/Pie slices: displays label name + count + percentage INSIDE slice
+  const renderInnerSliceLabel = (props: any) => {
+    const { cx, cy, midAngle, innerRadius, outerRadius, percent, value, payload } = props;
+    if (value === 0 || !percent || percent < 0.04) return null;
+
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.52;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    const title = payload?.shortName || payload?.name || '';
+    const pct = `${Math.round(percent * 100)}%`;
+
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        <text
+          x={x}
+          y={y - 7}
+          fill="#FFFFFF"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={11}
+          fontWeight={800}
+          style={{
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.95))',
+          }}
+        >
+          {title}
+        </text>
+        <text
+          x={x}
+          y={y + 8}
+          fill="#FEF08A"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={12}
+          fontWeight={900}
+          style={{
+            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.95))',
+          }}
+        >
+          {`${value} (${pct})`}
+        </text>
+      </g>
+    );
+  };
+
+  // Top pill badge on Bar Chart (exact count)
+  const renderBarTopLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    if (value === undefined || value === null || value === 0) return null;
+    const cx = x + width / 2;
+    const cy = y - 14;
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        <rect
+          x={cx - 16}
+          y={cy - 11}
+          width={32}
+          height={22}
+          rx={11}
+          fill="#0F2044"
+          stroke="#38BDF8"
+          strokeWidth={1.5}
+        />
+        <text
+          x={cx}
+          y={cy}
+          fill="#FFFFFF"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={12}
+          fontWeight={900}
+        >
+          {value}
+        </text>
+      </g>
+    );
+  };
+
+  // Inside label on Bar Chart (percentage)
+  const renderBarInsideLabel = (props: any) => {
+    const { x, y, width, height, index } = props;
+    if (!height || height < 24) return null;
+    const item = categoryChartData[index];
+    if (!item || item.count === 0) return null;
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        <text
+          x={cx}
+          y={cy}
+          fill="#FFFFFF"
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={12}
+          fontWeight={900}
+          style={{
+            filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.95))',
+          }}
+        >
+          {item.percent}
+        </text>
+      </g>
+    );
+  };
 
   // Handle Form Open (New)
   function handleOpenAdd(preset?: 'remote_meeting' | 'remote_event') {
@@ -718,69 +911,557 @@ export default function EventsMeetingsPage({
         </div>
       </div>
 
-      {/* ── 3. Visualizations & Charts Section ── */}
+      {/* ── 3. Visualizations & Charts Section (Executive Analytics) ── */}
       {showCharts && (
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
             gap: '1.25rem',
-            marginBottom: '1.5rem',
+            marginBottom: '1.75rem',
           }}
         >
-          {/* Chart 1: Types Breakdown */}
-          <div style={{ background: '#fff', borderRadius: '14px', padding: '1.25rem', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <BarChart3 size={17} color="#0284C7" />
-                <span>توزيع الفعاليات والاجتماعات حسب النوع</span>
-              </h3>
-              <span style={{ fontSize: '0.72rem', color: '#64748B' }}>الأنواع الـ 6 المعتمدة</span>
+          {/* Chart 1: Category Distribution (Bar Chart with Top & Inside Labels) */}
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '16px',
+              padding: '1.35rem',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 4px 14px rgba(15,32,68,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                <h3 style={{ fontSize: '0.96rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <BarChart3 size={18} color="#0284C7" />
+                  <span>توزيع الأنشطة حسب التصنيفات الستة</span>
+                </h3>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    color: '#0284C7',
+                    background: '#E0F2FE',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '20px',
+                    border: '1px solid #BAE6FD',
+                  }}
+                >
+                  {items.length} نشاطاً مسجلاً
+                </span>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#64748B', margin: '0 0 1rem 0' }}>
+                الأرقام أعلى الأعمدة تمثل العدد الفعلي، والنسب المئوية موضحة داخل الأعمدة.
+              </p>
             </div>
-            <ResponsiveContainer width="100%" height={230}>
-              <BarChart data={typeChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748B' }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 10, fill: '#64748B' }} />
-                <Tooltip contentStyle={{ background: '#0F2044', color: '#fff', borderRadius: '8px', fontSize: '11px', direction: 'rtl' }} />
-                <Bar dataKey="count" name="عدد الفعاليات" radius={[6, 6, 0, 0]}>
-                  {typeChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={categoryChartData} margin={{ top: 25, right: 10, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: '#0F2044', fontWeight: 800 }}
+                  tickLine={false}
+                  axisLine={{ stroke: '#CBD5E1' }}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tick={{ fontSize: 10, fill: '#64748B' }}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={[0, 'dataMax + 2']}
+                />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div
+                        style={{
+                          background: '#0F2044',
+                          color: '#fff',
+                          padding: '0.65rem 0.9rem',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          direction: 'rtl',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                        }}
+                      >
+                        <div style={{ fontWeight: 800, marginBottom: '0.25rem' }}>
+                          {d.icon} {d.name}
+                        </div>
+                        <div style={{ color: '#38BDF8', fontWeight: 800 }}>
+                          العدد: {d.count} سجل ({d.percent})
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="count" name="عدد الأنشطة" radius={[8, 8, 0, 0]}>
+                  {categoryChartData.map((entry, index) => (
+                    <Cell key={`cell-bar-${index}`} fill={entry.color} />
                   ))}
+                  <LabelList dataKey="count" content={renderBarTopLabel} />
+                  <LabelList dataKey="count" content={renderBarInsideLabel} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+
+            {/* Category Mini-Pills */}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.45rem',
+                marginTop: '0.85rem',
+                paddingTop: '0.85rem',
+                borderTop: '1px dashed #E2E8F0',
+              }}
+            >
+              {categoryChartData.map((c, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.22rem 0.55rem',
+                    borderRadius: '8px',
+                    background: '#F8FAFC',
+                    border: `1px solid ${c.color}35`,
+                    fontSize: '0.73rem',
+                    color: '#1E293B',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: c.color,
+                      display: 'inline-block',
+                    }}
+                  />
+                  <span style={{ fontWeight: 700 }}>{c.name}:</span>
+                  <span style={{ fontWeight: 900, color: c.color }}>
+                    {c.count} ({c.percent})
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Chart 2: Nature Distribution (Pie) */}
-          <div style={{ background: '#fff', borderRadius: '14px', padding: '1.25rem', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <PieChartIcon size={17} color="#10B981" />
-                <span>طبيعة الفعاليات (إشراف طلاب vs اجتماعات عمل)</span>
-              </h3>
-              <span style={{ fontSize: '0.72rem', color: '#64748B' }}>تصنيف الأنشطة</span>
+          {/* Chart 2: Status Distribution (Donut Chart with Inner Slice Labels) */}
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '16px',
+              padding: '1.35rem',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 4px 14px rgba(15,32,68,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                <h3 style={{ fontSize: '0.96rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle2 size={18} color="#16A34A" />
+                  <span>مؤشر حالات الإنجاز وتوثيق الأنشطة</span>
+                </h3>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    color: '#166534',
+                    background: '#DCFCE7',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '20px',
+                    border: '1px solid #BBF7D0',
+                  }}
+                >
+                  {stats.completionRate}% نسبة الإنجاز
+                </span>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#64748B', margin: '0 0 1rem 0' }}>
+                الحالة والعدد والنسبة المئوية معروضة مباشرة داخل كل جزء من الدائرة البيانية.
+              </p>
             </div>
-            <ResponsiveContainer width="100%" height={230}>
+
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Tooltip contentStyle={{ background: '#0F2044', color: '#fff', borderRadius: '8px', fontSize: '11px', direction: 'rtl' }} />
-                <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div
+                        style={{
+                          background: '#0F2044',
+                          color: '#fff',
+                          padding: '0.65rem 0.9rem',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          direction: 'rtl',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                        }}
+                      >
+                        <div style={{ fontWeight: 800, marginBottom: '0.25rem' }}>
+                          {d.icon} {d.name}
+                        </div>
+                        <div style={{ color: '#86EFAC', fontWeight: 800 }}>
+                          العدد: {d.value} سجل ({d.percent})
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <Pie
+                  data={statusChartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={95}
+                  paddingAngle={4}
+                  dataKey="value"
+                  labelLine={false}
+                  label={renderInnerSliceLabel}
+                >
+                  {statusChartData.map((entry, index) => (
+                    <Cell key={`cell-status-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                {/* Center of Donut KPI */}
+                <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#0F2044" fontSize={23} fontWeight={900}>
+                  {items.length}
+                </text>
+                <text x="50%" y="58%" textAnchor="middle" dominantBaseline="middle" fill="#16A34A" fontSize={11} fontWeight={800}>
+                  {stats.completionRate}% منجز
+                </text>
+              </PieChart>
+            </ResponsiveContainer>
+
+            {/* Status Mini-Pills */}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.45rem',
+                marginTop: '0.85rem',
+                paddingTop: '0.85rem',
+                borderTop: '1px dashed #E2E8F0',
+              }}
+            >
+              {statusChartData.map((s, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.22rem 0.55rem',
+                    borderRadius: '8px',
+                    background: '#F8FAFC',
+                    border: `1px solid ${s.color}35`,
+                    fontSize: '0.73rem',
+                    color: '#1E293B',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: s.color,
+                      display: 'inline-block',
+                    }}
+                  />
+                  <span style={{ fontWeight: 700 }}>{s.name}:</span>
+                  <span style={{ fontWeight: 900, color: s.color }}>
+                    {s.value} ({s.percent})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Chart 3: Scope Distribution (داخلي بالمدرسة vs خارجي وزاري وعن بعد) */}
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '16px',
+              padding: '1.35rem',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 4px 14px rgba(15,32,68,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                <h3 style={{ fontSize: '0.96rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Building size={18} color="#0284C7" />
+                  <span>توزيع المقر والنطاق (داخلي vs خارجي وعن بعد)</span>
+                </h3>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    color: '#4338CA',
+                    background: '#EEF2FF',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '20px',
+                    border: '1px solid #C7D2FE',
+                  }}
+                >
+                  9 داخلي • 7 خارجي
+                </span>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#64748B', margin: '0 0 1rem 0' }}>
+                مقارنة الأنشطة الداخلية بالمبنى المدرسي والأنشطة الخارجية الوزارية والمشاركات عن بعد.
+              </p>
+            </div>
+
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div
+                        style={{
+                          background: '#0F2044',
+                          color: '#fff',
+                          padding: '0.65rem 0.9rem',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          direction: 'rtl',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                        }}
+                      >
+                        <div style={{ fontWeight: 800, marginBottom: '0.25rem' }}>
+                          {d.icon} {d.name}
+                        </div>
+                        <div style={{ color: '#38BDF8', fontWeight: 800 }}>
+                          العدد: {d.value} سجل ({d.percent})
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <Pie
+                  data={scopeChartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={95}
+                  paddingAngle={5}
+                  dataKey="value"
+                  labelLine={false}
+                  label={renderInnerSliceLabel}
+                >
+                  {scopeChartData.map((entry, index) => (
+                    <Cell key={`cell-scope-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                {/* Center of Donut KPI */}
+                <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#0F2044" fontSize={22} fontWeight={900}>
+                  9 : 7
+                </text>
+                <text x="50%" y="58%" textAnchor="middle" dominantBaseline="middle" fill="#0284C7" fontSize={11} fontWeight={800}>
+                  داخلي : خارجي
+                </text>
+              </PieChart>
+            </ResponsiveContainer>
+
+            {/* Scope Mini-Pills */}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.45rem',
+                marginTop: '0.85rem',
+                paddingTop: '0.85rem',
+                borderTop: '1px dashed #E2E8F0',
+              }}
+            >
+              {scopeChartData.map((s, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.22rem 0.55rem',
+                    borderRadius: '8px',
+                    background: '#F8FAFC',
+                    border: `1px solid ${s.color}35`,
+                    fontSize: '0.73rem',
+                    color: '#1E293B',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: s.color,
+                      display: 'inline-block',
+                    }}
+                  />
+                  <span style={{ fontWeight: 700 }}>{s.name}:</span>
+                  <span style={{ fontWeight: 900, color: s.color }}>
+                    {s.value} ({s.percent})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Chart 4: Nature Distribution (عمل وتنسيق vs إشراف طلاب) */}
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '16px',
+              padding: '1.35rem',
+              border: '1px solid #E2E8F0',
+              boxShadow: '0 4px 14px rgba(15,32,68,0.05)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                <h3 style={{ fontSize: '0.96rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Users size={18} color="#10B981" />
+                  <span>طبيعة الفعاليات (اجتماعات عمل vs إشراف طلاب)</span>
+                </h3>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    color: '#0F2044',
+                    background: '#F1F5F9',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '20px',
+                    border: '1px solid #CBD5E1',
+                  }}
+                >
+                  13 عمل • 3 طلاب
+                </span>
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#64748B', margin: '0 0 1rem 0' }}>
+                تصنيف الفعاليات بحسب الدور التشغيلي بين تنسيق الإدارة والأقسام ورعاية ومتابعة الطلاب.
+              </p>
+            </div>
+
+            <ResponsiveContainer width="100%" height={260}>
+              <PieChart>
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div
+                        style={{
+                          background: '#0F2044',
+                          color: '#fff',
+                          padding: '0.65rem 0.9rem',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          direction: 'rtl',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                        }}
+                      >
+                        <div style={{ fontWeight: 800, marginBottom: '0.25rem' }}>
+                          {d.icon} {d.name}
+                        </div>
+                        <div style={{ color: '#86EFAC', fontWeight: 800 }}>
+                          العدد: {d.value} سجل ({d.percent})
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
                 <Pie
                   data={natureChartData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
+                  innerRadius={55}
+                  outerRadius={95}
                   paddingAngle={5}
                   dataKey="value"
-                  label={({ name, percent }: { name?: string; percent?: number }) => `${name || ''} (${(((percent ?? 0) * 100)).toFixed(0)}%)`}
+                  labelLine={false}
+                  label={renderInnerSliceLabel}
                 >
                   {natureChartData.map((entry, index) => (
-                    <Cell key={`cell-pie-${index}`} fill={entry.color} />
+                    <Cell key={`cell-nature-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
+                {/* Center of Donut KPI */}
+                <text x="50%" y="45%" textAnchor="middle" dominantBaseline="middle" fill="#0F2044" fontSize={23} fontWeight={900}>
+                  81%
+                </text>
+                <text x="50%" y="58%" textAnchor="middle" dominantBaseline="middle" fill="#0F2044" fontSize={11} fontWeight={800}>
+                  عمل وتنسيق
+                </text>
               </PieChart>
             </ResponsiveContainer>
+
+            {/* Nature Mini-Pills */}
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.45rem',
+                marginTop: '0.85rem',
+                paddingTop: '0.85rem',
+                borderTop: '1px dashed #E2E8F0',
+              }}
+            >
+              {natureChartData.map((n, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.22rem 0.55rem',
+                    borderRadius: '8px',
+                    background: '#F8FAFC',
+                    border: `1px solid ${n.color}35`,
+                    fontSize: '0.73rem',
+                    color: '#1E293B',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      backgroundColor: n.color,
+                      display: 'inline-block',
+                    }}
+                  />
+                  <span style={{ fontWeight: 700 }}>{n.name}:</span>
+                  <span style={{ fontWeight: 900, color: n.color }}>
+                    {n.value} ({n.percent})
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
