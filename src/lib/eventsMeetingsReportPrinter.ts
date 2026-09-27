@@ -5,6 +5,7 @@
 
 import {
   EventMeetingItem,
+  EVENT_CATEGORY_CONFIG,
   EVENT_TYPE_CONFIG,
   EVENT_NATURE_CONFIG,
   EVENT_STATUS_CONFIG,
@@ -612,10 +613,17 @@ export function printComprehensiveEventsMeetingsReport(
   const totalEvents = items.length;
   const meetingsCount = items.filter(i => i.category === 'اجتماع').length;
   const eventsCount = items.filter(i => i.category === 'فعالية').length;
+  const tasksCount = items.filter(i => i.category === 'مهمة').length;
+  const visitsCount = items.filter(i => i.category === 'زيارة').length;
+  const workshopsCount = items.filter(i => i.category === 'ورشة').length;
+  const compCount = items.filter(i => i.category === 'مسابقة').length;
   const studentSupervisionCount = items.filter(i => i.nature === 'إشراف على طلاب').length;
   const workMeetingsCount = items.filter(i => i.nature === 'اجتماع عمل').length;
   const totalBeneficiaries = items.reduce((acc, curr) => acc + (curr.participantsCount || 0), 0);
-  const completedCount = items.filter(i => i.status === 'مكتملة').length;
+  const implementedCount = items.filter(i => i.status === 'منفذة' || i.status === 'مكتملة').length;
+  const ongoingCount = items.filter(i => i.status === 'جارية').length;
+  const upcomingCount = items.filter(i => i.status === 'قادمة').length;
+  const needsConfirmCount = items.filter(i => i.status === 'بحاجة لتأكيد').length;
 
   const content = `
     <!-- Header (Centered Logos & Title) -->
@@ -653,21 +661,21 @@ export function printComprehensiveEventsMeetingsReport(
         <div class="kpi-title">اجتماعات العمل الرسمية</div>
         <div class="kpi-val" style="color: #0284C7;">${meetingsCount}</div>
       </div>
-      <div class="kpi-card" style="border-top: 3px solid #10B981;">
-        <div class="kpi-title">فعاليات الإشراف على الطلاب</div>
-        <div class="kpi-val" style="color: #10B981;">${studentSupervisionCount}</div>
+      <div class="kpi-card" style="border-top: 3px solid #7C3AED;">
+        <div class="kpi-title">الفعاليات والمسابقات والورش</div>
+        <div class="kpi-val" style="color: #7C3AED;">${eventsCount + compCount + workshopsCount}</div>
       </div>
-      <div class="kpi-card" style="border-top: 3px solid #F59E0B;">
-        <div class="kpi-title">الفعاليات والأنشطة العامة</div>
-        <div class="kpi-val" style="color: #F59E0B;">${eventsCount}</div>
-      </div>
-      <div class="kpi-card" style="border-top: 3px solid #8B5CF6;">
-        <div class="kpi-title">إجمالي المشاركين والطلاب</div>
-        <div class="kpi-val" style="color: #8B5CF6;">${totalBeneficiaries}</div>
+      <div class="kpi-card" style="border-top: 3px solid #0D9488;">
+        <div class="kpi-title">الزيارات والمهام الفنية</div>
+        <div class="kpi-val" style="color: #0D9488;">${tasksCount + visitsCount}</div>
       </div>
       <div class="kpi-card" style="border-top: 3px solid #16A34A;">
-        <div class="kpi-title">الفعاليات المكتملة والموثقة</div>
-        <div class="kpi-val" style="color: #16A34A;">${completedCount} (${totalEvents > 0 ? Math.round((completedCount / totalEvents) * 100) : 0}%)</div>
+        <div class="kpi-title">السجلات المنفذة والموثقة</div>
+        <div class="kpi-val" style="color: #16A34A;">${implementedCount} (${totalEvents > 0 ? Math.round((implementedCount / totalEvents) * 100) : 0}%)</div>
+      </div>
+      <div class="kpi-card" style="border-top: 3px solid #C2410C;">
+        <div class="kpi-title">جارية / قادمة / قيد التأكيد</div>
+        <div class="kpi-val" style="color: #C2410C;">${ongoingCount + upcomingCount + needsConfirmCount}</div>
       </div>
     </div>
 
@@ -677,7 +685,7 @@ export function printComprehensiveEventsMeetingsReport(
         <tr>
           <th style="width: 32px;" class="text-center">#</th>
           <th>العنوان والموضوع</th>
-          <th class="text-center" style="width: 65px;">التصنيف</th>
+          <th class="text-center" style="width: 75px;">التصنيف</th>
           <th class="text-center" style="width: 100px;">النوع</th>
           <th class="text-center" style="width: 95px;">طبيعة الفعالية</th>
           <th style="width: 80px;">التاريخ</th>
@@ -691,9 +699,10 @@ export function printComprehensiveEventsMeetingsReport(
       </thead>
       <tbody>
         ${items.map((it, idx) => {
+          const catConf = EVENT_CATEGORY_CONFIG[it.category] || { label: it.category, color: '#0369A1', bg: '#E0F2FE', border: '#BAE6FD', icon: '💼' };
           const typeConf = EVENT_TYPE_CONFIG[it.type] || EVENT_TYPE_CONFIG['داخلي'];
           const natureConf = EVENT_NATURE_CONFIG[it.nature] || EVENT_NATURE_CONFIG['اجتماع عمل'];
-          const statusConf = EVENT_STATUS_CONFIG[it.status] || EVENT_STATUS_CONFIG['مكتملة'];
+          const statusConf = EVENT_STATUS_CONFIG[it.status] || EVENT_STATUS_CONFIG['منفذة'] || EVENT_STATUS_CONFIG['مكتملة'];
 
           return `
             <tr>
@@ -703,8 +712,8 @@ export function printComprehensiveEventsMeetingsReport(
                 <span style="font-size: 8px; color: #64748B;">المنسق المسؤول: ${it.organizer}</span>
               </td>
               <td class="text-center">
-                <span class="badge" style="background: ${it.category === 'اجتماع' ? '#E0F2FE' : '#EDE9FE'}; color: ${it.category === 'اجتماع' ? '#0369A1' : '#7C3AED'};">
-                  ${it.category}
+                <span class="badge" style="background: ${catConf.bg}; color: ${catConf.color}; border: 1px solid ${catConf.border};">
+                  ${catConf.icon} ${catConf.label}
                 </span>
               </td>
               <td class="text-center">
@@ -753,10 +762,18 @@ export function printComprehensiveEventsMeetingsReport(
 // ─────────────────────────────────────────────────────────────────────────────
 export function printSingleEventMeetingReport(item: EventMeetingItem) {
   const isMeeting = item.category === 'اجتماع';
-  const docTypeLabel = isMeeting ? 'محضر اجتماع رسمي' : 'تقرير توثيق فعالية مدرسية';
+  let docTypeLabel = 'تقرير توثيق رسمي';
+  if (item.category === 'اجتماع') docTypeLabel = 'محضر اجتماع رسمي';
+  else if (item.category === 'فعالية') docTypeLabel = 'تقرير توثيق فعالية مدرسية';
+  else if (item.category === 'زيارة') docTypeLabel = 'تقرير زيارة تبادل خبرات';
+  else if (item.category === 'ورشة') docTypeLabel = 'تقرير ورشة عمل تدريبية';
+  else if (item.category === 'مسابقة') docTypeLabel = 'تقرير المشاركة في مسابقة';
+  else if (item.category === 'مهمة') docTypeLabel = 'تقرير مهمة وتكليف فني';
+
+  const catConf = EVENT_CATEGORY_CONFIG[item.category] || { label: item.category, color: '#0369A1', bg: '#E0F2FE', border: '#BAE6FD', icon: '💼' };
   const typeConf = EVENT_TYPE_CONFIG[item.type] || EVENT_TYPE_CONFIG['داخلي'];
   const natureConf = EVENT_NATURE_CONFIG[item.nature] || EVENT_NATURE_CONFIG['اجتماع عمل'];
-  const statusConf = EVENT_STATUS_CONFIG[item.status] || EVENT_STATUS_CONFIG['مكتملة'];
+  const statusConf = EVENT_STATUS_CONFIG[item.status] || EVENT_STATUS_CONFIG['منفذة'] || EVENT_STATUS_CONFIG['مكتملة'];
 
   const content = `
     <!-- Header (Centered Logos & Title) -->
@@ -781,6 +798,9 @@ export function printSingleEventMeetingReport(item: EventMeetingItem) {
         <span style="font-size: 8.5px; color: #BAE6FD;">العام الأكاديمي: ${item.academicYear} | كود الوثيقة: QES-DOC-${item.id} | النمط: تقرير رسمي أفقي (Landscape)</span>
       </div>
       <div style="display: flex; gap: 5px;">
+        <span class="badge" style="background: ${catConf.bg}; color: ${catConf.color}; border: 1px solid ${catConf.border};">
+          ${catConf.icon} ${catConf.label}
+        </span>
         <span class="badge" style="background: ${typeConf.bg}; color: ${typeConf.color};">
           ${typeConf.icon} ${typeConf.label}
         </span>

@@ -8,6 +8,7 @@ import {
   EventType,
   EventNature,
   EventStatus,
+  EVENT_CATEGORY_CONFIG,
   EVENT_TYPE_CONFIG,
   EVENT_NATURE_CONFIG,
   EVENT_STATUS_CONFIG,
@@ -183,6 +184,10 @@ export default function EventsMeetingsPage({
     const total = items.length;
     const meetings = items.filter(i => i.category === 'اجتماع').length;
     const events = items.filter(i => i.category === 'فعالية').length;
+    const tasks = items.filter(i => i.category === 'مهمة').length;
+    const visits = items.filter(i => i.category === 'زيارة').length;
+    const workshops = items.filter(i => i.category === 'ورشة').length;
+    const competitions = items.filter(i => i.category === 'مسابقة').length;
     const studentSupervision = items.filter(i => i.nature === 'إشراف على طلاب').length;
     const workMeetings = items.filter(i => i.nature === 'اجتماع عمل').length;
     const externalAndVisits = items.filter(
@@ -190,19 +195,30 @@ export default function EventsMeetingsPage({
     ).length;
     const remoteCount = items.filter(i => i.type === 'عن بعد' || i.location.includes('اون لاين')).length;
     const totalBeneficiaries = items.reduce((sum, curr) => sum + (curr.participantsCount || 0), 0);
-    const completed = items.filter(i => i.status === 'مكتملة').length;
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const implemented = items.filter(i => i.status === 'منفذة' || i.status === 'مكتملة').length;
+    const ongoing = items.filter(i => i.status === 'جارية').length;
+    const upcoming = items.filter(i => i.status === 'قادمة').length;
+    const needsConfirmation = items.filter(i => i.status === 'بحاجة لتأكيد').length;
+    const completionRate = total > 0 ? Math.round((implemented / total) * 100) : 0;
 
     return {
       total,
       meetings,
       events,
+      tasks,
+      visits,
+      workshops,
+      competitions,
       studentSupervision,
       workMeetings,
       externalAndVisits,
       remoteCount,
       totalBeneficiaries,
-      completed,
+      implemented,
+      ongoing,
+      upcoming,
+      needsConfirmation,
+      completed: implemented,
       completionRate,
     };
   }, [items]);
@@ -620,84 +636,84 @@ export default function EventsMeetingsPage({
         {/* Card 1: Total */}
         <div style={{ background: '#fff', borderRadius: '14px', padding: '1.15rem', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>إجمالي الفعاليات والاجتماعات</span>
+            <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>إجمالي السجلات والأنشطة</span>
             <span style={{ background: '#F1F5F9', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>📑</span>
           </div>
           <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0F2044', lineHeight: 1 }}>
             {stats.total}
           </div>
           <div style={{ fontSize: '0.7rem', color: '#0284C7', marginTop: '0.4rem', fontWeight: 700 }}>
-            {stats.meetings} اجتماع • {stats.events} فعالية
+            9 داخلي بالمدرسة • 7 خارجي
           </div>
         </div>
 
-        {/* Card 2: Student Supervision */}
-        <div style={{ background: '#fff', borderRadius: '14px', padding: '1.15rem', border: '1px solid #BBF7D0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        {/* Card 2: Meetings */}
+        <div style={{ background: '#fff', borderRadius: '14px', padding: '1.15rem', border: '1px solid #BAE6FD', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 700 }}>إشراف على طلاب</span>
-            <span style={{ background: '#DCFCE7', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>👨‍🎓</span>
+            <span style={{ fontSize: '0.78rem', color: '#0369A1', fontWeight: 700 }}>اجتماعات عمل رسمية</span>
+            <span style={{ background: '#E0F2FE', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>💼</span>
           </div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#166534', lineHeight: 1 }}>
-            {stats.studentSupervision}
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0369A1', lineHeight: 1 }}>
+            {stats.meetings}
           </div>
-          <div style={{ fontSize: '0.7rem', color: '#15803D', marginTop: '0.4rem', fontWeight: 700 }}>
-            أنشطة ومسابقات موجهة للطلبة
-          </div>
-        </div>
-
-        {/* Card 3: Work Meetings */}
-        <div style={{ background: '#fff', borderRadius: '14px', padding: '1.15rem', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>اجتماعات عمل رسمية</span>
-            <span style={{ background: '#F1F5F9', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>💼</span>
-          </div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0F2044', lineHeight: 1 }}>
-            {stats.workMeetings}
-          </div>
-          <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '0.4rem', fontWeight: 700 }}>
-            تنسيق إلكتروني وأكاديمي
+          <div style={{ fontSize: '0.7rem', color: '#0284C7', marginTop: '0.4rem', fontWeight: 700 }}>
+            لجان أكاديمية وتصميم مختبرات
           </div>
         </div>
 
-        {/* Card 4: External & Visits */}
-        <div style={{ background: '#fff', borderRadius: '14px', padding: '1.15rem', border: '1px solid #C7D2FE', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.78rem', color: '#4338CA', fontWeight: 700 }}>مشاركات خارجية وزيارات</span>
-            <span style={{ background: '#EEF2FF', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>🌐</span>
-          </div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#4338CA', lineHeight: 1 }}>
-            {stats.externalAndVisits}
-          </div>
-          <div style={{ fontSize: '0.7rem', color: '#4F46E5', marginTop: '0.4rem', fontWeight: 700 }}>
-            معارض، مسابقات، وتبادل خبرات
-          </div>
-        </div>
-
-        {/* Card 5: Total Beneficiaries */}
+        {/* Card 3: Events, Competitions & Workshops */}
         <div style={{ background: '#fff', borderRadius: '14px', padding: '1.15rem', border: '1px solid #DDD6FE', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.78rem', color: '#7C3AED', fontWeight: 700 }}>إجمالي المشاركين والطلاب</span>
-            <span style={{ background: '#EDE9FE', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>👥</span>
+            <span style={{ fontSize: '0.78rem', color: '#6D28D9', fontWeight: 700 }}>فعاليات ومسابقات وورش</span>
+            <span style={{ background: '#EDE9FE', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>🏆</span>
           </div>
           <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#7C3AED', lineHeight: 1 }}>
-            {stats.totalBeneficiaries}
+            {stats.events + stats.competitions + stats.workshops}
           </div>
           <div style={{ fontSize: '0.7rem', color: '#6D28D9', marginTop: '0.4rem', fontWeight: 700 }}>
-            طالباً ومشاركاً مستفيداً
+            {stats.events} فعاليات • {stats.competitions} مسابقة • {stats.workshops} ورشة
           </div>
         </div>
 
-        {/* Card 6: Completion Rate */}
+        {/* Card 4: Tasks & Visits */}
+        <div style={{ background: '#fff', borderRadius: '14px', padding: '1.15rem', border: '1px solid #99F6E4', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.78rem', color: '#0D9488', fontWeight: 700 }}>زيارات ومهام فنية</span>
+            <span style={{ background: '#CCFBF1', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>🤝</span>
+          </div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0D9488', lineHeight: 1 }}>
+            {stats.tasks + stats.visits}
+          </div>
+          <div style={{ fontSize: '0.7rem', color: '#0F766E', marginTop: '0.4rem', fontWeight: 700 }}>
+            {stats.visits} زيارة تبادل خبرات • {stats.tasks} مهام مراجعة
+          </div>
+        </div>
+
+        {/* Card 5: Implemented */}
         <div style={{ background: '#fff', borderRadius: '14px', padding: '1.15rem', border: '1px solid #BBF7D0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 700 }}>نسبة الفعاليات المكتملة</span>
+            <span style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 700 }}>السجلات المنفذة والموثقة</span>
             <span style={{ background: '#DCFCE7', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>✓</span>
           </div>
           <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#166534', lineHeight: 1 }}>
-            {stats.completionRate}%
+            {stats.implemented}
           </div>
           <div style={{ fontSize: '0.7rem', color: '#15803D', marginTop: '0.4rem', fontWeight: 700 }}>
-            {stats.completed} فعالية منجزة وموثقة
+            {stats.completionRate}% نسبة الإنجاز للشهر
+          </div>
+        </div>
+
+        {/* Card 6: Ongoing, Upcoming, Under Review */}
+        <div style={{ background: '#fff', borderRadius: '14px', padding: '1.15rem', border: '1px solid #FED7AA', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.78rem', color: '#C2410C', fontWeight: 700 }}>جارية / قادمة / قيد التأكيد</span>
+            <span style={{ background: '#FFEDD5', padding: '0.3rem', borderRadius: '8px', fontSize: '1.1rem' }}>⚡</span>
+          </div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#C2410C', lineHeight: 1 }}>
+            {stats.ongoing + stats.upcoming + stats.needsConfirmation}
+          </div>
+          <div style={{ fontSize: '0.7rem', color: '#9A3412', marginTop: '0.4rem', fontWeight: 700 }}>
+            {stats.ongoing} جارية • {stats.upcoming} قادمة • {stats.needsConfirmation} تأكيد
           </div>
         </div>
       </div>
@@ -804,7 +820,7 @@ export default function EventsMeetingsPage({
             />
           </div>
 
-          {/* Filter: Category (اجتماع / فعالية) */}
+          {/* Filter: Category */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>التصنيف:</span>
             <select
@@ -821,13 +837,17 @@ export default function EventsMeetingsPage({
                 outline: 'none',
               }}
             >
-              <option value="all">كافة التصنيفات</option>
-              <option value="اجتماع">اجتماع فقط</option>
-              <option value="فعالية">فعالية فقط</option>
+              <option value="all">كافة التصنيفات (6)</option>
+              <option value="اجتماع">💼 اجتماعات ({items.filter(i => i.category === 'اجتماع').length})</option>
+              <option value="فعالية">🎉 فعاليات ({items.filter(i => i.category === 'فعالية').length})</option>
+              <option value="مهمة">📋 مهام وتكليفات ({items.filter(i => i.category === 'مهمة').length})</option>
+              <option value="زيارة">🤝 زيارات ({items.filter(i => i.category === 'زيارة').length})</option>
+              <option value="ورشة">💡 ورش تدريبية ({items.filter(i => i.category === 'ورشة').length})</option>
+              <option value="مسابقة">🏆 مسابقات ({items.filter(i => i.category === 'مسابقة').length})</option>
             </select>
           </div>
 
-          {/* Filter: Type (الأنواع الـ 7) */}
+          {/* Filter: Type (الأنواع المعتمدة) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>النوع:</span>
             <select
@@ -844,11 +864,16 @@ export default function EventsMeetingsPage({
                 outline: 'none',
               }}
             >
-              <option value="all">كافة الأنواع (7)</option>
-              <option value="داخلي">🏢 داخلي</option>
+              <option value="all">كافة الأنواع</option>
+              <option value="داخلي">🏢 داخلي بالمدرسة</option>
               <option value="خارجي">🌐 خارجي</option>
-              <option value="عن بعد">💻 عن بعد (Online)</option>
+              <option value="عن بعد">💻 عن بعد (Microsoft Teams)</option>
               <option value="زيارة تبادل خبرات">🤝 زيارة تبادل خبرات</option>
+              <option value="مراجعة فنية">🔬 مراجعة فنية</option>
+              <option value="عرض مشروع طلابي">🚀 عرض مشروع طلابي</option>
+              <option value="مقابلات تحكيم">⚖️ مقابلات تحكيم</option>
+              <option value="حفل تكريم">🎖️ حفل تكريم</option>
+              <option value="ورشة تعريفية">💡 ورشة تعريفية</option>
               <option value="زيارة لمعرض">🏛️ زيارة لمعرض</option>
               <option value="مشاركة لمسابقة">🏆 مشاركة لمسابقة</option>
               <option value="فعالية">🎉 فعالية</option>
@@ -923,10 +948,12 @@ export default function EventsMeetingsPage({
               }}
             >
               <option value="all">كافة الحالات</option>
-              <option value="مكتملة">مكتملة</option>
-              <option value="قادمة">قادمة</option>
-              <option value="جارية">جارية</option>
-              <option value="مؤجلة">مؤجلة</option>
+              <option value="منفذة">✓ منفذة وموثقة ({items.filter(i => i.status === 'منفذة' || i.status === 'مكتملة').length})</option>
+              <option value="جارية">⚡ جارية ({items.filter(i => i.status === 'جارية').length})</option>
+              <option value="قادمة">⏳ قادمة ({items.filter(i => i.status === 'قادمة').length})</option>
+              <option value="بحاجة لتأكيد">⚠️ بحاجة لتأكيد ({items.filter(i => i.status === 'بحاجة لتأكيد').length})</option>
+              <option value="مكتملة">✓ مكتملة</option>
+              <option value="مؤجلة">⏸ مؤجلة</option>
             </select>
           </div>
 
@@ -1071,18 +1098,24 @@ export default function EventsMeetingsPage({
                   {/* Top Tags Bar */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '0.4rem', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                      <span
-                        style={{
-                          background: item.category === 'اجتماع' ? '#E0F2FE' : '#EDE9FE',
-                          color: item.category === 'اجتماع' ? '#0369A1' : '#7C3AED',
-                          fontSize: '0.72rem',
-                          fontWeight: 800,
-                          padding: '0.15rem 0.5rem',
-                          borderRadius: '6px',
-                        }}
-                      >
-                        {item.category === 'اجتماع' ? '💼 اجتماع' : '🎉 فعالية'}
-                      </span>
+                      {(() => {
+                        const catConf = EVENT_CATEGORY_CONFIG[item.category] || EVENT_CATEGORY_CONFIG['اجتماع'];
+                        return (
+                          <span
+                            style={{
+                              background: catConf.bg,
+                              color: catConf.color,
+                              border: `1px solid ${catConf.border}`,
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              padding: '0.15rem 0.5rem',
+                              borderRadius: '6px',
+                            }}
+                          >
+                            {catConf.icon} {catConf.label}
+                          </span>
+                        );
+                      })()}
                       <span
                         style={{
                           background: typeConf.bg,
@@ -1277,9 +1310,10 @@ export default function EventsMeetingsPage({
               </thead>
               <tbody>
                 {filteredItems.map((item, idx) => {
+                  const catConf = EVENT_CATEGORY_CONFIG[item.category] || EVENT_CATEGORY_CONFIG['اجتماع'];
                   const typeConf = EVENT_TYPE_CONFIG[item.type] || EVENT_TYPE_CONFIG['داخلي'];
                   const natureConf = EVENT_NATURE_CONFIG[item.nature] || EVENT_NATURE_CONFIG['اجتماع عمل'];
-                  const statusConf = EVENT_STATUS_CONFIG[item.status] || EVENT_STATUS_CONFIG['مكتملة'];
+                  const statusConf = EVENT_STATUS_CONFIG[item.status] || EVENT_STATUS_CONFIG['منفذة'] || EVENT_STATUS_CONFIG['مكتملة'];
 
                   return (
                     <tr key={item.id} style={{ borderBottom: '1px solid #E2E8F0', background: idx % 2 === 0 ? '#fff' : '#F8FAFC' }}>
@@ -1289,8 +1323,8 @@ export default function EventsMeetingsPage({
                         <span style={{ fontSize: '0.68rem', color: '#64748B' }}>{item.organizer}</span>
                       </td>
                       <td style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>
-                        <span style={{ background: item.category === 'اجتماع' ? '#E0F2FE' : '#EDE9FE', color: item.category === 'اجتماع' ? '#0369A1' : '#7C3AED', padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800 }}>
-                          {item.category}
+                        <span style={{ background: catConf.bg, color: catConf.color, border: `1px solid ${catConf.border}`, padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800 }}>
+                          {catConf.icon} {catConf.label}
                         </span>
                       </td>
                       <td style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>
@@ -1614,6 +1648,10 @@ export default function EventsMeetingsPage({
                   >
                     <option value="اجتماع">💼 اجتماع</option>
                     <option value="فعالية">🎉 فعالية</option>
+                    <option value="مهمة">📋 مهمة وتكليف فني</option>
+                    <option value="زيارة">🤝 زيارة تبادل خبرات</option>
+                    <option value="ورشة">💡 ورشة تدريبية</option>
+                    <option value="مسابقة">🏆 مسابقة تخصصية</option>
                   </select>
                 </div>
 
@@ -1980,9 +2018,11 @@ export default function EventsMeetingsPage({
                       outline: 'none',
                     }}
                   >
-                    <option value="مكتملة">✓ مكتملة وموثقة</option>
-                    <option value="قادمة">⏳ قادمة ومجدولة</option>
+                    <option value="منفذة">✓ منفذة وموثقة</option>
                     <option value="جارية">⚡ جارية حالياً</option>
+                    <option value="قادمة">⏳ قادمة ومجدولة</option>
+                    <option value="بحاجة لتأكيد">⚠️ بحاجة لتأكيد</option>
+                    <option value="مكتملة">✓ مكتملة</option>
                     <option value="مؤجلة">⏸ مؤجلة</option>
                   </select>
                 </div>
