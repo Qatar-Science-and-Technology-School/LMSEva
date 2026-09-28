@@ -8,8 +8,12 @@ import {
   DistanceLearningStatus,
   REASON_CONFIG,
   STATUS_CONFIG,
+  LMS_SECTIONS,
   GRADE_OPTIONS,
-  SECTION_OPTIONS,
+  ALL_SECTIONS,
+  getSectionsForGrade,
+  getGradeFromSection,
+  formatGradeLabel,
   SUBJECT_OPTIONS,
   calculateDaysCount,
   loadDistanceLearningRecords,
@@ -108,7 +112,7 @@ export default function DistanceLearningPage({
   }>({
     eventTitle: '',
     studentName: '',
-    grade: 'الصف العاشر',
+    grade: 'الصف 10',
     section: '1',
     fromDate: new Date().toISOString().split('T')[0],
     toDate: new Date().toISOString().split('T')[0],
@@ -147,7 +151,7 @@ export default function DistanceLearningPage({
     setFormData({
       eventTitle: '',
       studentName: '',
-      grade: 'الصف العاشر',
+      grade: 'الصف 10',
       section: '1',
       fromDate: today,
       toDate: today,
@@ -167,10 +171,16 @@ export default function DistanceLearningPage({
   // Open Edit Modal
   const handleOpenEditModal = (rec: DistanceLearningRecord) => {
     setEditingRecord(rec);
+    const recGrade = rec.grade
+      ? (GRADE_OPTIONS.includes(rec.grade)
+          ? rec.grade
+          : (GRADE_OPTIONS.find(g => g.replace(/\D/g, '') === rec.grade.replace(/\D/g, '')) || 'الصف 10'))
+      : 'الصف 10';
+
     setFormData({
       eventTitle: rec.eventTitle,
       studentName: rec.studentName,
-      grade: rec.grade || 'الصف العاشر',
+      grade: recGrade,
       section: rec.section || '1',
       fromDate: rec.fromDate,
       toDate: rec.toDate,
@@ -258,10 +268,16 @@ export default function DistanceLearningPage({
     return records.filter(r => {
       // Reason filter
       if (selectedReason !== 'all' && r.reason !== selectedReason) return false;
-      // Grade filter
-      if (selectedGrade !== 'all' && r.grade !== selectedGrade) return false;
-      // Section filter
-      if (selectedSection !== 'all' && r.section !== selectedSection) return false;
+      // Grade filter (support exact match or numeric match like "الصف 10" vs "10")
+      if (selectedGrade !== 'all') {
+        const selNum = selectedGrade.replace(/\D/g, '');
+        const rNum = (r.grade || '').replace(/\D/g, '');
+        if (r.grade !== selectedGrade && (!selNum || !rNum || selNum !== rNum)) return false;
+      }
+      // Section filter (support section code like "10/4" or section number like "4")
+      if (selectedSection !== 'all') {
+        if (r.gradeSection !== selectedSection && r.section !== selectedSection) return false;
+      }
       // Status filter
       if (selectedStatus !== 'all' && r.status !== selectedStatus) return false;
       // Search query
@@ -327,29 +343,31 @@ export default function DistanceLearningPage({
     ];
   }, [records]);
 
-  // Chart Data: Grade Distribution
+  // Chart Data: Grade Distribution (dynamically mapped across all LMS grades: 7, 9, 10, 11, 12)
   const gradeChartData = useMemo(() => {
-    const counts: Record<string, { records: number; days: number }> = {
-      'الصف التاسع': { records: 0, days: 0 },
-      'الصف العاشر': { records: 0, days: 0 },
-      'الصف الحادي عشر': { records: 0, days: 0 },
-      'الصف الثاني عشر': { records: 0, days: 0 },
-    };
+    const counts: Record<string, { records: number; days: number }> = {};
+    GRADE_OPTIONS.forEach(g => {
+      counts[g] = { records: 0, days: 0 };
+    });
 
     records.forEach(r => {
-      const g = r.grade || 'الصف العاشر';
-      if (counts[g]) {
-        counts[g].records++;
-        counts[g].days += (r.daysCount || 1);
+      let matchedGrade = GRADE_OPTIONS.find(g => g === r.grade);
+      if (!matchedGrade) {
+        const rNum = (r.grade || '').replace(/\D/g, '');
+        matchedGrade = GRADE_OPTIONS.find(g => g.replace(/\D/g, '') === rNum);
+      }
+      if (matchedGrade && counts[matchedGrade]) {
+        counts[matchedGrade].records++;
+        counts[matchedGrade].days += (r.daysCount || 1);
       }
     });
 
-    return [
-      { grade: 'الصف التاسع', count: counts['الصف التاسع'].records, days: counts['الصف التاسع'].days },
-      { grade: 'الصف العاشر', count: counts['الصف العاشر'].records, days: counts['الصف العاشر'].days },
-      { grade: 'الصف الحادي عشر', count: counts['الصف الحادي عشر'].records, days: counts['الصف الحادي عشر'].days },
-      { grade: 'الصف الثاني عشر', count: counts['الصف الثاني عشر'].records, days: counts['الصف الثاني عشر'].days },
-    ];
+    return GRADE_OPTIONS.map(g => ({
+      grade: formatGradeLabel(g),
+      gradeCode: g,
+      count: counts[g]?.records || 0,
+      days: counts[g]?.days || 0,
+    }));
   }, [records]);
 
   // Export to Excel
@@ -834,7 +852,10 @@ export default function DistanceLearningPage({
             <span style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 700 }}>الصف:</span>
             <select
               value={selectedGrade}
-              onChange={e => setSelectedGrade(e.target.value)}
+              onChange={e => {
+                setSelectedGrade(e.target.value);
+                setSelectedSection('all');
+              }}
               style={{
                 padding: '0.5rem 0.75rem',
                 borderRadius: '8px',
@@ -845,9 +866,9 @@ export default function DistanceLearningPage({
                 color: '#334155',
               }}
             >
-              <option value="all">كافة الصفوف</option>
+              <option value="all">كافة الصفوف (7، 9، 10، 11، 12)</option>
               {GRADE_OPTIONS.map(g => (
-                <option key={g} value={g}>{g}</option>
+                <option key={g} value={g}>{formatGradeLabel(g)}</option>
               ))}
             </select>
           </div>
@@ -868,9 +889,13 @@ export default function DistanceLearningPage({
                 color: '#334155',
               }}
             >
-              <option value="all">الكل</option>
-              {SECTION_OPTIONS.map(s => (
-                <option key={s} value={s}>شعبة {s}</option>
+              <option value="all">
+                {selectedGrade === 'all' ? `كافة الشعب (${ALL_SECTIONS.length} شعبة)` : `شعب ${formatGradeLabel(selectedGrade)}`}
+              </option>
+              {getSectionsForGrade(selectedGrade).map(s => (
+                <option key={s.section} value={s.section}>
+                  شعبة {s.section}
+                </option>
               ))}
             </select>
           </div>
@@ -1468,11 +1493,16 @@ export default function DistanceLearningPage({
                 {/* Grade */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
-                    الصف الدراسي <span style={{ color: '#DC2626' }}>*</span>
+                    الصف الدراسي (تحليل الشعب والمواد) <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <select
                     value={formData.grade}
-                    onChange={e => setFormData({ ...formData, grade: e.target.value })}
+                    onChange={e => {
+                      const newGrade = e.target.value;
+                      const secs = getSectionsForGrade(newGrade);
+                      const defaultSec = secs.length > 0 ? secs[0].sectionNum : '1';
+                      setFormData({ ...formData, grade: newGrade, section: defaultSec });
+                    }}
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.75rem',
@@ -1480,10 +1510,11 @@ export default function DistanceLearningPage({
                       border: '1px solid #CBD5E1',
                       fontSize: '0.82rem',
                       background: '#FFFFFF',
+                      fontWeight: 700,
                     }}
                   >
                     {GRADE_OPTIONS.map(g => (
-                      <option key={g} value={g}>{g}</option>
+                      <option key={g} value={g}>{formatGradeLabel(g)}</option>
                     ))}
                   </select>
                 </div>
@@ -1491,7 +1522,7 @@ export default function DistanceLearningPage({
                 {/* Section */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
-                    الشعبة <span style={{ color: '#DC2626' }}>*</span>
+                    الشعبة المعتمدة <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <select
                     value={formData.section}
@@ -1503,10 +1534,13 @@ export default function DistanceLearningPage({
                       border: '1px solid #CBD5E1',
                       fontSize: '0.82rem',
                       background: '#FFFFFF',
+                      fontWeight: 700,
                     }}
                   >
-                    {SECTION_OPTIONS.map(s => (
-                      <option key={s} value={s}>شعبة {s}</option>
+                    {getSectionsForGrade(formData.grade).map(s => (
+                      <option key={s.section} value={s.sectionNum}>
+                        شعبة {s.section} (شعبة {s.sectionNum})
+                      </option>
                     ))}
                   </select>
                 </div>

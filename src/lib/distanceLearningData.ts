@@ -1,7 +1,10 @@
 // =============================================================================
 // إدارة بيانات وسجلات التعلم عن بعد (Distance Learning Data Management)
 // مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين - قسم التعليم الإلكتروني
+// ربط متكامل مع شعب وفصول صفحة "تحليل الشعب والمواد" (SECTIONS_LMS_STATS)
 // =============================================================================
+
+import { SECTIONS_LMS_STATS } from './lmsReportSeptember2026';
 
 export type DistanceLearningReason =
   | 'عذر طبي'
@@ -19,9 +22,9 @@ export interface DistanceLearningRecord {
   id: string;
   eventTitle: string; // فعالية التعلم عن بعد
   studentName: string; // اسم الطالب
-  grade: string; // الصف (التاسع / العاشر / الحادي عشر / الثاني عشر)
-  section: string; // الشعبة (1 / 2 / 3)
-  gradeSection: string; // الصف والشعبة (مثل: 10/2)
+  grade: string; // الصف (مثل: الصف 7، الصف 9، الصف 10، الصف 11، الصف 12)
+  section: string; // الشعبة (مثل: 1، 2، 3، 4، 5)
+  gradeSection: string; // الصف والشعبة المعتمَد (مثل: 7/1، 9/2، 10/4، 11/2، 12/5)
   fromDate: string; // من تاريخ YYYY-MM-DD
   toDate: string; // إلى تاريخ YYYY-MM-DD
   daysCount: number; // عدد الأيام
@@ -36,6 +39,76 @@ export interface DistanceLearningRecord {
   academicYear: string; // العام الأكاديمي
   createdAt: string;
   updatedAt: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// استخراج الشعب والصفوف المعتمدة من صفحة "تحليل الشعب والمواد" (19 شعبة و5 صفوف)
+// ─────────────────────────────────────────────────────────────────────────────
+export interface SchoolSectionInfo {
+  section: string;      // رمز الشعبة مثل "7/1", "10/4"
+  grade: string;        // الصف مثل "الصف 7", "الصف 10"
+  gradeLabel: string;   // مسمى توضيحي مثل "الصف 7 (السابع)"
+  sectionNum: string;   // رقم الشعبة مثل "1", "4"
+  studentsCount: number;
+}
+
+// توليد قائمة الشعب المعتمدة وترتيبها تصاعدياً
+export const LMS_SECTIONS: SchoolSectionInfo[] = SECTIONS_LMS_STATS.map(s => {
+  const parts = s.section.split('/');
+  const gradeNum = parts[0];
+  const secNum = parts[1] || '1';
+
+  let gradeLabel = s.grade;
+  if (gradeNum === '7') gradeLabel = 'الصف 7 (السابع)';
+  else if (gradeNum === '9') gradeLabel = 'الصف 9 (التاسع)';
+  else if (gradeNum === '10') gradeLabel = 'الصف 10 (العاشر)';
+  else if (gradeNum === '11') gradeLabel = 'الصف 11 (الحادي عشر)';
+  else if (gradeNum === '12') gradeLabel = 'الصف 12 (الثاني عشر)';
+
+  return {
+    section: s.section,
+    grade: s.grade,
+    gradeLabel,
+    sectionNum: secNum,
+    studentsCount: s.studentsCount,
+  };
+}).sort((a, b) => {
+  const [gA, sA] = a.section.split('/').map(Number);
+  const [gB, sB] = b.section.split('/').map(Number);
+  if (gA !== gB) return gA - gB;
+  return sA - sB;
+});
+
+// قائمة الصفوف المعتمدة مرتبة (الصف 7، الصف 9، الصف 10، الصف 11، الصف 12)
+export const GRADE_OPTIONS = Array.from(new Set(LMS_SECTIONS.map(s => s.grade)));
+
+// قائمة كافة الشعب المعتمدة بالكامل
+export const ALL_SECTIONS = LMS_SECTIONS.map(s => s.section);
+
+// جلب الشعب التابعة لصف معين
+export function getSectionsForGrade(grade: string): SchoolSectionInfo[] {
+  if (!grade || grade === 'all') return LMS_SECTIONS;
+  return LMS_SECTIONS.filter(s => s.grade === grade || s.gradeLabel === grade);
+}
+
+// جلب الصف من كود الشعبة مثل "10/4" -> "الصف 10"
+export function getGradeFromSection(sectionCode: string): string {
+  const found = LMS_SECTIONS.find(s => s.section === sectionCode);
+  if (found) return found.grade;
+  const gradeNum = sectionCode.split('/')[0];
+  return `الصف ${gradeNum}`;
+}
+
+// تنسيق اسم الصف
+export function formatGradeLabel(grade: string): string {
+  const found = LMS_SECTIONS.find(s => s.grade === grade);
+  if (found) return found.gradeLabel;
+  if (grade.includes('7') || grade.includes('سابع')) return 'الصف 7 (السابع)';
+  if (grade.includes('9') || grade.includes('تاسع')) return 'الصف 9 (التاسع)';
+  if (grade.includes('10') || grade.includes('عاشر')) return 'الصف 10 (العاشر)';
+  if (grade.includes('11') || grade.includes('حادي')) return 'الصف 11 (الحادي عشر)';
+  if (grade.includes('12') || grade.includes('ثاني')) return 'الصف 12 (الثاني عشر)';
+  return grade;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,15 +207,6 @@ export const STATUS_CONFIG: Record<
   },
 };
 
-export const GRADE_OPTIONS = [
-  'الصف التاسع',
-  'الصف العاشر',
-  'الصف الحادي عشر',
-  'الصف الثاني عشر',
-];
-
-export const SECTION_OPTIONS = ['1', '2', '3'];
-
 export const SUBJECT_OPTIONS = [
   'الرياضيات',
   'الفيزياء',
@@ -168,14 +232,14 @@ export function calculateDaysCount(fromDate: string, toDate: string): number {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// البيانات الأولية الافتراضية (Seed Data)
+// البيانات الأولية الافتراضية متوافقة بالكامل مع شعب SECTIONS_LMS_STATS
 // ─────────────────────────────────────────────────────────────────────────────
 export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
   {
     id: 'DL-2026-001',
     eventTitle: 'المشاركة في أولمبياد العلوم الدولي للناشئين (IJSO)',
     studentName: 'صالح علي المري',
-    grade: 'الصف العاشر',
+    grade: 'الصف 10',
     section: '2',
     gradeSection: '10/2',
     fromDate: '2026-09-03',
@@ -197,7 +261,7 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     id: 'DL-2026-002',
     eventTitle: 'تمثيل المدرسة في معرض آيسف الدولي للعلوم والهندسة (ISEF)',
     studentName: 'عبدالله محمد الكواري',
-    grade: 'الصف الحادي عشر',
+    grade: 'الصف 11',
     section: '1',
     gradeSection: '11/1',
     fromDate: '2026-09-08',
@@ -219,7 +283,7 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     id: 'DL-2026-003',
     eventTitle: 'متابعة الحصص الدراسية إثر عملية جراحية بالقدم',
     studentName: 'خالد جاسم المناعي',
-    grade: 'الصف التاسع',
+    grade: 'الصف 9',
     section: '1',
     gradeSection: '9/1',
     fromDate: '2026-09-10',
@@ -241,7 +305,7 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     id: 'DL-2026-004',
     eventTitle: 'المشاركة في المؤتمر الدولي لتطبيقات الذكاء الاصطناعي والروبوت',
     studentName: 'ناصر راشد الهاجري',
-    grade: 'الصف الثاني عشر',
+    grade: 'الصف 12',
     section: '2',
     gradeSection: '12/2',
     fromDate: '2026-09-14',
@@ -263,7 +327,7 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     id: 'DL-2026-005',
     eventTitle: 'يوم التعلم عن بعد الشامل لتعزيز البنية الرقمية وحالات الطوارئ',
     studentName: 'جميع طلاب المدرسة (سجل عام معتمد)',
-    grade: 'الصف العاشر',
+    grade: 'الصف 10',
     section: '1',
     gradeSection: '10/1',
     fromDate: '2026-09-22',
@@ -285,7 +349,7 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     id: 'DL-2026-006',
     eventTitle: 'فترة نقاهة صحية - عذر طبي معتمد من المستشفى الأهلي',
     studentName: 'محمد أحمد السليطي',
-    grade: 'الصف العاشر',
+    grade: 'الصف 10',
     section: '3',
     gradeSection: '10/3',
     fromDate: '2026-09-15',
@@ -307,7 +371,7 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     id: 'DL-2026-007',
     eventTitle: 'المشاركة في أولمبياد الروبوت العالمي (WRO International)',
     studentName: 'حمد سلطان النعيمي',
-    grade: 'الصف الحادي عشر',
+    grade: 'الصف 11',
     section: '2',
     gradeSection: '11/2',
     fromDate: '2026-09-24',
@@ -329,7 +393,7 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     id: 'DL-2026-008',
     eventTitle: 'المشاركة في منتدى القيادات الشبابية للتكنولوجيا والابتكار',
     studentName: 'فيصل عبدالرحمن فخرو',
-    grade: 'الصف الثاني عشر',
+    grade: 'الصف 12',
     section: '1',
     gradeSection: '12/1',
     fromDate: '2026-09-25',
@@ -351,7 +415,7 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     id: 'DL-2026-009',
     eventTitle: 'عذر طبي - اشتباه وعكة صحية وراحة منزلية مؤقتة',
     studentName: 'راشد جابر المري',
-    grade: 'الصف التاسع',
+    grade: 'الصف 9',
     section: '2',
     gradeSection: '9/2',
     fromDate: '2026-09-27',
@@ -373,9 +437,9 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     id: 'DL-2026-010',
     eventTitle: 'المشاركة في هاكاثون الابتكار المدرسي الخليجي',
     studentName: 'سعود عبدالعزيز الباكر',
-    grade: 'الصف العاشر',
-    section: '1',
-    gradeSection: '10/1',
+    grade: 'الصف 10',
+    section: '4',
+    gradeSection: '10/4',
     fromDate: '2026-09-18',
     toDate: '2026-09-21',
     daysCount: 4,
@@ -390,6 +454,94 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
     academicYear: '2026-2027',
     createdAt: '2026-09-16T08:00:00.000Z',
     updatedAt: '2026-09-22T10:00:00.000Z',
+  },
+  {
+    id: 'DL-2026-011',
+    eventTitle: 'عذر طبي - متابعة الحصص الدراسية من المنزل بعد وعكة صحية',
+    studentName: 'تميم جابر العذبة',
+    grade: 'الصف 7',
+    section: '1',
+    gradeSection: '7/1',
+    fromDate: '2026-09-12',
+    toDate: '2026-09-16',
+    daysCount: 5,
+    reason: 'عذر طبي',
+    reasonDetails: 'عذر طبي معتمد من المركز الصحي - متابعة البث التفاعلي عبر المنصة',
+    status: 'مكتمل',
+    subjects: ['الرياضيات', 'العلوم', 'اللغة الإنجليزية', 'اللغة العربية'],
+    supervisor: 'أخصائي التعليم الإلكتروني',
+    platform: 'نظام قطر للتعليم',
+    commitmentRate: 91,
+    notes: 'تم تسليم كافة الأنشطة الصفية والواجبات اليومية عبر نظام قطر للتعليم',
+    academicYear: '2026-2027',
+    createdAt: '2026-09-11T08:00:00.000Z',
+    updatedAt: '2026-09-17T10:00:00.000Z',
+  },
+  {
+    id: 'DL-2026-012',
+    eventTitle: 'المشاركة في مسابقة الروبوت والذكاء الاصطناعي للمرحلة الإعدادية',
+    studentName: 'غانم حمد الرميحي',
+    grade: 'الصف 7',
+    section: '2',
+    gradeSection: '7/2',
+    fromDate: '2026-09-20',
+    toDate: '2026-09-24',
+    daysCount: 5,
+    reason: 'السفر لمسابقة',
+    reasonDetails: 'تمثيل المدرسة في البطولة الإقليمية للروبوت وتصميم المسارات',
+    status: 'مكتمل',
+    subjects: ['علوم الحاسوب والروبوت', 'الرياضيات', 'العلوم'],
+    supervisor: 'م. أحمد عادل طبيشات',
+    platform: 'Microsoft Teams',
+    commitmentRate: 96,
+    notes: 'أداء متميز والتزام كامل بمتابعة الدروس عبر المنصة',
+    academicYear: '2026-2027',
+    createdAt: '2026-09-18T09:00:00.000Z',
+    updatedAt: '2026-09-25T11:00:00.000Z',
+  },
+  {
+    id: 'DL-2026-013',
+    eventTitle: 'المشاركة في الأولمبياد الدولي للفيزياء التطبيقية',
+    studentName: 'سلطان خالد الكعبي',
+    grade: 'الصف 11',
+    section: '4',
+    gradeSection: '11/4',
+    fromDate: '2026-09-15',
+    toDate: '2026-09-22',
+    daysCount: 8,
+    reason: 'السفر لمسابقة',
+    reasonDetails: 'معسكر تدريبي مكثف والتنافس في المرحلة النهائية للأولمبياد',
+    status: 'مكتمل',
+    subjects: ['الفيزياء', 'الرياضيات', 'الكيمياء'],
+    supervisor: 'النائب الأكاديمي د. راني التوم',
+    platform: 'نظام قطر للتعليم و Teams',
+    commitmentRate: 98,
+    notes: 'تحقيق الميدالية الفضية والتزام متكامل بكافة التقييمات المدرسية',
+    academicYear: '2026-2027',
+    createdAt: '2026-09-13T08:30:00.000Z',
+    updatedAt: '2026-09-23T12:00:00.000Z',
+  },
+  {
+    id: 'DL-2026-014',
+    eventTitle: 'المشاركة في مؤتمر الطاقة المستدامة والمدن الخضراء',
+    studentName: 'جاسم عيسى المناعي',
+    grade: 'الصف 12',
+    section: '5',
+    gradeSection: '12/5',
+    fromDate: '2026-09-26',
+    toDate: '2026-09-29',
+    daysCount: 4,
+    reason: 'السفر لمؤتمر',
+    reasonDetails: 'عرض نموذج تخرج مصغر حول تحلية المياه بالطاقة الشمسية',
+    status: 'قيد المتابعة',
+    subjects: ['الفيزياء', 'الكيمياء', 'التصميم والتكنولوجيا والابتكار'],
+    supervisor: 'م. أحمد عادل طبيشات',
+    platform: 'Microsoft Teams',
+    commitmentRate: 94,
+    notes: 'متابعة يومية للواجبات والتقييمات البديلة المعتمدة',
+    academicYear: '2026-2027',
+    createdAt: '2026-09-25T10:00:00.000Z',
+    updatedAt: '2026-09-28T09:00:00.000Z',
   }
 ];
 
