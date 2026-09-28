@@ -22,6 +22,7 @@ import {
   restoreActionOriginalValues,
   reorderObjectives,
   reorderActions,
+  printOfficialOperationalPlan,
 } from '@/lib/operationalPlanData';
 
 interface Props {
@@ -53,6 +54,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
   const [editingObjective, setEditingObjective] = useState<OperationalObjective | null>(null);
   const [deletingActionId, setDeletingActionId] = useState<string | null>(null);
   const [deletingObjectiveId, setDeletingObjectiveId] = useState<string | null>(null);
+  const [deleteReassignToId, setDeleteReassignToId] = useState<string>('DELETE_ACTIONS');
   const [showExcludedDrawer, setShowExcludedDrawer] = useState(false);
   const [viewingSourceAction, setViewingSourceAction] = useState<OperationalAction | null>(null);
   const [showPrintInstructionsModal, setShowPrintInstructionsModal] = useState(false);
@@ -61,6 +63,11 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
   const [newObjTitle, setNewObjTitle] = useState('');
   const [newObjCode, setNewObjCode] = useState('');
   const [newObjDesc, setNewObjDesc] = useState('');
+
+  // Form State for Edit Objective
+  const [editObjTitle, setEditObjTitle] = useState('');
+  const [editObjCode, setEditObjCode] = useState('');
+  const [editObjDesc, setEditObjDesc] = useState('');
 
   // Form State for Add Action
   const [newActObjectiveId, setNewActObjectiveId] = useState('');
@@ -206,7 +213,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
       });
   }, [state, filteredActions, selectedObjectiveFilter, selectedStatusFilter, selectedAudienceFilter, searchQuery]);
 
-  // Group full actions by objective for official printing (Strict: complete plan printed by default!)
+  // Group full actions by objective for official printing
   const groupedPrintData = useMemo(() => {
     if (!state) return [];
     const map = new Map<string, OperationalAction[]>();
@@ -214,7 +221,6 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
       map.set(obj.id, []);
     });
 
-    // Sort actions by order
     const sorted = [...state.actions].sort((a, b) => (a.order || 0) - (b.order || 0));
     sorted.forEach(action => {
       const list = map.get(action.objectiveId);
@@ -231,14 +237,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
     }));
   }, [state]);
 
-  // ─── Actions & Handlers ────────────────────────────────────────────────────
-  const handleToggleStatus = async (actionId: string) => {
-    if (!state || !isAdmin) return;
-    const updated = toggleActionStatus(state, actionId);
-    setState(updated);
-    await saveOperationalPlan(updated);
-  };
-
+  // ─── Objective Handlers (Add / Edit / Delete / Reorder) ────────────────────
   const handleAddObjectiveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!state || !newObjTitle.trim()) return;
@@ -249,6 +248,57 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
     setNewObjCode('');
     setNewObjDesc('');
     setShowAddObjModal(false);
+  };
+
+  const handleOpenEditObjective = (obj: OperationalObjective) => {
+    setEditingObjective(obj);
+    setEditObjTitle(obj.title);
+    setEditObjCode(obj.code);
+    setEditObjDesc(obj.description || '');
+  };
+
+  const handleEditObjectiveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!state || !editingObjective || !editObjTitle.trim()) return;
+    const updated = updateObjective(state, editingObjective.id, {
+      title: editObjTitle.trim(),
+      code: editObjCode.trim() || editingObjective.code,
+      description: editObjDesc.trim(),
+    });
+    setState(updated);
+    await saveOperationalPlan(updated);
+    setEditingObjective(null);
+  };
+
+  const handleDeleteObjectiveConfirm = async () => {
+    if (!state || !deletingObjectiveId) return;
+    const reassignId = deleteReassignToId === 'DELETE_ACTIONS' ? undefined : deleteReassignToId;
+    const updated = deleteObjective(state, deletingObjectiveId, reassignId);
+    setState(updated);
+    await saveOperationalPlan(updated);
+    setDeletingObjectiveId(null);
+    setDeleteReassignToId('DELETE_ACTIONS');
+  };
+
+  const handleMoveObjective = async (objectiveId: string, direction: 'up' | 'down') => {
+    if (!state || !isAdmin) return;
+    const index = state.objectives.findIndex(o => o.id === objectiveId);
+    if (index < 0) return;
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === state.objectives.length - 1) return;
+
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    const updated = reorderObjectives(state, index, targetIndex);
+    setState(updated);
+    await saveOperationalPlan(updated);
+  };
+
+  // ─── Action Handlers (Add / Edit / Toggle / Delete / Reorder) ───────────────
+  const handleToggleStatus = async (actionId: string) => {
+    if (!state || !isAdmin) return;
+    const updated = toggleActionStatus(state, actionId);
+    setState(updated);
+    await saveOperationalPlan(updated);
   };
 
   const handleAddActionSubmit = async (e: React.FormEvent) => {
@@ -306,14 +356,6 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
     setDeletingActionId(null);
   };
 
-  const handleDeleteObjectiveConfirm = async () => {
-    if (!state || !deletingObjectiveId) return;
-    const updated = deleteObjective(state, deletingObjectiveId);
-    setState(updated);
-    await saveOperationalPlan(updated);
-    setDeletingObjectiveId(null);
-  };
-
   const handleRestoreExcluded = async (sourceId: string) => {
     if (!state) return;
     const unexcluded = restoreExcludedAction(state, sourceId);
@@ -330,7 +372,6 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
     if (direction === 'down' && index === objActions.length - 1) return;
 
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    // Map back to global actions indices
     const globalFrom = state.actions.findIndex(a => a.id === objActions[index].id);
     const globalTo = state.actions.findIndex(a => a.id === objActions[targetIndex].id);
 
@@ -339,11 +380,11 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
     await saveOperationalPlan(updated);
   };
 
-  const handleTriggerPrint = () => {
-    setShowPrintInstructionsModal(false);
-    setTimeout(() => {
-      window.print();
-    }, 250);
+  // Launch official printout
+  const handlePrintOfficial = () => {
+    if (state) {
+      printOfficialOperationalPlan(state, { academicYear: selectedYear });
+    }
   };
 
   if (loading) {
@@ -505,9 +546,9 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
               <span>{syncing ? 'جاري المزامنة...' : 'تحديث البيانات الآن'}</span>
             </button>
 
-            {/* Print Official Button */}
+            {/* Print Official Button (Direct Standalone Window with Official Letterhead & Signatures) */}
             <button
-              onClick={() => setShowPrintInstructionsModal(true)}
+              onClick={handlePrintOfficial}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.4rem',
                 background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
@@ -539,14 +580,15 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
                 <button
                   onClick={() => setShowAddObjModal(true)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '0.3rem',
-                    background: '#F8FAFC', border: '1px solid #CBD5E1', color: '#334155',
-                    padding: '0.45rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem',
-                    fontWeight: 700, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '0.4rem',
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    color: '#FFFFFF', border: 'none',
+                    padding: '0.45rem 0.9rem', borderRadius: '8px', fontSize: '0.82rem',
+                    fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 6px rgba(5,150,105,0.25)',
                   }}
                 >
                   <span>🎯</span>
-                  <span>إضافة هدف</span>
+                  <span>إضافة هدف استراتيجي</span>
                 </button>
 
                 {state.excludedSourceIds && state.excludedSourceIds.length > 0 && (
@@ -791,7 +833,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
                         </td>
                       </tr>
                     ) : (
-                      groupedScreenData.map(group => {
+                      groupedScreenData.map((group, groupIdx) => {
                         const { objective, actions } = group;
                         return (
                           <React.Fragment key={objective.id}>
@@ -799,22 +841,31 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
                             <tr style={{ background: '#F1F5F9', borderBottom: '2px solid #CBD5E1' }}>
                               <td colSpan={isAdmin ? 8 : 7} style={{ padding: '0.75rem 1rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                  {/* Objective Details */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                                     <span style={{
-                                      background: '#0F2044', color: '#FFFFFF', padding: '0.2rem 0.6rem',
-                                      borderRadius: '6px', fontSize: '0.75rem', fontWeight: 900
+                                      background: '#0F2044', color: '#FFFFFF', padding: '0.25rem 0.65rem',
+                                      borderRadius: '6px', fontSize: '0.78rem', fontWeight: 900
                                     }}>
                                       {objective.code}
                                     </span>
-                                    <span style={{ fontWeight: 900, color: '#0F2044', fontSize: '0.92rem' }}>
+                                    <span style={{ fontWeight: 900, color: '#0F2044', fontSize: '0.94rem' }}>
                                       {objective.title}
                                     </span>
                                     <span style={{ fontSize: '0.72rem', color: '#64748B', background: '#E2E8F0', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
                                       {actions.length} إجراء
                                     </span>
+                                    {objective.description && (
+                                      <span style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                                        • {objective.description}
+                                      </span>
+                                    )}
                                   </div>
+
+                                  {/* Objective Controls (Add action, Edit objective, Move, Delete) */}
                                   {isAdmin && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                                      {/* Add action under this objective */}
                                       <button
                                         onClick={() => {
                                           setNewActObjectiveId(objective.id);
@@ -822,24 +873,73 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
                                         }}
                                         style={{
                                           background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px',
-                                          padding: '0.25rem 0.55rem', fontSize: '0.72rem', fontWeight: 700,
-                                          color: '#0F2044', cursor: 'pointer'
+                                          padding: '0.25rem 0.6rem', fontSize: '0.72rem', fontWeight: 700,
+                                          color: '#0F2044', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
                                         }}
+                                        title="إضافة إجراء جديد تحت هذا الهدف"
                                       >
-                                        ➕ إضافة إجراء هنا
+                                        <span>➕</span>
+                                        <span>إضافة إجراء</span>
                                       </button>
-                                      {objective.isManual && (
-                                        <button
-                                          onClick={() => setDeletingObjectiveId(objective.id)}
-                                          style={{
-                                            background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '6px',
-                                            padding: '0.25rem 0.55rem', fontSize: '0.72rem', fontWeight: 700,
-                                            color: '#DC2626', cursor: 'pointer'
-                                          }}
-                                        >
-                                          حذف الهدف
-                                        </button>
-                                      )}
+
+                                      {/* Edit Objective */}
+                                      <button
+                                        onClick={() => handleOpenEditObjective(objective)}
+                                        style={{
+                                          background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '6px',
+                                          padding: '0.25rem 0.6rem', fontSize: '0.72rem', fontWeight: 800,
+                                          color: '#1D4ED8', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
+                                        }}
+                                        title="تعديل عنوان ورمز ووصف هذا الهدف"
+                                      >
+                                        <span>✏️</span>
+                                        <span>تعديل الهدف</span>
+                                      </button>
+
+                                      {/* Reorder Objective Up */}
+                                      <button
+                                        onClick={() => handleMoveObjective(objective.id, 'up')}
+                                        disabled={groupIdx === 0}
+                                        style={{
+                                          background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px',
+                                          padding: '0.25rem 0.45rem', fontSize: '0.72rem', fontWeight: 700,
+                                          color: groupIdx === 0 ? '#CBD5E1' : '#475569', cursor: groupIdx === 0 ? 'not-allowed' : 'pointer'
+                                        }}
+                                        title="تحريك الهدف لأعلى"
+                                      >
+                                        ⬆️
+                                      </button>
+
+                                      {/* Reorder Objective Down */}
+                                      <button
+                                        onClick={() => handleMoveObjective(objective.id, 'down')}
+                                        disabled={groupIdx === state.objectives.length - 1}
+                                        style={{
+                                          background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px',
+                                          padding: '0.25rem 0.45rem', fontSize: '0.72rem', fontWeight: 700,
+                                          color: groupIdx === state.objectives.length - 1 ? '#CBD5E1' : '#475569', cursor: groupIdx === state.objectives.length - 1 ? 'not-allowed' : 'pointer'
+                                        }}
+                                        title="تحريك الهدف لأسفل"
+                                      >
+                                        ⬇️
+                                      </button>
+
+                                      {/* Delete Objective */}
+                                      <button
+                                        onClick={() => {
+                                          setDeletingObjectiveId(objective.id);
+                                          setDeleteReassignToId('DELETE_ACTIONS');
+                                        }}
+                                        style={{
+                                          background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '6px',
+                                          padding: '0.25rem 0.6rem', fontSize: '0.72rem', fontWeight: 800,
+                                          color: '#DC2626', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem'
+                                        }}
+                                        title="حذف هذا الهدف من الخطة"
+                                      >
+                                        <span>🗑️</span>
+                                        <span>حذف الهدف</span>
+                                      </button>
                                     </div>
                                   )}
                                 </div>
@@ -1035,14 +1135,14 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #E2E8F0' }}>
               <div>
                 <h3 style={{ margin: 0, color: '#0F2044', fontSize: '1.1rem', fontWeight: 900 }}>
-                  معاينة وثيقة الخطة الإجرائية الرسمية (قالب A3 أفقي)
+                  معاينة وثيقة الخطة الإجرائية الرسمية (قالب A3 أفقي مع الترويسة والتوقيعات)
                 </h3>
                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.78rem', color: '#64748B' }}>
                   هذه المعاينة تعرض الوثيقة الرسمية الشاملة لكافة الأهداف والإجراءات مع الترويسة والتوقيعات الرسمية
                 </p>
               </div>
               <button
-                onClick={() => setShowPrintInstructionsModal(true)}
+                onClick={handlePrintOfficial}
                 style={{
                   background: 'linear-gradient(135deg, #0F2044 0%, #0284C7 100%)',
                   color: '#FFFFFF', border: 'none', padding: '0.6rem 1.4rem',
@@ -1051,7 +1151,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
                 }}
               >
                 <span>🖨️</span>
-                <span>طباعة أو حفظ PDF</span>
+                <span>فتح نافذة الطباعة الرسمية (A3)</span>
               </button>
             </div>
 
@@ -1061,63 +1161,10 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
         )}
       </div>
 
-      {/* ─── Hidden Printable Root (Rendered Only for Browser Print) ───────── */}
+      {/* ─── Hidden Printable Root (Rendered Only for Native Browser Print) ─ */}
       <div className="print-root" style={{ display: 'none' }}>
         <OfficialPrintDocument state={state} selectedYear={selectedYear} groupedData={groupedPrintData} />
       </div>
-
-      {/* ─── Print Guidance Modal (A3 Landscape 0-Margins Instructions) ─────── */}
-      {showPrintInstructionsModal && (
-        <div className="no-print" style={{
-          position: 'fixed', inset: 0, background: 'rgba(15,32,68,0.65)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem'
-        }}>
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', maxWidth: '580px', width: '100%', padding: '1.75rem', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', direction: 'rtl' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-              <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#E0F2FE', color: '#0369A1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
-                🖨️
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#0F2044' }}>
-                  تعليمات الطباعة الرسمية بمقاس A3 أفقي (بدون هوامش)
-                </h3>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.75rem', color: '#64748B' }}>
-                  للحصول على إخراج رسمي مطابق للمعايير المعتمدة للمدرسة والوزارة
-                </p>
-              </div>
-            </div>
-
-            <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '1.1rem', marginBottom: '1.25rem' }}>
-              <h4 style={{ margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#0F2044', fontWeight: 800 }}>
-                يرجى التأكد من ضبط إعدادات نافذة الطباعة كالتالي:
-              </h4>
-              <ul style={{ margin: 0, paddingRight: '1.25rem', fontSize: '0.8rem', color: '#334155', lineHeight: 1.8 }}>
-                <li>حجم الورق (Paper size): <strong>A3</strong> (أو Tabloid إذا تعذر)</li>
-                <li>الاتجاه (Orientation): <strong>أفقي (Landscape)</strong></li>
-                <li>الهوامش (Margins): <strong>بلا / صفر (None / Custom = 0)</strong></li>
-                <li>رسومات الخلفية (Background graphics): <strong>تفعيل (مربّع الاختيار مفعل)</strong></li>
-                <li>الرؤوس والتذييلات (Headers & Footers): <strong>تعطيل / إيقاف (غير مفعل)</strong></li>
-                <li>الملاءمة (Scale): <strong>100%</strong> (أو احتواء العرض إذا رغبت بصفحة واحدة)</li>
-              </ul>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem' }}>
-              <button
-                onClick={() => setShowPrintInstructionsModal(false)}
-                style={{ padding: '0.55rem 1.1rem', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#475569', cursor: 'pointer' }}
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleTriggerPrint}
-                style={{ padding: '0.55rem 1.5rem', background: 'linear-gradient(135deg, #0F2044 0%, #0284C7 100%)', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 6px rgba(15,32,68,0.2)' }}
-              >
-                فتح نافذة الطباعة الآن 🖨️
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ─── Modal: Add Objective ─────────────────────────────────────────── */}
       {showAddObjModal && (
@@ -1132,7 +1179,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
             <form onSubmit={handleAddObjectiveSubmit}>
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
-                  كود الهدف (اختياري، مثل OBJ-06)
+                  كود الهدف (مثل OBJ-06)
                 </label>
                 <input
                   type="text"
@@ -1186,6 +1233,179 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modal: Edit Objective ────────────────────────────────────────── */}
+      {editingObjective && (
+        <div className="no-print" style={{
+          position: 'fixed', inset: 0, background: 'rgba(15,32,68,0.65)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem'
+        }}>
+          <div style={{ background: '#FFFFFF', borderRadius: '16px', maxWidth: '520px', width: '100%', padding: '1.75rem', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', direction: 'rtl' }}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '1.15rem', fontWeight: 900, color: '#0F2044' }}>
+              ✏️ تعديل الهدف الاستراتيجي التشغيلي
+            </h3>
+            <form onSubmit={handleEditObjectiveSubmit}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
+                  كود الهدف (مثل OBJ-01)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editObjCode}
+                  onChange={e => setEditObjCode(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
+                  عنوان الهدف *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editObjTitle}
+                  onChange={e => setEditObjTitle(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#334155', marginBottom: '0.35rem' }}>
+                  الوصف أو النطاق التنفيذي (اختياري)
+                </label>
+                <textarea
+                  rows={3}
+                  value={editObjDesc}
+                  onChange={e => setEditObjDesc(e.target.value)}
+                  style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingObjective(null)}
+                  style={{ padding: '0.5rem 1rem', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#475569', cursor: 'pointer' }}
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '0.5rem 1.5rem', background: '#0F2044', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  حفظ التعديلات
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Modal: Delete Objective (With Action Reassignment) ────────────── */}
+      {deletingObjectiveId && (
+        <div className="no-print" style={{
+          position: 'fixed', inset: 0, background: 'rgba(15,32,68,0.65)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem'
+        }}>
+          <div style={{ background: '#FFFFFF', borderRadius: '16px', maxWidth: '500px', width: '100%', padding: '1.75rem', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', direction: 'rtl' }}>
+            <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🚨</div>
+              <h3 style={{ margin: '0 0 0.4rem', fontSize: '1.15rem', fontWeight: 900, color: '#DC2626' }}>
+                تأكيد حذف الهدف الاستراتيجي
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: '#1E293B', fontWeight: 800, margin: 0 }}>
+                {state.objectives.find(o => o.id === deletingObjectiveId)?.code}: {state.objectives.find(o => o.id === deletingObjectiveId)?.title}
+              </p>
+            </div>
+
+            {/* Actions count alert & Reassignment options */}
+            {(() => {
+              const actCount = state.actions.filter(a => a.objectiveId === deletingObjectiveId).length;
+              const otherObjectives = state.objectives.filter(o => o.id !== deletingObjectiveId);
+              return (
+                <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '1rem', marginBottom: '1.25rem' }}>
+                  <p style={{ fontSize: '0.82rem', color: '#334155', fontWeight: 700, margin: '0 0 0.75rem' }}>
+                    يحتوي هذا الهدف حالياً على <strong>{actCount}</strong> إجراء مسجلاً في الخطة.
+                  </p>
+
+                  {actCount > 0 && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 800, color: '#475569', marginBottom: '0.4rem' }}>
+                        ماذا ترغب أن تفعل بالإجراءات التابعة لهذا الهدف؟
+                      </label>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.8rem' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            name="deleteActionChoice"
+                            checked={deleteReassignToId === 'DELETE_ACTIONS'}
+                            onChange={() => setDeleteReassignToId('DELETE_ACTIONS')}
+                          />
+                          <span>حذف الإجراءات التابعة مع الهدف نهائياً ({actCount} إجراء)</span>
+                        </label>
+
+                        {otherObjectives.length > 0 && (
+                          <div>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', marginBottom: '0.35rem' }}>
+                              <input
+                                type="radio"
+                                name="deleteActionChoice"
+                                checked={deleteReassignToId !== 'DELETE_ACTIONS'}
+                                onChange={() => setDeleteReassignToId(otherObjectives[0].id)}
+                              />
+                              <span>نقل كافة الإجراءات ({actCount}) إلى هدف استراتيجي آخر:</span>
+                            </label>
+
+                            {deleteReassignToId !== 'DELETE_ACTIONS' && (
+                              <select
+                                value={deleteReassignToId}
+                                onChange={e => setDeleteReassignToId(e.target.value)}
+                                style={{
+                                  width: '100%', padding: '0.45rem 0.65rem', borderRadius: '6px',
+                                  border: '1px solid #CBD5E1', fontSize: '0.78rem', background: '#FFFFFF', marginTop: '0.2rem'
+                                }}
+                              >
+                                {otherObjectives.map(o => (
+                                  <option key={o.id} value={o.id}>
+                                    {o.code}: {o.title}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeletingObjectiveId(null);
+                  setDeleteReassignToId('DELETE_ACTIONS');
+                }}
+                style={{ padding: '0.5rem 1.2rem', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#475569', cursor: 'pointer' }}
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteObjectiveConfirm}
+                style={{ padding: '0.5rem 1.4rem', background: '#DC2626', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
+              >
+                تأكيد حذف الهدف
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1620,40 +1840,6 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
           </div>
         </div>
       )}
-
-      {/* ─── Delete Confirmation Modal (Objective) ────────────────────────── */}
-      {deletingObjectiveId && (
-        <div className="no-print" style={{
-          position: 'fixed', inset: 0, background: 'rgba(15,32,68,0.65)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem'
-        }}>
-          <div style={{ background: '#FFFFFF', borderRadius: '16px', maxWidth: '460px', width: '100%', padding: '1.75rem', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', direction: 'rtl', textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🚨</div>
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.15rem', fontWeight: 900, color: '#DC2626' }}>
-              تأكيد حذف الهدف الاستراتيجي
-            </h3>
-            <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.6, margin: '0 0 1.25rem' }}>
-              تنبيه: سيؤدي حذف هذا الهدف إلى إزالة جميع الإجراءات التابعة له من الخطة الإجرائية.
-              <br />
-              هل ترغب بالاستمرار في الحذف؟
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
-              <button
-                onClick={() => setDeletingObjectiveId(null)}
-                style={{ padding: '0.5rem 1.2rem', background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700, color: '#475569', cursor: 'pointer' }}
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={handleDeleteObjectiveConfirm}
-                style={{ padding: '0.5rem 1.4rem', background: '#DC2626', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer' }}
-              >
-                حذف الهدف مع إجراءاته
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -1708,13 +1894,15 @@ function OfficialPrintDocument({
           <h3 style={{ margin: '0.2rem 0', fontSize: '1.05rem', fontWeight: 800, color: '#1E3A8A' }}>
             {SCHOOL_NAME}
           </h3>
+          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0284C7', margin: '2px 0 6px' }}>
+            قسم المشاريع والحلول الرقمية والتعليم الإلكتروني
+          </div>
           <div style={{
             display: 'inline-block',
             background: 'linear-gradient(135deg, #0F2044 0%, #0369A1 100%)',
             color: '#FFFFFF',
             padding: '0.35rem 1.5rem',
             borderRadius: '8px',
-            marginTop: '0.3rem',
             boxShadow: '0 2px 6px rgba(15,32,68,0.15)',
           }}>
             <span style={{ fontSize: '1.05rem', fontWeight: 900 }}>
