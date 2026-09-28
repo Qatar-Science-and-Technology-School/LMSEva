@@ -1078,32 +1078,15 @@ export function printOfficialOperationalPlan(
             flex: 1;
             padding: 0 15px;
           }
-          .header-country {
-            font-size: 11pt;
-            font-weight: 800;
-            color: #0F2044;
-            margin-bottom: 2px;
-          }
-          .header-school {
-            font-size: 13pt;
-            font-weight: 900;
-            color: #1E3A8A;
-            letter-spacing: -0.2px;
-          }
-          .header-dept {
-            font-size: 9pt;
-            font-weight: 800;
-            color: #0284C7;
-            margin: 2px 0 6px;
-          }
           .header-banner {
             display: inline-block;
             background: linear-gradient(135deg, #0F2044 0%, #0369A1 100%);
             color: #ffffff;
-            padding: 4px 18px;
+            padding: 8px 24px;
             border-radius: 8px;
-            font-size: 10pt;
+            font-size: 13pt;
             font-weight: 900;
+            box-shadow: 0 2px 6px rgba(15,32,68,0.15);
           }
           /* Summary stats bar */
           .stats-bar {
@@ -1242,9 +1225,6 @@ export function printOfficialOperationalPlan(
             <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" class="header-logo" />
           </div>
           <div class="header-center">
-            <div class="header-country">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
-            <div class="header-school">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
-            <div class="header-dept">قسم المشاريع والحلول الرقمية والتعليم الإلكتروني</div>
             <div class="header-banner">
               الخطة الإجرائية للتعليم الإلكتروني والحلول الرقمية | العام الأكاديمي: ${academicYear}
             </div>

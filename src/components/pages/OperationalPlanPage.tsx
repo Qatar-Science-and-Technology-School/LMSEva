@@ -1886,30 +1886,21 @@ function OfficialPrintDocument({
           />
         </div>
 
-        {/* Center Official Title & Metadata Banner */}
+        {/* Center Official Title Banner */}
         <div style={{ textAlign: 'center', flex: 1, padding: '0 1rem' }}>
-          <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: '#0F2044', letterSpacing: '-0.3px' }}>
-            دولة قطر — وزارة التربية والتعليم والتعليم العالي
-          </h2>
-          <h3 style={{ margin: '0.2rem 0', fontSize: '1.05rem', fontWeight: 800, color: '#1E3A8A' }}>
-            {SCHOOL_NAME}
-          </h3>
-          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0284C7', margin: '2px 0 6px' }}>
-            قسم المشاريع والحلول الرقمية والتعليم الإلكتروني
-          </div>
           <div style={{
             display: 'inline-block',
             background: 'linear-gradient(135deg, #0F2044 0%, #0369A1 100%)',
             color: '#FFFFFF',
-            padding: '0.35rem 1.5rem',
+            padding: '0.6rem 2.2rem',
             borderRadius: '8px',
             boxShadow: '0 2px 6px rgba(15,32,68,0.15)',
           }}>
-            <span style={{ fontSize: '1.05rem', fontWeight: 900 }}>
+            <span style={{ fontSize: '1.25rem', fontWeight: 900 }}>
               الخطة الإجرائية للتعليم الإلكتروني والحلول الرقمية
             </span>
-            <span style={{ margin: '0 0.6rem', opacity: 0.7 }}>|</span>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>
+            <span style={{ margin: '0 0.8rem', opacity: 0.7 }}>|</span>
+            <span style={{ fontSize: '1rem', fontWeight: 700 }}>
               العام الأكاديمي: {selectedYear}
             </span>
           </div>
