@@ -433,8 +433,6 @@ export function printTeacherCertificate(options: CertificatePrintOptions) {
                 <br/>
                 بقسم <span class="highlight-dept">${departmentName}</span> ${subject ? `(${subject})` : ''}
               </div>
-
-              ${totalScore ? `<div class="score-badge">المعدل العام التقييمي: ${totalScore}%</div>` : ''}
             </div>
 
             <!-- Signatures: School Principal ONLY -->
@@ -570,8 +568,6 @@ export function printBatchCertificates(certificates: CertificatePrintOptions[]) 
                 <br/>
                 بقسم <span class="highlight-dept">${departmentName}</span> ${subject ? `(${subject})` : ''}
               </div>
-
-              ${totalScore ? `<div class="score-badge">المعدل العام التقييمي: ${totalScore}%</div>` : ''}
             </div>
 
             <!-- Signatures: School Principal ONLY -->
