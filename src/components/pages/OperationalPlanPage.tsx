@@ -1882,16 +1882,19 @@ function OfficialPrintDocument({
         marginBottom: '1rem',
       }}>
         {/* Right Logo: State of Qatar / Ministry */}
-        <div style={{ width: '180px', textAlign: 'right' }}>
+        <div style={{ width: '220px', textAlign: 'right' }}>
           <img
             src="/ministry-logo.png"
             alt="وزارة التربية والتعليم والتعليم العالي"
-            style={{ height: '70px', maxWidth: '180px', objectFit: 'contain' }}
+            style={{ height: '75px', maxWidth: '215px', objectFit: 'contain' }}
           />
         </div>
 
         {/* Center Official Title Banner */}
         <div style={{ textAlign: 'center', flex: 1, padding: '0 1rem' }}>
+          <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700, marginBottom: '4px' }}>
+            دولة قطر — وزارة التربية والتعليم والتعليم العالي
+          </div>
           <div style={{
             display: 'inline-block',
             background: 'linear-gradient(135deg, #0F2044 0%, #0369A1 100%)',
@@ -1908,14 +1911,17 @@ function OfficialPrintDocument({
               العام الأكاديمي: {selectedYear}
             </span>
           </div>
+          <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 700, marginTop: '4px' }}>
+            مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين — قسم المشاريع والحلول الرقمية والتعليم الإلكتروني
+          </div>
         </div>
 
         {/* Left Logo: Qatar Science and Technology School */}
-        <div style={{ width: '180px', textAlign: 'left' }}>
+        <div style={{ width: '220px', textAlign: 'left' }}>
           <img
             src="/school-logo.png"
             alt="شعار مدرسة قطر للعلوم والتكنولوجيا"
-            style={{ height: '70px', maxWidth: '180px', objectFit: 'contain' }}
+            style={{ height: '75px', maxWidth: '215px', objectFit: 'contain' }}
           />
         </div>
       </div>
@@ -1930,137 +1936,188 @@ function OfficialPrintDocument({
       }}>
         <thead>
           <tr style={{ background: '#0F2044', color: '#FFFFFF', printColorAdjust: 'exact', WebkitPrintColorAdjust: 'exact' }}>
-            <th style={{ width: '38px', textAlign: 'center', padding: '6px 4px', fontWeight: 800, border: '1px solid #1E293B' }}>م.</th>
-            <th style={{ width: '210px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>الأهداف</th>
-            <th style={{ minWidth: '260px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>الإجراءات لكل هدف</th>
-            <th style={{ width: '160px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>الفئة المستهدفة</th>
-            <th style={{ width: '130px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>وقت التنفيذ</th>
-            <th style={{ width: '110px', textAlign: 'center', padding: '6px 6px', fontWeight: 800, border: '1px solid #1E293B' }}>حالة التنفيذ</th>
-            <th style={{ minWidth: '200px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>ملاحظات</th>
+            <th style={{ width: '32px', textAlign: 'center', padding: '6px 4px', fontWeight: 800, border: '1px solid #1E293B' }}>م.</th>
+            <th style={{ width: '185px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>الأهداف الاستراتيجية</th>
+            <th style={{ minWidth: '230px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>الإجراءات التنفيذية</th>
+            <th style={{ width: '145px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>الفئة المستهدفة</th>
+            <th style={{ width: '115px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>الإطار الزمني</th>
+            <th style={{ width: '105px', textAlign: 'center', padding: '6px 6px', fontWeight: 800, border: '1px solid #1E293B' }}>حالة التنفيذ</th>
+            <th style={{ minWidth: '180px', textAlign: 'right', padding: '6px 8px', fontWeight: 800, border: '1px solid #1E293B' }}>الملاحظات والمخرجات</th>
+            <th style={{ width: '85px', textAlign: 'center', padding: '6px 4px', fontWeight: 800, border: '1px solid #1E293B' }}>المصدر</th>
           </tr>
         </thead>
         <tbody>
           {groupedData.map((group, groupIdx) => {
             const { objective, actions } = group;
             const hasActions = actions.length > 0;
-            const rowSpanCount = hasActions ? actions.length : 1;
 
             return (
               <React.Fragment key={objective.id}>
+                {/* Objective Section Header Row (Spans all columns cleanly) */}
+                <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid', pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>
+                  <td colSpan={8} style={{
+                    background: 'linear-gradient(135deg, #0F2044 0%, #1E3A5F 100%)',
+                    color: '#FFFFFF',
+                    padding: '5px 10px',
+                    fontWeight: 800,
+                    fontSize: '8.5pt',
+                    border: '1.5px solid #0F2044',
+                    printColorAdjust: 'exact',
+                    WebkitPrintColorAdjust: 'exact',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          background: '#0284C7',
+                          color: '#FFFFFF',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontSize: '7.5pt',
+                          fontWeight: 900,
+                        }}>
+                          {objective.code}
+                        </span>
+                        <span style={{ fontWeight: 900 }}>الهدف الاستراتيجي: {objective.title}</span>
+                        {objective.description && (
+                          <span style={{ fontSize: '7pt', color: '#E2E8F0', fontWeight: 500, marginRight: '8px' }}>
+                            — {objective.description}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '7pt', background: 'rgba(255,255,255,0.18)', padding: '1px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                        إجمالي الإجراءات: {actions.length} إجراء
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+
                 {hasActions ? (
                   actions.map((act, actIdx) => (
                     <tr
                       key={act.id}
                       style={{
                         pageBreakInside: 'avoid',
-                        background: groupIdx % 2 === 0 ? '#FFFFFF' : '#F8FAFC',
+                        breakInside: 'avoid',
+                        background: actIdx % 2 === 0 ? '#FFFFFF' : '#F8FAFC',
                       }}
                     >
                       {/* Serial Number */}
                       <td style={{
                         textAlign: 'center',
                         fontWeight: 700,
-                        padding: '5px 4px',
-                        border: '1px solid #334155',
+                        padding: '4px 3px',
+                        border: '1px solid #CBD5E1',
                         color: '#0F2044',
+                        fontSize: '8pt',
                       }}>
                         {actIdx + 1}
                       </td>
 
-                      {/* Objective Cell (RowSpanned for all actions under this objective) */}
-                      {actIdx === 0 && (
-                        <td
-                          rowSpan={rowSpanCount}
-                          style={{
-                            verticalAlign: 'top',
-                            padding: '6px 8px',
-                            border: '1.5px solid #0F2044',
-                            background: '#F1F5F9',
-                            fontWeight: 800,
-                            color: '#0F2044',
-                            lineHeight: 1.45,
-                            printColorAdjust: 'exact',
-                            WebkitPrintColorAdjust: 'exact',
-                          }}
-                        >
-                          <div style={{
-                            display: 'inline-block',
-                            background: '#0F2044',
-                            color: '#FFFFFF',
-                            padding: '1px 5px',
-                            borderRadius: '4px',
-                            fontSize: '0.72rem',
-                            fontWeight: 900,
-                            marginBottom: '4px',
-                            printColorAdjust: 'exact',
-                            WebkitPrintColorAdjust: 'exact',
-                          }}>
+                      {/* Objective Cell */}
+                      <td style={{
+                        padding: '4px 6px',
+                        border: '1px solid #CBD5E1',
+                        fontSize: '7.5pt',
+                        verticalAlign: 'middle',
+                      }}>
+                        <div style={{ fontWeight: 800, color: '#0F2044', lineHeight: 1.3 }}>
+                          <span style={{ background: '#EEF2FF', color: '#0F2044', border: '1px solid #C7D2FE', padding: '1px 4px', borderRadius: '3px', fontSize: '6.5pt', fontWeight: 900, marginLeft: '3px' }}>
                             {objective.code}
-                          </div>
-                          <div>{objective.title}</div>
-                        </td>
-                      )}
+                          </span>
+                          {objective.title}
+                        </div>
+                      </td>
 
                       {/* Action Title */}
                       <td style={{
-                        padding: '5px 8px',
+                        padding: '4px 7px',
                         fontWeight: 700,
                         color: '#0F172A',
-                        lineHeight: 1.4,
-                        border: '1px solid #334155',
+                        lineHeight: 1.35,
+                        border: '1px solid #CBD5E1',
+                        fontSize: '8pt',
                       }}>
                         {act.title}
+                        {act.isManual && (
+                          <span style={{ marginRight: '4px', background: '#FEF3C7', color: '#92400E', padding: '1px 4px', borderRadius: '3px', fontSize: '6.5pt', fontWeight: 800 }}>
+                            يدوي
+                          </span>
+                        )}
                       </td>
 
                       {/* Target Audience */}
                       <td style={{
-                        padding: '5px 8px',
+                        padding: '4px 6px',
                         color: '#334155',
-                        border: '1px solid #334155',
+                        border: '1px solid #CBD5E1',
+                        fontSize: '7.5pt',
                       }}>
                         {act.targetAudience}
                       </td>
 
                       {/* Timeframe */}
                       <td style={{
-                        padding: '5px 8px',
+                        padding: '4px 6px',
                         color: '#334155',
-                        border: '1px solid #334155',
+                        border: '1px solid #CBD5E1',
+                        fontSize: '7.5pt',
                         whiteSpace: 'nowrap',
                       }}>
                         {act.timeframe}
                       </td>
 
-                      {/* Execution Status: Both explicit text and icon */}
+                      {/* Execution Status */}
                       <td style={{
-                        padding: '5px 6px',
+                        padding: '4px 4px',
                         textAlign: 'center',
                         fontWeight: 800,
-                        border: '1px solid #334155',
+                        border: '1px solid #CBD5E1',
                         whiteSpace: 'nowrap',
                         color: act.status === 'تم التنفيذ' ? '#065F46' : act.status === 'لم يتم التنفيذ' ? '#991B1B' : '#475569',
                       }}>
-                        <span>{act.status === 'تم التنفيذ' ? '✓ تم التنفيذ' : act.status === 'لم يتم التنفيذ' ? '✗ لم يتم التنفيذ' : '— غير محدد'}</span>
+                        <span style={{
+                          display: 'inline-block',
+                          padding: '1px 6px',
+                          borderRadius: '8px',
+                          fontSize: '7pt',
+                          fontWeight: 800,
+                          background: act.status === 'تم التنفيذ' ? '#ECFDF5' : act.status === 'لم يتم التنفيذ' ? '#FEF2F2' : '#F1F5F9',
+                          border: `1px solid ${act.status === 'تم التنفيذ' ? '#A7F3D0' : act.status === 'لم يتم التنفيذ' ? '#FECACA' : '#CBD5E1'}`,
+                        }}>
+                          {act.status === 'تم التنفيذ' ? '✓ تم التنفيذ' : act.status === 'لم يتم التنفيذ' ? '✗ لم يتم' : '— غير محدد'}
+                        </span>
                       </td>
 
                       {/* Notes */}
                       <td style={{
-                        padding: '5px 8px',
+                        padding: '4px 6px',
                         color: '#475569',
-                        lineHeight: 1.35,
-                        border: '1px solid #334155',
+                        lineHeight: 1.3,
+                        border: '1px solid #CBD5E1',
+                        fontSize: '7.5pt',
                       }}>
                         {act.notes || '—'}
+                      </td>
+
+                      {/* Source */}
+                      <td style={{
+                        padding: '4px 4px',
+                        color: '#64748B',
+                        border: '1px solid #CBD5E1',
+                        fontSize: '7pt',
+                        textAlign: 'center',
+                      }}>
+                        {act.sourceModule ? (SOURCE_MODULE_LABELS[act.sourceModule] || act.sourceModule) : (act.isManual ? 'يدوي' : '—')}
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr style={{ pageBreakInside: 'avoid', background: '#FFFFFF' }}>
-                    <td style={{ textAlign: 'center', padding: '6px', border: '1px solid #334155' }}>—</td>
-                    <td style={{ padding: '6px 8px', border: '1.5px solid #0F2044', background: '#F1F5F9', fontWeight: 800 }}>
-                      {objective.code}: {objective.title}
+                  <tr style={{ pageBreakInside: 'avoid', breakInside: 'avoid', background: '#FFFFFF' }}>
+                    <td style={{ textAlign: 'center', padding: '4px', border: '1px solid #CBD5E1', color: '#94A3B8' }}>—</td>
+                    <td style={{ padding: '4px 6px', border: '1px solid #CBD5E1', color: '#64748B', fontSize: '7.5pt' }}>
+                      {objective.code}
                     </td>
-                    <td colSpan={5} style={{ padding: '6px', textAlign: 'center', color: '#94A3B8', border: '1px solid #334155' }}>
+                    <td colSpan={6} style={{ padding: '4px', textAlign: 'center', color: '#94A3B8', border: '1px solid #CBD5E1', fontSize: '7.5pt' }}>
                       لا توجد إجراءات مسجلة
                     </td>
                   </tr>

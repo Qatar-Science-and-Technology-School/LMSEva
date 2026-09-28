@@ -964,22 +964,35 @@ export function printOfficialOperationalPlan(
 
   sortedObjectives.forEach(obj => {
     const actions = objMap.get(obj.id) || [];
-    const rowSpan = actions.length > 0 ? actions.length : 1;
+
+    // Objective Section Divider Row (Spans all 8 columns without any vertical rowspan!)
+    rowsHtml += `
+      <tr class="obj-header-row" style="page-break-inside: avoid; break-inside: avoid; page-break-after: avoid; break-after: avoid;">
+        <td colspan="8" style="background: linear-gradient(135deg, #0F2044 0%, #1E3A5F 100%); color: #FFFFFF; font-weight: 800; padding: 5px 10px; font-size: 8pt; border: 1.5px solid #0F2044;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="background: #0284C7; color: #FFFFFF; padding: 1px 7px; border-radius: 4px; font-weight: 900; font-size: 7.5pt;">${obj.code}</span>
+              <span style="font-size: 8.5pt; font-weight: 900;">الهدف الاستراتيجي: ${obj.title}</span>
+              ${obj.description ? `<span style="font-size: 7pt; color: #E2E8F0; font-weight: 500; margin-right: 8px;">— ${obj.description}</span>` : ''}
+            </div>
+            <span style="font-size: 7pt; background: rgba(255,255,255,0.18); padding: 1px 8px; border-radius: 10px; font-weight: 700; white-space: nowrap;">
+              إجمالي الإجراءات: ${actions.length} إجراء
+            </span>
+          </div>
+        </td>
+      </tr>
+    `;
 
     if (actions.length === 0) {
       rowsHtml += `
-        <tr>
-          <td style="text-align:center;border:1px solid #CBD5E1;padding:4px 3px;">—</td>
-          <td style="border:1.5px solid #0F2044;background:#EEF2FF;font-weight:800;padding:4px 7px;color:#0F2044;">
-            <span style="background:linear-gradient(135deg,#0F2044,#0369A1);color:#fff;display:inline-block;padding:1px 5px;border-radius:3px;font-size:7.5pt;margin-left:4px;">${obj.code}</span>
-            ${obj.title}
-          </td>
-          <td colspan="6" style="text-align:center;color:#94A3B8;border:1px solid #CBD5E1;padding:4px;">لا توجد إجراءات مسجلة</td>
+        <tr style="page-break-inside: avoid; break-inside: avoid;">
+          <td class="tc" style="border: 1px solid #CBD5E1; padding: 4px; font-size: 7.5pt; color: #94A3B8;">—</td>
+          <td style="border: 1px solid #CBD5E1; padding: 4px 6px; font-size: 7.5pt; color: #64748B;">${obj.code}</td>
+          <td colspan="6" style="text-align: center; color: #94A3B8; border: 1px solid #CBD5E1; padding: 4px; font-size: 7.5pt;">لا توجد إجراءات مسجلة</td>
         </tr>
       `;
     } else {
       actions.forEach((act, actIdx) => {
-        const isFirst = actIdx === 0;
         const statusClass = act.status === 'تم التنفيذ' ? 'sd' : act.status === 'لم يتم التنفيذ' ? 'sn' : 'su';
         const statusText = act.status === 'تم التنفيذ' ? '✓ تم التنفيذ' : act.status === 'لم يتم التنفيذ' ? '✗ لم يتم' : '— غير محدد';
         const sourceLabel = act.sourceModule
@@ -988,27 +1001,35 @@ export function printOfficialOperationalPlan(
         const rowBg = actIdx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
 
         rowsHtml += `
-          <tr style="background:${rowBg};">
-            <td style="text-align:center;font-weight:800;border:1px solid #CBD5E1;padding:4px 3px;color:#0F2044;font-size:7.5pt;">${globalIndex++}</td>
-            ${isFirst ? `
-              <td rowspan="${rowSpan}" style="vertical-align:top;border:1.5px solid #0F2044;background:#EEF2FF;font-weight:800;color:#0F2044;padding:5px 7px;line-height:1.4;">
-                <div style="background:linear-gradient(135deg,#0F2044,#0369A1);color:#fff;display:inline-block;padding:1px 6px;border-radius:3px;font-size:7.5pt;font-weight:900;margin-bottom:4px;">${obj.code}</div>
-                <div style="font-size:8pt;font-weight:800;line-height:1.35;">${obj.title}</div>
-                ${obj.description ? `<div style="font-size:7pt;color:#475569;font-weight:500;margin-top:3px;padding-top:3px;border-top:1px dashed #CBD5E1;">${obj.description}</div>` : ''}
-                <div style="margin-top:4px;font-size:6.5pt;color:#64748B;font-weight:700;">📋 ${actions.length} إجراء</div>
-              </td>
-            ` : ''}
-            <td style="padding:4px 7px;font-weight:700;color:#0F172A;line-height:1.35;border:1px solid #CBD5E1;font-size:8pt;">
-              ${act.title}
-              ${act.isManual ? `<span style="margin-right:4px;background:#FEF3C7;color:#92400E;padding:1px 4px;border-radius:3px;font-size:6.5pt;font-weight:800;">يدوي</span>` : ''}
+          <tr style="page-break-inside: avoid; break-inside: avoid; background: ${rowBg};">
+            <td class="tc" style="font-weight: 800; border: 1px solid #CBD5E1; padding: 4px 3px; color: #0F2044; font-size: 7.5pt; width: 30px;">
+              ${globalIndex++}
             </td>
-            <td style="padding:4px 7px;color:#334155;border:1px solid #CBD5E1;font-size:7.5pt;">${act.targetAudience || '—'}</td>
-            <td style="padding:4px 7px;color:#334155;border:1px solid #CBD5E1;font-size:7.5pt;white-space:nowrap;">${act.timeframe || '—'}</td>
-            <td style="padding:4px 5px;text-align:center;border:1px solid #CBD5E1;">
+            <td style="border: 1px solid #CBD5E1; padding: 4px 6px; font-size: 7.5pt; width: 175px; vertical-align: middle;">
+              <div style="font-weight: 800; color: #0F2044; font-size: 7.5pt; line-height: 1.3;">
+                <span style="background: #EEF2FF; color: #0F2044; border: 1px solid #C7D2FE; padding: 1px 4px; border-radius: 3px; font-size: 6.5pt; font-weight: 900; margin-left: 3px;">${obj.code}</span>
+                ${obj.title}
+              </div>
+            </td>
+            <td style="padding: 4px 7px; font-weight: 700; color: #0F172A; line-height: 1.35; border: 1px solid #CBD5E1; font-size: 8pt; min-width: 220px;">
+              ${act.title}
+              ${act.isManual ? `<span style="margin-right: 4px; background: #FEF3C7; color: #92400E; padding: 1px 4px; border-radius: 3px; font-size: 6.5pt; font-weight: 800;">يدوي</span>` : ''}
+            </td>
+            <td style="padding: 4px 6px; color: #334155; border: 1px solid #CBD5E1; font-size: 7.5pt; width: 140px;">
+              ${act.targetAudience || '—'}
+            </td>
+            <td style="padding: 4px 6px; color: #334155; border: 1px solid #CBD5E1; font-size: 7.5pt; white-space: nowrap; width: 110px;">
+              ${act.timeframe || '—'}
+            </td>
+            <td style="padding: 4px 4px; text-align: center; border: 1px solid #CBD5E1; white-space: nowrap; width: 100px;">
               <span class="${statusClass}">${statusText}</span>
             </td>
-            <td style="padding:4px 7px;color:#475569;line-height:1.3;border:1px solid #CBD5E1;font-size:7.5pt;">${act.notes || '—'}</td>
-            <td style="padding:4px 6px;color:#64748B;border:1px solid #CBD5E1;font-size:7pt;text-align:center;">${sourceLabel}</td>
+            <td style="padding: 4px 6px; color: #475569; line-height: 1.3; border: 1px solid #CBD5E1; font-size: 7.5pt; min-width: 175px;">
+              ${act.notes || '—'}
+            </td>
+            <td style="padding: 4px 5px; color: #64748B; border: 1px solid #CBD5E1; font-size: 7pt; text-align: center; width: 85px;">
+              ${sourceLabel}
+            </td>
           </tr>
         `;
       });
@@ -1025,173 +1046,335 @@ export function printOfficialOperationalPlan(
   const printDate = new Date().toLocaleDateString('ar-QA', { year: 'numeric', month: 'long', day: 'numeric' });
   const printTime = new Date().toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' });
 
-  // KPI pill helper
-  const kpiPill = (icon: string, value: string|number, label: string, color: string) =>
-    `<div style="display:inline-flex;flex-direction:column;align-items:center;min-width:70px;padding:4px 8px;background:#FFFFFF;border-radius:6px;border:1.5px solid ${color}30;border-top:3px solid ${color};">
-       <div style="font-size:11pt;">${icon}</div>
-       <div style="font-size:14pt;font-weight:900;color:${color};line-height:1;">${value}</div>
-       <div style="font-size:6.5pt;font-weight:800;color:#475569;margin-top:2px;text-align:center;">${label}</div>
-     </div>`;
-
   const html = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="utf-8"/>
-  <title>الخطة الإجرائية — ${academicYear}</title>
+  <title>الخطة الإجرائية للتعليم الإلكتروني والحلول الرقمية — ${academicYear}</title>
+  <base href="${typeof window !== 'undefined' ? window.location.origin : ''}/" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    *{box-sizing:border-box;margin:0;padding:0;
-      -webkit-print-color-adjust:exact!important;
-      print-color-adjust:exact!important;
-      color-adjust:exact!important;}
-
-    @page{
-      size:420mm 297mm;
-      size:A3 landscape;
-      margin:0;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
     }
 
-    html,body{
-      margin:0!important;padding:0!important;
-      width:420mm;min-height:297mm;
-      background:#fff!important;
-      font-family:'Cairo','Noto Sans Arabic',system-ui,sans-serif;
-      color:#0F172A;direction:rtl;
-      font-size:8pt;line-height:1.35;
+    @page {
+      size: 420mm 297mm;
+      size: A3 landscape;
+      margin: 0;
     }
 
-    /* ── PAGE WRAPPER (one per A3 sheet) ───────────────── */
-    .pw{
-      width:420mm;
-      padding:5mm 10mm 5mm 10mm;
-      box-sizing:border-box;
-      background:#fff;
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 420mm;
+      min-height: 297mm;
+      background: #FFFFFF !important;
+      font-family: 'Cairo', 'Noto Sans Arabic', system-ui, sans-serif;
+      color: #0F172A;
+      direction: rtl;
+      font-size: 8pt;
+      line-height: 1.35;
     }
 
-    /* ── HEADER (ultra-compact) ─────────────────────────── */
-    .hdr{
-      display:flex;align-items:center;justify-content:space-between;
-      border-bottom:2.5px solid #0F2044;
-      padding-bottom:5px;margin-bottom:5px;
-    }
-    .hdr-logo{height:50px;max-width:140px;object-fit:contain;}
-    .hdr-center{text-align:center;flex:1;padding:0 10px;}
-    .hdr-sub{font-size:6.5pt;color:#64748B;font-weight:600;margin-bottom:2px;}
-    .hdr-banner{
-      display:inline-block;
-      background:linear-gradient(135deg,#0F2044,#0369A1);
-      color:#fff;padding:5px 18px;border-radius:7px;
-      font-size:11.5pt;font-weight:900;
-      box-shadow:0 2px 6px rgba(15,32,68,.2);
-    }
-    .hdr-year{display:block;font-size:8pt;font-weight:700;color:rgba(255,255,255,.85);margin-top:2px;}
-    .hdr-code{font-size:6.5pt;color:#94A3B8;font-weight:600;margin-top:3px;}
-
-    /* ── KPI STRIP ──────────────────────────────────────── */
-    .kpi-strip{
-      display:flex;gap:5px;justify-content:space-between;
-      background:linear-gradient(135deg,#F8FAFC,#EEF2FF);
-      border:1px solid #CBD5E1;border-radius:7px;
-      padding:5px 8px;margin-bottom:4px;
-    }
-    .kpi-item{
-      display:flex;flex-direction:column;align-items:center;
-      min-width:60px;flex:1;padding:3px 5px;
-      background:#fff;border-radius:5px;
-      border-top:3px solid transparent;
-    }
-    .kpi-item.navy {border-top-color:#0F2044;}
-    .kpi-item.blue  {border-top-color:#0284C7;}
-    .kpi-item.green {border-top-color:#10B981;}
-    .kpi-item.red   {border-top-color:#EF4444;}
-    .kpi-item.gray  {border-top-color:#64748B;}
-    .kpi-item.purple{border-top-color:#8B5CF6;}
-    .kpi-ico{font-size:10pt;margin-bottom:1px;}
-    .kpi-val{font-size:13pt;font-weight:900;line-height:1.05;}
-    .kpi-item.navy  .kpi-val{color:#0F2044;}
-    .kpi-item.blue  .kpi-val{color:#0284C7;}
-    .kpi-item.green .kpi-val{color:#10B981;}
-    .kpi-item.red   .kpi-val{color:#EF4444;}
-    .kpi-item.gray  .kpi-val{color:#64748B;}
-    .kpi-item.purple.kpi-val{color:#8B5CF6;}
-    .kpi-item.purple .kpi-val{color:#8B5CF6;}
-    .kpi-lbl{font-size:6pt;font-weight:800;color:#475569;margin-top:1px;text-align:center;}
-    .pb{background:#F1F5F9;height:4px;border-radius:2px;margin-top:3px;overflow:hidden;width:100%;}
-    .pb-fill{height:100%;border-radius:2px;background:#8B5CF6;}
-
-    /* ── META BAR ───────────────────────────────────────── */
-    .meta-bar{
-      display:flex;justify-content:space-between;align-items:center;
-      background:#F8FAFC;border:1px solid #E2E8F0;border-radius:5px;
-      padding:3px 10px;margin-bottom:4px;
-      font-size:6.5pt;font-weight:700;color:#334155;
-    }
-    .meta-pill{display:inline-flex;align-items:center;gap:3px;}
-    .meta-pill strong{color:#0F2044;}
-
-    /* ── TABLE ──────────────────────────────────────────── */
-    table{
-      width:100%;border-collapse:collapse;
-      font-size:7.5pt;border:2px solid #0F2044;
-      page-break-inside:auto;
-    }
-    thead{display:table-header-group;}
-    tr{page-break-inside:avoid;page-break-after:auto;}
-    th{
-      background:linear-gradient(135deg,#0F2044,#1E3A5F)!important;
-      color:#fff!important;font-weight:800;
-      padding:6px 5px;text-align:right;
-      border:1px solid #1E293B;font-size:7.5pt;
-      -webkit-print-color-adjust:exact!important;
-      print-color-adjust:exact!important;
-    }
-    th.tc,td.tc{text-align:center;}
-    td{border:1px solid #CBD5E1;vertical-align:middle;padding:0;}
-
-    /* ── STATUS BADGES ──────────────────────────────────── */
-    .sd{display:inline-block;padding:1px 5px;border-radius:8px;font-size:7pt;font-weight:800;
-        background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;}
-    .sn{display:inline-block;padding:1px 5px;border-radius:8px;font-size:7pt;font-weight:800;
-        background:#FEF2F2;color:#991B1B;border:1px solid #FECACA;}
-    .su{display:inline-block;padding:1px 5px;border-radius:8px;font-size:7pt;font-weight:800;
-        background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;}
-
-    /* ── SIGNATURES ─────────────────────────────────────── */
-    .sigs{
-      margin-top:6mm;border-top:2px solid #0F2044;
-      padding-top:5px;page-break-inside:avoid;break-inside:avoid;
-    }
-    .sigs-ttl{text-align:center;font-size:7pt;font-weight:800;color:#0F2044;margin-bottom:5px;}
-    .sigs-row{display:flex;justify-content:space-between;gap:8px;}
-    .sig{flex:1;text-align:center;background:#FAFCFF;border:1.5px solid #CBD5E1;border-radius:7px;padding:5px 8px;}
-    .sig.main{border-color:#0F2044;background:#EEF2FF;}
-    .sig-rt{font-size:7.5pt;font-weight:800;color:#0F2044;border-bottom:1px solid #CBD5E1;padding-bottom:3px;margin-bottom:3px;}
-    .sig-nm{font-size:8pt;font-weight:800;color:#1E293B;margin-bottom:1px;}
-    .sig-jb{font-size:6.5pt;color:#64748B;margin-bottom:4px;}
-    .sig-ia{height:32px;display:flex;align-items:center;justify-content:center;}
-    .sig-img{max-height:30px;max-width:120px;object-fit:contain;}
-    .sig-ln{border-top:1px solid #94A3B8;margin:4px 8px 2px;}
-    .sig-lb{font-size:6pt;color:#94A3B8;}
-
-    /* ── FOOTER ─────────────────────────────────────────── */
-    .doc-footer{
-      margin-top:5px;padding-top:4px;border-top:1px dashed #CBD5E1;
-      display:flex;justify-content:space-between;align-items:center;
-      font-size:6pt;color:#94A3B8;font-weight:600;
+    /* ── PAGE WRAPPER ──────────────────────────────────── */
+    .pw {
+      width: 420mm;
+      padding: 6mm 12mm;
+      box-sizing: border-box;
+      background: #FFFFFF;
+      margin: 0 auto;
     }
 
-    .ab{page-break-inside:avoid;break-inside:avoid;}
+    /* ── HEADER WITH ENLARGED LOGOS ────────────────────── */
+    .hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2.5px solid #0F2044;
+      padding-bottom: 6px;
+      margin-bottom: 6px;
+    }
+    .hdr-logo-box {
+      width: 220px;
+      display: flex;
+      align-items: center;
+    }
+    .hdr-logo {
+      height: 75px;
+      max-width: 215px;
+      object-fit: contain;
+      image-rendering: -webkit-optimize-contrast;
+    }
+    .hdr-center {
+      text-align: center;
+      flex: 1;
+      padding: 0 12px;
+    }
+    .hdr-sub {
+      font-size: 7.5pt;
+      color: #475569;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .hdr-banner {
+      display: inline-block;
+      background: linear-gradient(135deg, #0F2044 0%, #0369A1 100%);
+      color: #FFFFFF;
+      padding: 6px 24px;
+      border-radius: 8px;
+      font-size: 13pt;
+      font-weight: 900;
+      box-shadow: 0 2px 8px rgba(15,32,68,0.2);
+    }
+    .hdr-year {
+      display: block;
+      font-size: 8.5pt;
+      font-weight: 700;
+      color: rgba(255,255,255,0.9);
+      margin-top: 2px;
+    }
+    .hdr-code {
+      font-size: 7pt;
+      color: #64748B;
+      font-weight: 600;
+      margin-top: 3px;
+    }
+
+    /* ── COMPACT KPI STRIP ─────────────────────────────── */
+    .kpi-strip {
+      display: flex;
+      gap: 6px;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%);
+      border: 1px solid #CBD5E1;
+      border-radius: 7px;
+      padding: 4px 8px;
+      margin-bottom: 5px;
+    }
+    .kpi-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      padding: 3px 5px;
+      background: #FFFFFF;
+      border-radius: 5px;
+      border: 1px solid #E2E8F0;
+      border-top: 3px solid transparent;
+    }
+    .kpi-item.navy   { border-top-color: #0F2044; }
+    .kpi-item.blue   { border-top-color: #0284C7; }
+    .kpi-item.green  { border-top-color: #10B981; }
+    .kpi-item.red    { border-top-color: #EF4444; }
+    .kpi-item.gray   { border-top-color: #64748B; }
+    .kpi-item.purple { border-top-color: #8B5CF6; }
+    .kpi-ico { font-size: 10pt; margin-bottom: 1px; }
+    .kpi-val { font-size: 13pt; font-weight: 900; line-height: 1.05; }
+    .kpi-item.navy   .kpi-val { color: #0F2044; }
+    .kpi-item.blue   .kpi-val { color: #0284C7; }
+    .kpi-item.green  .kpi-val { color: #10B981; }
+    .kpi-item.red    .kpi-val { color: #EF4444; }
+    .kpi-item.gray   .kpi-val { color: #64748B; }
+    .kpi-item.purple .kpi-val { color: #8B5CF6; }
+    .kpi-lbl { font-size: 6.5pt; font-weight: 800; color: #475569; margin-top: 1px; text-align: center; }
+    .pb { background: #F1F5F9; height: 4px; border-radius: 2px; margin-top: 3px; overflow: hidden; width: 100%; }
+    .pb-fill { height: 100%; border-radius: 2px; background: #8B5CF6; }
+
+    /* ── META BAR ──────────────────────────────────────── */
+    .meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 5px;
+      padding: 4px 10px;
+      margin-bottom: 6px;
+      font-size: 7pt;
+      font-weight: 700;
+      color: #334155;
+    }
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .meta-pill strong {
+      color: #0F2044;
+    }
+
+    /* ── TABLE (STARTS ON PAGE 1 IMMEDIATELY) ──────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 7.5pt;
+      border: 2px solid #0F2044;
+      page-break-inside: auto;
+    }
+    thead {
+      display: table-header-group;
+    }
+    tr {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      page-break-after: auto;
+    }
+    th {
+      background: linear-gradient(135deg, #0F2044 0%, #1E3A5F 100%) !important;
+      color: #FFFFFF !important;
+      font-weight: 800;
+      padding: 6px 5px;
+      text-align: right;
+      border: 1px solid #1E293B;
+      font-size: 7.5pt;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    th.tc, td.tc {
+      text-align: center;
+    }
+    td {
+      border: 1px solid #CBD5E1;
+      vertical-align: middle;
+    }
+
+    /* ── STATUS BADGES ─────────────────────────────────── */
+    .sd {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 7pt;
+      font-weight: 800;
+      background: #ECFDF5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+    .sn {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 7pt;
+      font-weight: 800;
+      background: #FEF2F2;
+      color: #991B1B;
+      border: 1px solid #FECACA;
+    }
+    .su {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 7pt;
+      font-weight: 800;
+      background: #F1F5F9;
+      color: #475569;
+      border: 1px solid #CBD5E1;
+    }
+
+    /* ── SIGNATURES (ON FINAL PAGE) ────────────────────── */
+    .sigs {
+      margin-top: 8mm;
+      border-top: 2px solid #0F2044;
+      padding-top: 6px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .sigs-ttl {
+      text-align: center;
+      font-size: 7.5pt;
+      font-weight: 800;
+      color: #0F2044;
+      margin-bottom: 6px;
+    }
+    .sigs-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .sig {
+      flex: 1;
+      text-align: center;
+      background: #FAFCFF;
+      border: 1.5px solid #CBD5E1;
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+    .sig.main {
+      border-color: #0F2044;
+      background: #EEF2FF;
+    }
+    .sig-rt {
+      font-size: 8pt;
+      font-weight: 800;
+      color: #0F2044;
+      border-bottom: 1px solid #CBD5E1;
+      padding-bottom: 3px;
+      margin-bottom: 3px;
+    }
+    .sig-nm {
+      font-size: 8.5pt;
+      font-weight: 800;
+      color: #1E293B;
+      margin-bottom: 1px;
+    }
+    .sig-jb {
+      font-size: 7pt;
+      color: #64748B;
+      margin-bottom: 4px;
+    }
+    .sig-ia {
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sig-img {
+      max-height: 36px;
+      max-width: 140px;
+      object-fit: contain;
+    }
+    .sig-ln {
+      border-top: 1px solid #94A3B8;
+      margin: 5px 10px 3px;
+    }
+    .sig-lb {
+      font-size: 6.5pt;
+      color: #94A3B8;
+    }
+
+    /* ── DOCUMENT FOOTER ───────────────────────────────── */
+    .doc-footer {
+      margin-top: 6px;
+      padding-top: 4px;
+      border-top: 1px dashed #CBD5E1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 6.5pt;
+      color: #94A3B8;
+      font-weight: 600;
+    }
+
+    .ab {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
   </style>
 </head>
 <body>
 <div class="pw">
 
-  <!-- ══════ LETTERHEAD ══════ -->
+  <!-- ══════ LETTERHEAD (ENLARGED OFFICIAL LOGOS) ══════ -->
   <div class="hdr ab">
-    <div style="width:140px;display:flex;align-items:center;justify-content:flex-start;">
-      <img src="/ministry-logo.png" alt="وزارة التربية" class="hdr-logo"/>
+    <div class="hdr-logo-box" style="justify-content: flex-start;">
+      <img src="ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" class="hdr-logo"/>
     </div>
     <div class="hdr-center">
       <div class="hdr-sub">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
@@ -1199,15 +1382,15 @@ export function printOfficialOperationalPlan(
         الخطة الإجرائية للتعليم الإلكتروني والحلول الرقمية
         <span class="hdr-year">العام الأكاديمي: ${academicYear}</span>
       </div>
-      <div class="hdr-sub" style="margin-top:3px;">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين — قسم المشاريع والحلول الرقمية والتعليم الإلكتروني</div>
+      <div class="hdr-sub" style="margin-top: 3px;">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين — قسم المشاريع والحلول الرقمية والتعليم الإلكتروني</div>
       <div class="hdr-code">كود الوثيقة: QSTSS-OP-${academicYear} &nbsp;|&nbsp; تاريخ الإصدار: ${printDate}</div>
     </div>
-    <div style="width:140px;display:flex;align-items:center;justify-content:flex-end;">
-      <img src="/school-logo.png" alt="مدرسة قطر" class="hdr-logo"/>
+    <div class="hdr-logo-box" style="justify-content: flex-end;">
+      <img src="school-logo.png" alt="مدرسة قطر للعلوم والتكنولوجيا" class="hdr-logo"/>
     </div>
   </div>
 
-  <!-- ══════ KPI STRIP ══════ -->
+  <!-- ══════ KPI SUMMARY STRIP ══════ -->
   <div class="kpi-strip ab">
     <div class="kpi-item navy">
       <div class="kpi-ico">🎯</div>
@@ -1236,33 +1419,33 @@ export function printOfficialOperationalPlan(
     </div>
     <div class="kpi-item purple">
       <div class="kpi-ico">📈</div>
-      <div class="kpi-val" style="color:#8B5CF6;">${compRate}%</div>
+      <div class="kpi-val" style="color: #8B5CF6;">${compRate}%</div>
       <div class="kpi-lbl">نسبة الإنجاز</div>
-      <div class="pb"><div class="pb-fill" style="width:${compRate}%;"></div></div>
+      <div class="pb"><div class="pb-fill" style="width: ${compRate}%;"></div></div>
     </div>
   </div>
 
   <!-- ══════ META BAR ══════ -->
   <div class="meta-bar ab">
     <span class="meta-pill">🏫 <strong>مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</strong></span>
-    <span class="meta-pill">📅 <strong>${academicYear}</strong></span>
+    <span class="meta-pill">📅 <strong>العام الأكاديمي: ${academicYear}</strong></span>
     <span class="meta-pill">🔄 آخر مزامنة: <strong>${state.lastSyncedAt ? new Date(state.lastSyncedAt).toLocaleDateString('ar-QA') : 'غير محدد'}</strong></span>
-    <span class="meta-pill">🖨️ <strong>${printDate} — ${printTime}</strong></span>
-    <span class="meta-pill">📌 <strong style="color:#065F46;">وثيقة رسمية معتمدة</strong></span>
+    <span class="meta-pill">🖨️ تاريخ الطباعة: <strong>${printDate} — ${printTime}</strong></span>
+    <span class="meta-pill">📌 <strong style="color: #065F46;">وثيقة رسمية معتمدة</strong></span>
   </div>
 
-  <!-- ══════ OFFICIAL TABLE ══════ -->
+  <!-- ══════ OFFICIAL TABLE (STARTS IMMEDIATELY ON PAGE 1) ══════ -->
   <table>
     <thead>
       <tr>
-        <th class="tc" style="width:28px;">م.</th>
-        <th style="width:185px;">الأهداف الاستراتيجية</th>
-        <th style="min-width:220px;">الإجراءات التنفيذية</th>
-        <th style="width:140px;">الفئة المستهدفة</th>
-        <th style="width:115px;">الإطار الزمني</th>
-        <th class="tc" style="width:108px;">حالة التنفيذ</th>
-        <th style="min-width:175px;">الملاحظات والمخرجات</th>
-        <th class="tc" style="width:82px;">المصدر</th>
+        <th class="tc" style="width: 28px;">م.</th>
+        <th style="width: 175px;">الأهداف الاستراتيجية</th>
+        <th style="min-width: 220px;">الإجراءات التنفيذية</th>
+        <th style="width: 140px;">الفئة المستهدفة</th>
+        <th style="width: 110px;">الإطار الزمني</th>
+        <th class="tc" style="width: 100px;">حالة التنفيذ</th>
+        <th style="min-width: 175px;">الملاحظات والمخرجات</th>
+        <th class="tc" style="width: 85px;">المصدر</th>
       </tr>
     </thead>
     <tbody>
@@ -1270,47 +1453,93 @@ export function printOfficialOperationalPlan(
     </tbody>
   </table>
 
-  <!-- ══════ SIGNATURES ══════ -->
+  <!-- ══════ OFFICIAL SIGNATURES (ON FINAL PAGE) ══════ -->
   <div class="sigs">
     <div class="sigs-ttl">— التوقيعات والاعتمادات الرسمية —</div>
     <div class="sigs-row">
+      <!-- 1. Coordinator -->
       <div class="sig">
         <div class="sig-rt">إعداد وتوثيق الخطة</div>
         <div class="sig-nm">م. أحمد عادل طبيشات</div>
         <div class="sig-jb">منسق المشاريع والتعليم الإلكتروني</div>
-        <div class="sig-ia"><img class="sig-img" src="/signature-ahmad.png" onerror="this.style.display='none'" alt=""/></div>
+        <div class="sig-ia">
+          <img class="sig-img" src="signature-ahmad.png" onerror="this.style.display='none'" alt="توقيع م. أحمد عادل طبيشات"/>
+        </div>
         <div class="sig-ln"></div>
         <div class="sig-lb">التوقيع</div>
       </div>
+
+      <!-- 2. Academic Vice Principal -->
       <div class="sig">
         <div class="sig-rt">مراجعة واعتماد</div>
         <div class="sig-nm">د. راني التوم</div>
         <div class="sig-jb">النائب الأكاديمي للمدرسة</div>
-        <div class="sig-ia"><img class="sig-img" src="/signature-rani.png" onerror="this.style.display='none'" alt=""/></div>
+        <div class="sig-ia">
+          <img class="sig-img" src="signature-rani.png" onerror="this.style.display='none'" alt="توقيع د. راني التوم"/>
+        </div>
         <div class="sig-ln"></div>
         <div class="sig-lb">التوقيع</div>
       </div>
+
+      <!-- 3. School Principal -->
       <div class="sig main">
         <div class="sig-rt">يعتمد، مدير المدرسة</div>
         <div class="sig-nm">محمد علي مندني العمادي</div>
         <div class="sig-jb">مدير مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
-        <div class="sig-ia"><img class="sig-img" src="/principal-signature.png" onerror="this.style.display='none'" alt=""/></div>
+        <div class="sig-ia">
+          <img class="sig-img" src="principal-signature.png" onerror="this.style.display='none'" alt="توقيع مدير المدرسة"/>
+        </div>
         <div class="sig-ln"></div>
         <div class="sig-lb">التوقيع والختم الرسمي</div>
       </div>
     </div>
   </div>
 
-  <!-- ══════ FOOTER ══════ -->
+  <!-- ══════ DOCUMENT FOOTER ══════ -->
   <div class="doc-footer">
-    <span>📄 QSTSS-OP-${academicYear} | وثيقة رسمية — للاستخدام المؤسسي الداخلي</span>
+    <span>📄 QSTSS-OP-${academicYear} | وثيقة رسمية معتمدة — صادرة عن مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</span>
     <span>وزارة التربية والتعليم والتعليم العالي — دولة قطر | ${printDate}</span>
   </div>
 
 </div>
 <script>
   window.onload = function() {
-    setTimeout(function() { window.focus(); window.print(); }, 600);
+    var images = document.images;
+    var totalImages = images.length;
+    var loaded = 0;
+    var printed = false;
+
+    function triggerPrint() {
+      if (printed) return;
+      printed = true;
+      setTimeout(function() {
+        window.focus();
+        window.print();
+      }, 400);
+    }
+
+    if (totalImages === 0) {
+      triggerPrint();
+    } else {
+      for (var i = 0; i < totalImages; i++) {
+        if (images[i].complete) {
+          loaded++;
+        } else {
+          images[i].addEventListener('load', function() {
+            loaded++;
+            if (loaded >= totalImages) triggerPrint();
+          });
+          images[i].addEventListener('error', function() {
+            loaded++;
+            if (loaded >= totalImages) triggerPrint();
+          });
+        }
+      }
+      if (loaded >= totalImages) {
+        triggerPrint();
+      }
+      setTimeout(triggerPrint, 1500);
+    }
   };
 </script>
 </body>
