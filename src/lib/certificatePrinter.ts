@@ -14,6 +14,7 @@ export interface CertificatePrintOptions {
   recognitionReason?: string;
   subject?: string;
   badgeTitle?: string;
+  recipientType?: 'teacher' | 'section';
 }
 
 export function printTeacherCertificate(options: CertificatePrintOptions) {
@@ -29,6 +30,7 @@ export function printTeacherCertificate(options: CertificatePrintOptions) {
     recognitionReason,
     subject,
     badgeTitle = 'المعلم المتميز في نظام قطر للتعليم',
+    recipientType,
   } = options;
 
   const formattedDate = new Date().toLocaleDateString('ar-QA', {
@@ -36,6 +38,14 @@ export function printTeacherCertificate(options: CertificatePrintOptions) {
     month: 'long',
     day: 'numeric',
   });
+
+  const isSection = recipientType === 'section' || teacherNameAr.includes('شعبة') || teacherNameAr.includes('طلاب');
+  const introSubText = isSection 
+    ? 'بِجَزِيلِ الشُّكْرِ وَالتَّقْدِيرِ وَعَظِيمِ الاِمْتِنَانِ إِلَى:' 
+    : 'بِجَزِيلِ الشُّكْرِ وَالتَّقْدِيرِ وَعَظِيمِ الاِمْتِنَانِ لِلْمُعَلِّمِ الفَاضِلِ:';
+  const deptLine = isSection 
+    ? `<span class="highlight-dept">${departmentName}</span>` 
+    : `بقسم <span class="highlight-dept">${departmentName}</span> ${subject ? `(${subject})` : ''}`;
 
   const reasonText = recognitionReason || 
     `تقديرًا لجهوده الاستثنائية وتفوقه في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية، وتحقيق أعلى مؤشرات الأداء والإنجاز الأكاديمي لشهر ${month} للعام الأكاديمي ${academicYear}.`;
@@ -409,7 +419,7 @@ export function printTeacherCertificate(options: CertificatePrintOptions) {
             <div class="cert-body">
               <div class="cert-intro">
                 <div class="cert-intro-main">تَتَقَدَّمُ إِدَارَةُ <strong>مَدْرَسَةِ قَطَرَ لِلْعُلُومِ وَالتِّكْنُولُوجِيَا الإِعْدَادِيَّةِ الثَّانَوِيَّةِ لِلْبَنِين</strong></div>
-                <div class="cert-intro-sub">بِجَزِيلِ الشُّكْرِ وَالتَّقْدِيرِ وَعَظِيمِ الاِمْتِنَانِ لِلْمُعَلِّمِ الفَاضِلِ:</div>
+                <div class="cert-intro-sub">${introSubText}</div>
               </div>
 
               <div class="teacher-name-wrapper">
@@ -431,7 +441,7 @@ export function printTeacherCertificate(options: CertificatePrintOptions) {
               <div class="cert-text">
                 ${reasonText}
                 <br/>
-                بقسم <span class="highlight-dept">${departmentName}</span> ${subject ? `(${subject})` : ''}
+                ${deptLine}
               </div>
             </div>
 
@@ -488,7 +498,16 @@ export function printBatchCertificates(certificates: CertificatePrintOptions[]) 
       recognitionReason,
       subject,
       badgeTitle = 'المعلم المتميز في نظام قطر للتعليم',
+      recipientType,
     } = cert;
+
+    const isSection = recipientType === 'section' || teacherNameAr.includes('شعبة') || teacherNameAr.includes('طلاب');
+    const introSubText = isSection 
+      ? 'بِجَزِيلِ الشُّكْرِ وَالتَّقْدِيرِ وَعَظِيمِ الاِمْتِنَانِ إِلَى:' 
+      : 'بِجَزِيلِ الشُّكْرِ وَالتَّقْدِيرِ وَعَظِيمِ الاِمْتِنَانِ لِلْمُعَلِّمِ الفَاضِلِ:';
+    const deptLine = isSection 
+      ? `<span class="highlight-dept">${departmentName}</span>` 
+      : `بقسم <span class="highlight-dept">${departmentName}</span> ${subject ? `(${subject})` : ''}`;
 
     const reasonText = recognitionReason || 
       `تقديرًا لجهوده الاستثنائية وتفوقه في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية، وتحقيق أعلى مؤشرات الأداء والإنجاز الأكاديمي لشهر ${month} للعام الأكاديمي ${academicYear}.`;
@@ -544,7 +563,7 @@ export function printBatchCertificates(certificates: CertificatePrintOptions[]) 
             <div class="cert-body">
               <div class="cert-intro">
                 <div class="cert-intro-main">تَتَقَدَّمُ إِدَارَةُ <strong>مَدْرَسَةِ قَطَرَ لِلْعُلُومِ وَالتِّكْنُولُوجِيَا الإِعْدَادِيَّةِ الثَّانَوِيَّةِ لِلْبَنِين</strong></div>
-                <div class="cert-intro-sub">بِجَزِيلِ الشُّكْرِ وَالتَّقْدِيرِ وَعَظِيمِ الاِمْتِنَانِ لِلْمُعَلِّمِ الفَاضِلِ:</div>
+                <div class="cert-intro-sub">${introSubText}</div>
               </div>
 
               <div class="teacher-name-wrapper">
@@ -566,7 +585,7 @@ export function printBatchCertificates(certificates: CertificatePrintOptions[]) 
               <div class="cert-text">
                 ${reasonText}
                 <br/>
-                بقسم <span class="highlight-dept">${departmentName}</span> ${subject ? `(${subject})` : ''}
+                ${deptLine}
               </div>
             </div>
 

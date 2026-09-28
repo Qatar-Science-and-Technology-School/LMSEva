@@ -387,6 +387,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
     totalScore?: number;
     recognitionReason?: string;
     badgeTitle?: string;
+    recipientType?: 'teacher' | 'section';
   }) => {
     printTeacherCertificate({
       teacherNameAr: options.teacherNameAr,
@@ -396,7 +397,89 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       totalScore: options.totalScore,
       recognitionReason: options.recognitionReason,
       badgeTitle: options.badgeTitle || 'المعلم المتميز في نظام قطر للتعليم',
+      recipientType: options.recipientType,
     });
+  };
+
+  // طباعة جميع شهادات العشرة الأوائل دفعة واحدة
+  const handlePrintAllTop10 = () => {
+    if (selMonth === 'سبتمبر') {
+      const certList = TOP_10_INDEX_TEACHERS.map(t => ({
+        teacherNameAr: customTop10Names[t.rank] || t.name,
+        departmentName: t.department,
+        totalScore: t.generalIndex,
+        recognitionReason: `تكريم وتقدير لحصول المعلم على المركز ${t.rank} على مستوى المدرسة في مؤشرات تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية لشهر ${selMonth} ${selYear}.`,
+        badgeTitle: `المركز ${t.rank} على مستوى المدرسة`,
+        month: selMonth,
+        academicYear: selYear,
+        recipientType: 'teacher' as const,
+      }));
+      printBatchCertificates(certList);
+    } else if (monthlyTop10.length > 0) {
+      const certList = monthlyTop10.map((t: any, i: number) => ({
+        teacherNameAr: t.teacherNameAr,
+        departmentName: t.departmentName,
+        totalScore: t.totalScore,
+        recognitionReason: `تكريم وتقدير لحصول المعلم على المركز ${i + 1} على مستوى المدرسة في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
+        badgeTitle: `المركز ${i + 1} على مستوى المدرسة`,
+        month: selMonth,
+        academicYear: selYear,
+        recipientType: 'teacher' as const,
+      }));
+      printBatchCertificates(certList);
+    } else {
+      alert(`لا توجد بيانات تقييم معتمدة لشهر ${selMonth} حتى الآن لطباعة شهادات الأوائل.`);
+    }
+  };
+
+  // طباعة جميع شهادات فرسان الأقسام الأكاديمية دفعة واحدة
+  const handlePrintAllDeptChampions = () => {
+    if (selMonth === 'سبتمبر') {
+      const certList = DEPARTMENT_CHAMPIONS_10.map(d => ({
+        teacherNameAr: customDeptChampions[d.rank] || d.teacherName,
+        departmentName: d.department,
+        totalScore: d.score,
+        recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.department} وحصوله على لقب (${d.title}) في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
+        badgeTitle: d.title,
+        month: selMonth,
+        academicYear: selYear,
+        recipientType: 'teacher' as const,
+      }));
+      printBatchCertificates(certList);
+    } else if (currentHonorees.length > 0) {
+      const certList = currentHonorees.map((d: any) => ({
+        teacherNameAr: d.teacherNameAr,
+        departmentName: d.departmentName,
+        totalScore: d.totalScore,
+        recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.departmentName} في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
+        badgeTitle: `فارس قسم ${d.departmentName}`,
+        month: selMonth,
+        academicYear: selYear,
+        recipientType: 'teacher' as const,
+      }));
+      printBatchCertificates(certList);
+    } else {
+      alert(`لا توجد بيانات تقييم معتمدة لشهر ${selMonth} حتى الآن لطباعة شهادات فرسان الأقسام.`);
+    }
+  };
+
+  // طباعة جميع شهادات الشعب الدراسية المتصدرة دفعة واحدة
+  const handlePrintAllDistinguishedSections = () => {
+    const topSections = SECTIONS_LMS_STATS.slice(0, 5);
+    const certList = topSections.map((sec, idx) => {
+      const medal = idx === 0 ? 'المركز الأول' : idx === 1 ? 'المركز الثاني' : idx === 2 ? 'المركز الثالث' : `المركز ${idx + 1}`;
+      return {
+        teacherNameAr: `طلاب ومعلمي شعبة ${sec.section}`,
+        departmentName: sec.grade,
+        totalScore: sec.solveRate,
+        recognitionReason: `شهادة شكر وتقدير لتصدر شعبة ${sec.section} (${sec.grade}) وحصولها على ${medal} على مستوى مدرسة قطر للعلوم والتكنولوجيا بنسبة حل تقييمات بلغت ${sec.solveRate}% لشهر سبتمبر 2026.`,
+        badgeTitle: `الشعبة المتميزة - ${medal}`,
+        recipientType: 'section' as const,
+        month: selMonth,
+        academicYear: selYear,
+      };
+    });
+    printBatchCertificates(certList);
   };
 
   const exportExcel = () => {
@@ -508,33 +591,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
 
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
           <button
-            onClick={() => {
-              if (selMonth === 'سبتمبر') {
-                const certList = TOP_10_INDEX_TEACHERS.map(t => ({
-                  teacherNameAr: customTop10Names[t.rank] || t.name,
-                  departmentName: t.department,
-                  totalScore: t.generalIndex,
-                  recognitionReason: `تكريم وتقدير لحصول المعلم على المركز ${t.rank} على مستوى المدرسة في مؤشرات تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية لشهر ${selMonth} ${selYear}.`,
-                  badgeTitle: `المركز ${t.rank} على مستوى المدرسة`,
-                  month: selMonth,
-                  academicYear: selYear,
-                }));
-                printBatchCertificates(certList);
-              } else if (monthlyTop10.length > 0) {
-                const certList = monthlyTop10.map((t: any, i: number) => ({
-                  teacherNameAr: t.teacherNameAr,
-                  departmentName: t.departmentName,
-                  totalScore: t.totalScore,
-                  recognitionReason: `تكريم وتقدير لحصول المعلم على المركز ${i + 1} على مستوى المدرسة في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
-                  badgeTitle: `المركز ${i + 1} على مستوى المدرسة`,
-                  month: selMonth,
-                  academicYear: selYear,
-                }));
-                printBatchCertificates(certList);
-              } else {
-                alert(`لا توجد بيانات تقييم معتمدة لشهر ${selMonth} حتى الآن لطباعة شهادات الأوائل.`);
-              }
-            }}
+            onClick={handlePrintAllTop10}
             style={{
               background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
               color: '#fff',
@@ -554,33 +611,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
           </button>
 
           <button
-            onClick={() => {
-              if (selMonth === 'سبتمبر') {
-                const certList = DEPARTMENT_CHAMPIONS_10.map(d => ({
-                  teacherNameAr: customDeptChampions[d.rank] || d.teacherName,
-                  departmentName: d.department,
-                  totalScore: d.score,
-                  recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.department} وحصوله على لقب (${d.title}) في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
-                  badgeTitle: d.title,
-                  month: selMonth,
-                  academicYear: selYear,
-                }));
-                printBatchCertificates(certList);
-              } else if (currentHonorees.length > 0) {
-                const certList = currentHonorees.map((d: any) => ({
-                  teacherNameAr: d.teacherNameAr,
-                  departmentName: d.departmentName,
-                  totalScore: d.totalScore,
-                  recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.departmentName} في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
-                  badgeTitle: `فارس قسم ${d.departmentName}`,
-                  month: selMonth,
-                  academicYear: selYear,
-                }));
-                printBatchCertificates(certList);
-              } else {
-                alert(`لا توجد بيانات تقييم معتمدة لشهر ${selMonth} حتى الآن لطباعة شهادات فرسان الأقسام.`);
-              }
-            }}
+            onClick={handlePrintAllDeptChampions}
             style={{
               background: '#0284C7',
               color: '#fff',
@@ -597,6 +628,26 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
             }}
           >
             <span>🎖️</span> طباعة شهادات فرسان الأقسام - {selMonth} (A4)
+          </button>
+
+          <button
+            onClick={handlePrintAllDistinguishedSections}
+            style={{
+              background: '#10B981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.55rem 1rem',
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              boxShadow: '0 2px 8px rgba(16,185,129,0.3)',
+            }}
+          >
+            <span>🏆</span> طباعة شهادات الشعب المتصدرة (A4)
           </button>
         </div>
       </div>
@@ -742,6 +793,27 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                     ↩️ استعادة الافتراضي ({Object.keys(customTop10Names).length} معدّل)
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={handlePrintAllTop10}
+                  style={{
+                    background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.45rem 0.9rem',
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: '0 2px 8px rgba(245,158,11,0.25)',
+                  }}
+                  title="طباعة كافة شهادات شكر وتقدير العشرة الأوائل دفعة واحدة (A4 Landscape)"
+                >
+                  <span>📜</span> طباعة جميع شهادات العشرة الأوائل (A4)
+                </button>
                 <span style={{ background: '#FEF3C7', color: '#92400E', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800 }}>
                   10 معلمين متميزين
                 </span>
@@ -1090,6 +1162,27 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                     ↩️ استعادة الافتراضي ({Object.keys(customDeptChampions).length} معدّل)
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={handlePrintAllDeptChampions}
+                  style={{
+                    background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.45rem 0.9rem',
+                    fontWeight: 800,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: '0 2px 8px rgba(2,132,199,0.25)',
+                  }}
+                  title="طباعة كافة شهادات فرسان الأقسام الأكاديمية دفعة واحدة (A4 Landscape)"
+                >
+                  <span>🎖️</span> طباعة جميع شهادات فرسان الأقسام (A4)
+                </button>
                 <span style={{ background: '#E0F2FE', color: '#0369A1', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800 }}>
                   10 أقسام أكاديمية
                 </span>
@@ -1331,26 +1424,49 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   أفضل 5 شعب دراسية حققت أعلى نسب إنجاز وحل للتقييمات المسندة لشهر سبتمبر 2026
                 </p>
               </div>
-              {onNavigateToPage && (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
-                  onClick={() => onNavigateToPage('class_analysis')}
+                  type="button"
+                  onClick={handlePrintAllDistinguishedSections}
                   style={{
-                    background: '#F0FDF4',
-                    color: '#15803D',
-                    border: '1px solid #BBF7D0',
-                    padding: '0.45rem 0.85rem',
+                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                    color: '#fff',
+                    border: 'none',
                     borderRadius: '8px',
-                    fontSize: '0.8rem',
+                    padding: '0.45rem 0.9rem',
                     fontWeight: 800,
+                    fontSize: '0.8rem',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.4rem',
+                    boxShadow: '0 2px 8px rgba(16,185,129,0.25)',
                   }}
+                  title="طباعة كافة شهادات شكر وتقدير الشعب المتصدرة دفعة واحدة (A4 Landscape)"
                 >
-                  <span>📊</span> عرض تحليل الـ 19 شعبة بالتفصيل
+                  <span>🏆</span> طباعة جميع شهادات الشعب المتصدرة (A4)
                 </button>
-              )}
+                {onNavigateToPage && (
+                  <button
+                    onClick={() => onNavigateToPage('class_analysis')}
+                    style={{
+                      background: '#F0FDF4',
+                      color: '#15803D',
+                      border: '1px solid #BBF7D0',
+                      padding: '0.45rem 0.85rem',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                    }}
+                  >
+                    <span>📊</span> عرض تحليل الـ 19 شعبة بالتفصيل
+                  </button>
+                )}
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
@@ -1400,6 +1516,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                         totalScore: sec.solveRate,
                         recognitionReason: `شهادة شكر وتقدير لتصدر شعبة ${sec.section} (${sec.grade}) وحصولها على ${medal} على مستوى مدرسة قطر للعلوم والتكنولوجيا بنسبة حل تقييمات بلغت ${sec.solveRate}% لشهر سبتمبر 2026.`,
                         badgeTitle: `الشعبة المتميزة - ${medal}`,
+                        recipientType: 'section',
                       })}
                       style={{
                         background: '#0F2044',
