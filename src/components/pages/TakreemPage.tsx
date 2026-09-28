@@ -161,6 +161,78 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
   // Tab state
   const [activeTab, setActiveTab] = useState<'top_honorees' | 'monthly' | 'custom_cert' | 'archive' | 'annual'>('top_honorees');
 
+  // Editable Names for Top 10 and Department Champions
+  const [customTop10Names, setCustomTop10Names] = useState<Record<number, string>>({});
+  const [customDeptChampions, setCustomDeptChampions] = useState<Record<number, string>>({});
+  
+  const [editingTop10Rank, setEditingTop10Rank] = useState<number | null>(null);
+  const [tempTop10Name, setTempTop10Name] = useState('');
+
+  const [editingDeptRank, setEditingDeptRank] = useState<number | null>(null);
+  const [tempDeptName, setTempDeptName] = useState('');
+
+  // Load saved custom names from localStorage
+  useEffect(() => {
+    try {
+      const savedTop10 = localStorage.getItem('takreem_custom_top10_names');
+      if (savedTop10) setCustomTop10Names(JSON.parse(savedTop10));
+      const savedDept = localStorage.getItem('takreem_custom_dept_champions');
+      if (savedDept) setCustomDeptChampions(JSON.parse(savedDept));
+    } catch (e) {
+      console.error('Failed to load custom names from localStorage', e);
+    }
+  }, []);
+
+  const handleSaveTop10 = (rank: number, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setCustomTop10Names(prev => {
+      const updated = { ...prev, [rank]: trimmed };
+      try {
+        localStorage.setItem('takreem_custom_top10_names', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setEditingTop10Rank(null);
+  };
+
+  const handleResetTop10 = (rank: number) => {
+    setCustomTop10Names(prev => {
+      const updated = { ...prev };
+      delete updated[rank];
+      try {
+        localStorage.setItem('takreem_custom_top10_names', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setEditingTop10Rank(null);
+  };
+
+  const handleSaveDeptChampion = (rank: number, newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setCustomDeptChampions(prev => {
+      const updated = { ...prev, [rank]: trimmed };
+      try {
+        localStorage.setItem('takreem_custom_dept_champions', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setEditingDeptRank(null);
+  };
+
+  const handleResetDeptChampion = (rank: number) => {
+    setCustomDeptChampions(prev => {
+      const updated = { ...prev };
+      delete updated[rank];
+      try {
+        localStorage.setItem('takreem_custom_dept_champions', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setEditingDeptRank(null);
+  };
+
   useEffect(() => {
     Promise.all([db.getTeachers(), db.getEvaluations(), db.getDepartments()])
       .then(([t, e, d]) => {
@@ -182,6 +254,24 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
   const availableMergedDepts = isCoord && coordDepts.length > 0
     ? departments.filter(d => coordDepts.includes(d.id))
     : departments;
+
+  // Comprehensive teacher name suggestions for editing
+  const allTeacherNames = useMemo(() => {
+    const set = new Set<string>();
+    if (teachers && teachers.length > 0) {
+      teachers.forEach(t => {
+        if (t.nameAr) set.add(t.nameAr.trim());
+      });
+    }
+    if (SEPTEMBER_2026_LMS_TEACHERS && SEPTEMBER_2026_LMS_TEACHERS.length > 0) {
+      SEPTEMBER_2026_LMS_TEACHERS.forEach(t => {
+        if (t.name) set.add(t.name.trim());
+      });
+    }
+    TOP_10_INDEX_TEACHERS.forEach(t => set.add(t.name.trim()));
+    DEPARTMENT_CHAMPIONS_10.forEach(d => set.add(d.teacherName.trim()));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'ar'));
+  }, [teachers]);
 
   const currentHonorees = useMemo(() => {
     let list = getMonthlyDepartmentHonorees(evaluations, teachers, departments, selYear, selMonth);
@@ -386,7 +476,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
             onClick={() => {
               if (selMonth === 'سبتمبر') {
                 const certList = TOP_10_INDEX_TEACHERS.map(t => ({
-                  teacherNameAr: t.name,
+                  teacherNameAr: customTop10Names[t.rank] || t.name,
                   departmentName: t.department,
                   totalScore: t.generalIndex,
                   recognitionReason: `تكريم وتقدير لحصول المعلم على المركز ${t.rank} على مستوى المدرسة في مؤشرات تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية لشهر ${selMonth} ${selYear}.`,
@@ -432,7 +522,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
             onClick={() => {
               if (selMonth === 'سبتمبر') {
                 const certList = DEPARTMENT_CHAMPIONS_10.map(d => ({
-                  teacherNameAr: d.teacherName,
+                  teacherNameAr: customDeptChampions[d.rank] || d.teacherName,
                   departmentName: d.department,
                   totalScore: d.score,
                   recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.department} وحصوله على لقب (${d.title}) في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
@@ -592,15 +682,44 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   المتصدرون لمؤشر متابعة نظام قطر للتعليم والمنصات الرقمية من واقع التقارير الرسمية المعتمدة
                 </p>
               </div>
-              <span style={{ background: '#FEF3C7', color: '#92400E', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800 }}>
-                10 معلمين متميزين
-              </span>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {Object.keys(customTop10Names).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('هل ترغب في استعادة جميع أسماء العشرة الأوائل إلى الأسماء الافتراضية؟')) {
+                        setCustomTop10Names({});
+                        try { localStorage.removeItem('takreem_custom_top10_names'); } catch (e) {}
+                      }
+                    }}
+                    style={{
+                      background: '#FEF2F2',
+                      border: '1px solid #FECACA',
+                      color: '#DC2626',
+                      padding: '0.3rem 0.65rem',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ↩️ استعادة الافتراضي ({Object.keys(customTop10Names).length} معدّل)
+                  </button>
+                )}
+                <span style={{ background: '#FEF3C7', color: '#92400E', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800 }}>
+                  10 معلمين متميزين
+                </span>
+              </div>
             </div>
 
             {/* Top 10 Cards Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               {TOP_10_INDEX_TEACHERS.map(t => {
                 const medal = t.rank === 1 ? '🥇 المركز الأول' : t.rank === 2 ? '🥈 المركز الثاني' : t.rank === 3 ? '🥉 المركز الثالث' : `المركز ${t.rank}`;
+                const teacherName = customTop10Names[t.rank] || t.name;
+                const isCustomized = Boolean(customTop10Names[t.rank]);
+                const isEditing = editingTop10Rank === t.rank;
+
                 return (
                   <div
                     key={t.rank}
@@ -632,9 +751,158 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                         </span>
                       </div>
 
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.35rem' }}>
-                        {t.name}
-                      </h3>
+                      {/* Teacher Name Box with Edit Option */}
+                      <div style={{
+                        background: isEditing ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
+                        border: isEditing ? '2px solid #F59E0B' : '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        padding: '0.45rem 0.65rem',
+                        marginBottom: '0.6rem',
+                        transition: 'all 0.2s',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.4rem' }}>
+                          <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                            <span>{teacherName}</span>
+                            {isCustomized && (
+                              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#D97706', background: '#FEF3C7', padding: '1px 5px', borderRadius: '4px' }}>
+                                تم التعديل
+                              </span>
+                            )}
+                          </h3>
+                          {!isEditing && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingTop10Rank(t.rank);
+                                setTempTop10Name(teacherName);
+                              }}
+                              title="تعديل اسم المعلم أو اختيار معلم آخر"
+                              style={{
+                                background: '#FFFFFF',
+                                border: '1px solid #CBD5E1',
+                                borderRadius: '6px',
+                                padding: '0.2rem 0.5rem',
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                color: '#0F2044',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.2rem',
+                                flexShrink: 0,
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                              }}
+                            >
+                              <span>✏️</span> تعديل
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Inline Editor for Top 10 */}
+                        {isEditing && (
+                          <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #CBD5E1' }}>
+                            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#D97706', marginBottom: '0.3rem' }}>
+                              اختيار معلم آخر من قائمة المدرسة:
+                            </label>
+                            <select
+                              value={allTeacherNames.includes(tempTop10Name) ? tempTop10Name : ''}
+                              onChange={(e) => {
+                                if (e.target.value) setTempTop10Name(e.target.value);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.4rem 0.5rem',
+                                borderRadius: '6px',
+                                border: '1px solid #CBD5E1',
+                                fontSize: '0.8rem',
+                                marginBottom: '0.4rem',
+                                background: '#F8FAFC',
+                                color: '#0F172A',
+                                outline: 'none',
+                              }}
+                            >
+                              <option value="">-- اضغط لاختيار اسم معلم آخر --</option>
+                              {allTeacherNames.map(name => (
+                                <option key={name} value={name}>{name}</option>
+                              ))}
+                            </select>
+
+                            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
+                              أو كتابة وتعديل الاسم يدوياً:
+                            </label>
+                            <input
+                              type="text"
+                              value={tempTop10Name}
+                              onChange={(e) => setTempTop10Name(e.target.value)}
+                              placeholder="اكتب اسم المعلم..."
+                              style={{
+                                width: '100%',
+                                padding: '0.4rem 0.5rem',
+                                borderRadius: '6px',
+                                border: '1px solid #CBD5E1',
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+                                outline: 'none',
+                                boxSizing: 'border-box',
+                                marginBottom: '0.5rem',
+                              }}
+                            />
+
+                            <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                              {isCustomized && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetTop10(t.rank)}
+                                  style={{
+                                    background: '#FEF2F2',
+                                    border: '1px solid #FECACA',
+                                    color: '#DC2626',
+                                    borderRadius: '5px',
+                                    padding: '0.25rem 0.55rem',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  ↩️ استعادة الأصلي
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setEditingTop10Rank(null)}
+                                style={{
+                                  background: '#F1F5F9',
+                                  border: '1px solid #CBD5E1',
+                                  color: '#64748B',
+                                  borderRadius: '5px',
+                                  padding: '0.25rem 0.55rem',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                إلغاء
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveTop10(t.rank, tempTop10Name)}
+                                style={{
+                                  background: '#D97706',
+                                  border: 'none',
+                                  color: '#FFFFFF',
+                                  borderRadius: '5px',
+                                  padding: '0.25rem 0.75rem',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                💾 حفظ الاسم
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
                       <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
                         <span style={{ background: '#DCFCE7', color: '#166534', fontSize: '0.72rem', fontWeight: 800, padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
@@ -651,7 +919,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
 
                     <button
                       onClick={() => handlePrintCertificate({
-                        teacherNameAr: t.name,
+                        teacherNameAr: teacherName,
                         departmentName: t.department,
                         totalScore: t.generalIndex,
                         recognitionReason: `تكريم وتقدير لحصول المعلم على ${medal} على مستوى مدرسة قطر للعلوم والتكنولوجيا في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية لشهر سبتمبر 2026.`,
@@ -701,7 +969,14 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                       <td style={{ padding: '0.6rem', textAlign: 'center', fontWeight: 900 }}>
                         {t.rank === 1 ? '🥇 1' : t.rank === 2 ? '🥈 2' : t.rank === 3 ? '🥉 3' : t.rank}
                       </td>
-                      <td style={{ padding: '0.6rem', fontWeight: 800, color: '#0F2044' }}>{t.name}</td>
+                      <td style={{ padding: '0.6rem', fontWeight: 800, color: '#0F2044' }}>
+                        <span>{customTop10Names[t.rank] || t.name}</span>
+                        {customTop10Names[t.rank] && (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#D97706', background: '#FEF3C7', padding: '1px 5px', borderRadius: '4px', marginRight: '6px' }}>
+                            معدّل
+                          </span>
+                        )}
+                      </td>
                       <td style={{ padding: '0.6rem', color: '#64748B' }}>{t.department}</td>
                       <td style={{ padding: '0.6rem', textAlign: 'center', fontWeight: 900, color: '#047857' }}>
                         {t.generalIndex.toFixed(2)}%
@@ -716,7 +991,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                       <td style={{ padding: '0.6rem', textAlign: 'center' }}>
                         <button
                           onClick={() => handlePrintCertificate({
-                            teacherNameAr: t.name,
+                            teacherNameAr: customTop10Names[t.rank] || t.name,
                             departmentName: t.department,
                             totalScore: t.generalIndex,
                             recognitionReason: `تكريم وتقدير لتفوق المعلم وحصوله على المركز ${t.rank} على مستوى المدرسة في تفعيل نظام قطر للتعليم والمنصات الرقمية.`,
@@ -754,77 +1029,257 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   تم اختيار المعلم الأول المتميز في كل قسم أكاديمي بناءً على أعلى مؤشرات الأداء المعتمدة لشهر سبتمبر 2026
                 </p>
               </div>
-              <span style={{ background: '#E0F2FE', color: '#0369A1', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800 }}>
-                10 أقسام أكاديمية
-              </span>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {Object.keys(customDeptChampions).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('هل ترغب في استعادة جميع أسماء فرسان الأقسام إلى الأسماء الافتراضية؟')) {
+                        setCustomDeptChampions({});
+                        try { localStorage.removeItem('takreem_custom_dept_champions'); } catch (e) {}
+                      }
+                    }}
+                    style={{
+                      background: '#FEF2F2',
+                      border: '1px solid #FECACA',
+                      color: '#DC2626',
+                      padding: '0.3rem 0.65rem',
+                      borderRadius: '6px',
+                      fontSize: '0.75rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    ↩️ استعادة الافتراضي ({Object.keys(customDeptChampions).length} معدّل)
+                  </button>
+                )}
+                <span style={{ background: '#E0F2FE', color: '#0369A1', padding: '0.3rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 800 }}>
+                  10 أقسام أكاديمية
+                </span>
+              </div>
             </div>
 
             {/* Department Champions Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
-              {DEPARTMENT_CHAMPIONS_10.map(d => (
-                <div
-                  key={d.rank}
-                  style={{
-                    background: '#F8FAFC',
-                    border: '1px solid #CBD5E1',
-                    borderRadius: '12px',
-                    padding: '1.1rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0284C7', background: '#E0F2FE', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
-                        {d.department}
-                      </span>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#166534', background: '#DCFCE7', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
-                        المعدل: {d.score.toFixed(1)}%
-                      </span>
-                    </div>
+              {DEPARTMENT_CHAMPIONS_10.map(d => {
+                const deptTeacherName = customDeptChampions[d.rank] || d.teacherName;
+                const isDeptCustomized = Boolean(customDeptChampions[d.rank]);
+                const isEditing = editingDeptRank === d.rank;
 
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F2044', margin: '0.3rem 0' }}>
-                      {d.teacherName}
-                    </h3>
-
-                    <div style={{ fontSize: '0.78rem', color: '#3D52A0', fontWeight: 800, marginBottom: '0.4rem' }}>
-                      🌟 {d.title}
-                    </div>
-
-                    <p style={{ fontSize: '0.76rem', color: '#475569', lineHeight: '1.5', margin: '0 0 0.85rem' }}>
-                      {d.achievement}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => handlePrintCertificate({
-                      teacherNameAr: d.teacherName,
-                      departmentName: d.department,
-                      totalScore: d.score,
-                      recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.department} وحصوله على لقب (${d.title}) في تفعيل نظام قطر للتعليم لشهر سبتمبر 2026. ${d.achievement}`,
-                      badgeTitle: d.title,
-                    })}
+                return (
+                  <div
+                    key={d.rank}
                     style={{
-                      background: '#3D52A0',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '0.5rem 0.85rem',
-                      fontWeight: 800,
-                      fontSize: '0.78rem',
-                      cursor: 'pointer',
+                      background: '#F8FAFC',
+                      border: '1px solid #CBD5E1',
+                      borderRadius: '12px',
+                      padding: '1.1rem',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.35rem',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                     }}
                   >
-                    <span>🎖️</span> طباعة شهادة شكر وتقدير
-                  </button>
-                </div>
-              ))}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0284C7', background: '#E0F2FE', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                          {d.department}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#166534', background: '#DCFCE7', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+                          المعدل: {d.score.toFixed(1)}%
+                        </span>
+                      </div>
+
+                      {/* Teacher Name Area with Edit / Change Option inside the box */}
+                      <div style={{
+                        background: isEditing ? '#FFFFFF' : 'rgba(255,255,255,0.7)',
+                        border: isEditing ? '2px solid #0284C7' : '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        padding: '0.5rem 0.75rem',
+                        margin: '0.35rem 0 0.5rem',
+                        transition: 'all 0.2s',
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.4rem' }}>
+                          <h3 style={{ fontSize: '1.15rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                            <span>{deptTeacherName}</span>
+                            {isDeptCustomized && (
+                              <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#0284C7', background: '#E0F2FE', padding: '1px 5px', borderRadius: '4px' }}>
+                                تم التعديل
+                              </span>
+                            )}
+                          </h3>
+                          {!isEditing && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingDeptRank(d.rank);
+                                setTempDeptName(deptTeacherName);
+                              }}
+                              title="تعديل اسم المعلم أو اختيار معلم آخر لهذا القسم"
+                              style={{
+                                background: '#FFFFFF',
+                                border: '1px solid #CBD5E1',
+                                borderRadius: '6px',
+                                padding: '0.2rem 0.55rem',
+                                fontSize: '0.72rem',
+                                fontWeight: 800,
+                                color: '#0F2044',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.2rem',
+                                flexShrink: 0,
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                              }}
+                            >
+                              <span>✏️</span> تعديل
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Inline Editor for Department Champion */}
+                        {isEditing && (
+                          <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #CBD5E1' }}>
+                            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#0284C7', marginBottom: '0.3rem' }}>
+                              اختيار معلم آخر لقسم {d.department}:
+                            </label>
+                            <select
+                              value={allTeacherNames.includes(tempDeptName) ? tempDeptName : ''}
+                              onChange={(e) => {
+                                if (e.target.value) setTempDeptName(e.target.value);
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.4rem 0.5rem',
+                                borderRadius: '6px',
+                                border: '1px solid #CBD5E1',
+                                fontSize: '0.8rem',
+                                marginBottom: '0.4rem',
+                                background: '#F8FAFC',
+                                color: '#0F172A',
+                                outline: 'none',
+                              }}
+                            >
+                              <option value="">-- اضغط لاختيار اسم معلم آخر --</option>
+                              {allTeacherNames.map(name => (
+                                <option key={name} value={name}>{name}</option>
+                              ))}
+                            </select>
+
+                            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
+                              أو كتابة وتعديل الاسم يدوياً:
+                            </label>
+                            <input
+                              type="text"
+                              value={tempDeptName}
+                              onChange={(e) => setTempDeptName(e.target.value)}
+                              placeholder="اكتب اسم المعلم..."
+                              style={{
+                                width: '100%',
+                                padding: '0.4rem 0.5rem',
+                                borderRadius: '6px',
+                                border: '1px solid #CBD5E1',
+                                fontSize: '0.82rem',
+                                fontWeight: 700,
+                                outline: 'none',
+                                boxSizing: 'border-box',
+                                marginBottom: '0.5rem',
+                              }}
+                            />
+
+                            <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                              {isDeptCustomized && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResetDeptChampion(d.rank)}
+                                  style={{
+                                    background: '#FEF2F2',
+                                    border: '1px solid #FECACA',
+                                    color: '#DC2626',
+                                    borderRadius: '5px',
+                                    padding: '0.25rem 0.55rem',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  ↩️ استعادة الأصلي
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setEditingDeptRank(null)}
+                                style={{
+                                  background: '#F1F5F9',
+                                  border: '1px solid #CBD5E1',
+                                  color: '#64748B',
+                                  borderRadius: '5px',
+                                  padding: '0.25rem 0.55rem',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                إلغاء
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveDeptChampion(d.rank, tempDeptName)}
+                                style={{
+                                  background: '#0284C7',
+                                  border: 'none',
+                                  color: '#FFFFFF',
+                                  borderRadius: '5px',
+                                  padding: '0.25rem 0.75rem',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                💾 حفظ الاسم
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: '0.78rem', color: '#3D52A0', fontWeight: 800, marginBottom: '0.4rem' }}>
+                        🌟 {d.title}
+                      </div>
+
+                      <p style={{ fontSize: '0.76rem', color: '#475569', lineHeight: '1.5', margin: '0 0 0.85rem' }}>
+                        {d.achievement}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handlePrintCertificate({
+                        teacherNameAr: deptTeacherName,
+                        departmentName: d.department,
+                        totalScore: d.score,
+                        recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.department} وحصوله على لقب (${d.title}) في تفعيل نظام قطر للتعليم لشهر سبتمبر 2026. ${d.achievement}`,
+                        badgeTitle: d.title,
+                      })}
+                      style={{
+                        background: '#3D52A0',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.5rem 0.85rem',
+                        fontWeight: 800,
+                        fontSize: '0.78rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                      }}
+                    >
+                      <span>🎖️</span> طباعة شهادة شكر وتقدير
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
