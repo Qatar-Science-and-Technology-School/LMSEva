@@ -968,47 +968,47 @@ export function printOfficialOperationalPlan(
 
     if (actions.length === 0) {
       rowsHtml += `
-        <tr style="page-break-inside: avoid;">
-          <td style="text-align:center;border:1px solid #CBD5E1;padding:6px;">—</td>
-          <td style="border:1.5px solid #0F2044;background:#EEF2FF;font-weight:800;padding:6px 8px;color:#0F2044;">
-            <div style="background:linear-gradient(135deg,#0F2044,#0369A1);color:#fff;display:inline-block;padding:1px 6px;border-radius:4px;font-size:8pt;margin-bottom:3px;">${obj.code}</div>
-            <div style="font-size:8.5pt;">${obj.title}</div>
+        <tr>
+          <td style="text-align:center;border:1px solid #CBD5E1;padding:4px 3px;">—</td>
+          <td style="border:1.5px solid #0F2044;background:#EEF2FF;font-weight:800;padding:4px 7px;color:#0F2044;">
+            <span style="background:linear-gradient(135deg,#0F2044,#0369A1);color:#fff;display:inline-block;padding:1px 5px;border-radius:3px;font-size:7.5pt;margin-left:4px;">${obj.code}</span>
+            ${obj.title}
           </td>
-          <td colspan="6" style="text-align:center;color:#94A3B8;border:1px solid #CBD5E1;padding:6px;">لا توجد إجراءات مسجلة</td>
+          <td colspan="6" style="text-align:center;color:#94A3B8;border:1px solid #CBD5E1;padding:4px;">لا توجد إجراءات مسجلة</td>
         </tr>
       `;
     } else {
       actions.forEach((act, actIdx) => {
         const isFirst = actIdx === 0;
-        const statusClass = act.status === 'تم التنفيذ' ? 'status-done' : act.status === 'لم يتم التنفيذ' ? 'status-not-done' : 'status-undefined';
+        const statusClass = act.status === 'تم التنفيذ' ? 'sd' : act.status === 'لم يتم التنفيذ' ? 'sn' : 'su';
         const statusText = act.status === 'تم التنفيذ' ? '✓ تم التنفيذ' : act.status === 'لم يتم التنفيذ' ? '✗ لم يتم' : '— غير محدد';
         const sourceLabel = act.sourceModule
           ? (SOURCE_MODULE_LABELS[act.sourceModule] || act.sourceModule)
-          : (act.isManual ? 'إدخال يدوي' : '—');
+          : (act.isManual ? 'يدوي' : '—');
         const rowBg = actIdx % 2 === 0 ? '#FFFFFF' : '#F8FAFC';
 
         rowsHtml += `
-          <tr style="page-break-inside:avoid;background:${rowBg};">
-            <td style="text-align:center;font-weight:800;border:1px solid #CBD5E1;padding:5px 4px;color:#0F2044;font-size:8pt;">${globalIndex++}</td>
+          <tr style="background:${rowBg};">
+            <td style="text-align:center;font-weight:800;border:1px solid #CBD5E1;padding:4px 3px;color:#0F2044;font-size:7.5pt;">${globalIndex++}</td>
             ${isFirst ? `
-              <td rowspan="${rowSpan}" style="vertical-align:top;border:1.5px solid #0F2044;background:#EEF2FF;font-weight:800;color:#0F2044;padding:6px 8px;line-height:1.45;">
-                <div style="background:linear-gradient(135deg,#0F2044,#0369A1);color:#fff;display:inline-block;padding:2px 7px;border-radius:4px;font-size:8pt;font-weight:900;margin-bottom:5px;">${obj.code}</div>
-                <div style="font-size:8.5pt;font-weight:800;">${obj.title}</div>
-                ${obj.description ? `<div style="font-size:7.5pt;color:#475569;font-weight:500;margin-top:4px;border-top:1px dashed #CBD5E1;padding-top:4px;">${obj.description}</div>` : ''}
-                <div style="margin-top:5px;font-size:7pt;color:#64748B;font-weight:600;">📋 ${actions.length} إجراء</div>
+              <td rowspan="${rowSpan}" style="vertical-align:top;border:1.5px solid #0F2044;background:#EEF2FF;font-weight:800;color:#0F2044;padding:5px 7px;line-height:1.4;">
+                <div style="background:linear-gradient(135deg,#0F2044,#0369A1);color:#fff;display:inline-block;padding:1px 6px;border-radius:3px;font-size:7.5pt;font-weight:900;margin-bottom:4px;">${obj.code}</div>
+                <div style="font-size:8pt;font-weight:800;line-height:1.35;">${obj.title}</div>
+                ${obj.description ? `<div style="font-size:7pt;color:#475569;font-weight:500;margin-top:3px;padding-top:3px;border-top:1px dashed #CBD5E1;">${obj.description}</div>` : ''}
+                <div style="margin-top:4px;font-size:6.5pt;color:#64748B;font-weight:700;">📋 ${actions.length} إجراء</div>
               </td>
             ` : ''}
-            <td style="padding:5px 8px;font-weight:700;color:#0F172A;line-height:1.4;border:1px solid #CBD5E1;font-size:8.5pt;">
+            <td style="padding:4px 7px;font-weight:700;color:#0F172A;line-height:1.35;border:1px solid #CBD5E1;font-size:8pt;">
               ${act.title}
-              ${act.isManual ? '<span style="margin-right:4px;display:inline-block;background:#FEF3C7;color:#92400E;padding:1px 5px;border-radius:3px;font-size:7pt;font-weight:800;">يدوي</span>' : ''}
+              ${act.isManual ? `<span style="margin-right:4px;background:#FEF3C7;color:#92400E;padding:1px 4px;border-radius:3px;font-size:6.5pt;font-weight:800;">يدوي</span>` : ''}
             </td>
-            <td style="padding:5px 8px;color:#334155;border:1px solid #CBD5E1;font-size:8pt;">${act.targetAudience || '—'}</td>
-            <td style="padding:5px 8px;color:#334155;border:1px solid #CBD5E1;white-space:nowrap;font-size:8pt;">${act.timeframe || '—'}</td>
-            <td style="padding:5px 6px;text-align:center;font-weight:800;border:1px solid #CBD5E1;white-space:nowrap;font-size:8pt;">
-              <span class="status-badge ${statusClass}">${statusText}</span>
+            <td style="padding:4px 7px;color:#334155;border:1px solid #CBD5E1;font-size:7.5pt;">${act.targetAudience || '—'}</td>
+            <td style="padding:4px 7px;color:#334155;border:1px solid #CBD5E1;font-size:7.5pt;white-space:nowrap;">${act.timeframe || '—'}</td>
+            <td style="padding:4px 5px;text-align:center;border:1px solid #CBD5E1;">
+              <span class="${statusClass}">${statusText}</span>
             </td>
-            <td style="padding:5px 8px;color:#475569;line-height:1.35;border:1px solid #CBD5E1;font-size:8pt;">${act.notes || '—'}</td>
-            <td style="padding:5px 7px;color:#64748B;border:1px solid #CBD5E1;font-size:7.5pt;text-align:center;">${sourceLabel}</td>
+            <td style="padding:4px 7px;color:#475569;line-height:1.3;border:1px solid #CBD5E1;font-size:7.5pt;">${act.notes || '—'}</td>
+            <td style="padding:4px 6px;color:#64748B;border:1px solid #CBD5E1;font-size:7pt;text-align:center;">${sourceLabel}</td>
           </tr>
         `;
       });
@@ -1025,6 +1025,14 @@ export function printOfficialOperationalPlan(
   const printDate = new Date().toLocaleDateString('ar-QA', { year: 'numeric', month: 'long', day: 'numeric' });
   const printTime = new Date().toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit' });
 
+  // KPI pill helper
+  const kpiPill = (icon: string, value: string|number, label: string, color: string) =>
+    `<div style="display:inline-flex;flex-direction:column;align-items:center;min-width:70px;padding:4px 8px;background:#FFFFFF;border-radius:6px;border:1.5px solid ${color}30;border-top:3px solid ${color};">
+       <div style="font-size:11pt;">${icon}</div>
+       <div style="font-size:14pt;font-weight:900;color:${color};line-height:1;">${value}</div>
+       <div style="font-size:6.5pt;font-weight:800;color:#475569;margin-top:2px;text-align:center;">${label}</div>
+     </div>`;
+
   const html = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -1034,82 +1042,145 @@ export function printOfficialOperationalPlan(
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
-    @page{size:420mm 297mm;size:A3 landscape;margin:0;}
-    html,body{margin:0!important;padding:0!important;width:420mm;min-height:297mm;background:#fff!important;
-      font-family:'Cairo','Noto Sans Arabic',system-ui,sans-serif;color:#0F172A;direction:rtl;
-      -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
-    .pw{width:420mm;min-height:297mm;padding:7mm 11mm;box-sizing:border-box;margin:0 auto;background:#fff;}
+    *{box-sizing:border-box;margin:0;padding:0;
+      -webkit-print-color-adjust:exact!important;
+      print-color-adjust:exact!important;
+      color-adjust:exact!important;}
 
-    /* HEADER */
-    .hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #0F2044;padding-bottom:8px;margin-bottom:8px;}
-    .hdr-logo-box{width:165px;display:flex;align-items:center;}
-    .hdr-logo{height:60px;max-width:160px;object-fit:contain;}
-    .hdr-center{text-align:center;flex:1;padding:0 12px;}
-    .hdr-sub{font-size:7.5pt;color:#64748B;font-weight:600;margin-bottom:4px;}
-    .hdr-banner{display:inline-block;background:linear-gradient(135deg,#0F2044,#0369A1);color:#fff;
-      padding:7px 20px;border-radius:8px;font-size:13pt;font-weight:900;box-shadow:0 3px 8px rgba(15,32,68,.25);}
-    .hdr-year{display:block;font-size:9pt;font-weight:700;color:rgba(255,255,255,.85);margin-top:3px;}
-    .hdr-code{font-size:7pt;color:#94A3B8;font-weight:600;margin-top:4px;}
+    @page{
+      size:420mm 297mm;
+      size:A3 landscape;
+      margin:0;
+    }
 
-    /* KPI CARDS */
-    .kpi-row{display:flex;gap:6px;margin-bottom:7px;}
-    .kpi-card{flex:1;background:#fff;border:1.5px solid #E2E8F0;border-radius:8px;padding:6px 7px;text-align:center;position:relative;overflow:hidden;}
-    .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
-    .kc-navy::before{background:#0F2044;} .kc-blue::before{background:#0284C7;}
-    .kc-green::before{background:#10B981;} .kc-red::before{background:#EF4444;}
-    .kc-gray::before{background:#64748B;} .kc-purple::before{background:#8B5CF6;}
-    .kpi-icon{font-size:13pt;margin-bottom:2px;}
-    .kpi-val{font-size:17pt;font-weight:900;line-height:1.1;margin:2px 0;}
-    .kc-navy .kpi-val{color:#0F2044;} .kc-blue .kpi-val{color:#0284C7;}
-    .kc-green .kpi-val{color:#10B981;} .kc-red .kpi-val{color:#EF4444;}
-    .kc-gray .kpi-val{color:#64748B;} .kc-purple .kpi-val{color:#8B5CF6;}
-    .kpi-lbl{font-size:7pt;font-weight:800;color:#475569;margin-bottom:1px;}
-    .kpi-sub{font-size:6.5pt;color:#94A3B8;font-weight:600;}
-    .pb-bg{background:#F1F5F9;height:5px;border-radius:3px;margin-top:4px;overflow:hidden;}
-    .pb-fill{height:100%;border-radius:3px;background:#8B5CF6;}
+    html,body{
+      margin:0!important;padding:0!important;
+      width:420mm;min-height:297mm;
+      background:#fff!important;
+      font-family:'Cairo','Noto Sans Arabic',system-ui,sans-serif;
+      color:#0F172A;direction:rtl;
+      font-size:8pt;line-height:1.35;
+    }
 
-    /* META BAR */
-    .meta-bar{display:flex;justify-content:space-between;align-items:center;
-      background:linear-gradient(135deg,#F8FAFC,#EEF2FF);border:1px solid #CBD5E1;
-      border-radius:6px;padding:5px 12px;margin-bottom:7px;
-      font-size:7.5pt;font-weight:700;color:#334155;}
-    .meta-pill{display:inline-flex;align-items:center;gap:4px;}
+    /* ── PAGE WRAPPER (one per A3 sheet) ───────────────── */
+    .pw{
+      width:420mm;
+      padding:5mm 10mm 5mm 10mm;
+      box-sizing:border-box;
+      background:#fff;
+    }
+
+    /* ── HEADER (ultra-compact) ─────────────────────────── */
+    .hdr{
+      display:flex;align-items:center;justify-content:space-between;
+      border-bottom:2.5px solid #0F2044;
+      padding-bottom:5px;margin-bottom:5px;
+    }
+    .hdr-logo{height:50px;max-width:140px;object-fit:contain;}
+    .hdr-center{text-align:center;flex:1;padding:0 10px;}
+    .hdr-sub{font-size:6.5pt;color:#64748B;font-weight:600;margin-bottom:2px;}
+    .hdr-banner{
+      display:inline-block;
+      background:linear-gradient(135deg,#0F2044,#0369A1);
+      color:#fff;padding:5px 18px;border-radius:7px;
+      font-size:11.5pt;font-weight:900;
+      box-shadow:0 2px 6px rgba(15,32,68,.2);
+    }
+    .hdr-year{display:block;font-size:8pt;font-weight:700;color:rgba(255,255,255,.85);margin-top:2px;}
+    .hdr-code{font-size:6.5pt;color:#94A3B8;font-weight:600;margin-top:3px;}
+
+    /* ── KPI STRIP ──────────────────────────────────────── */
+    .kpi-strip{
+      display:flex;gap:5px;justify-content:space-between;
+      background:linear-gradient(135deg,#F8FAFC,#EEF2FF);
+      border:1px solid #CBD5E1;border-radius:7px;
+      padding:5px 8px;margin-bottom:4px;
+    }
+    .kpi-item{
+      display:flex;flex-direction:column;align-items:center;
+      min-width:60px;flex:1;padding:3px 5px;
+      background:#fff;border-radius:5px;
+      border-top:3px solid transparent;
+    }
+    .kpi-item.navy {border-top-color:#0F2044;}
+    .kpi-item.blue  {border-top-color:#0284C7;}
+    .kpi-item.green {border-top-color:#10B981;}
+    .kpi-item.red   {border-top-color:#EF4444;}
+    .kpi-item.gray  {border-top-color:#64748B;}
+    .kpi-item.purple{border-top-color:#8B5CF6;}
+    .kpi-ico{font-size:10pt;margin-bottom:1px;}
+    .kpi-val{font-size:13pt;font-weight:900;line-height:1.05;}
+    .kpi-item.navy  .kpi-val{color:#0F2044;}
+    .kpi-item.blue  .kpi-val{color:#0284C7;}
+    .kpi-item.green .kpi-val{color:#10B981;}
+    .kpi-item.red   .kpi-val{color:#EF4444;}
+    .kpi-item.gray  .kpi-val{color:#64748B;}
+    .kpi-item.purple.kpi-val{color:#8B5CF6;}
+    .kpi-item.purple .kpi-val{color:#8B5CF6;}
+    .kpi-lbl{font-size:6pt;font-weight:800;color:#475569;margin-top:1px;text-align:center;}
+    .pb{background:#F1F5F9;height:4px;border-radius:2px;margin-top:3px;overflow:hidden;width:100%;}
+    .pb-fill{height:100%;border-radius:2px;background:#8B5CF6;}
+
+    /* ── META BAR ───────────────────────────────────────── */
+    .meta-bar{
+      display:flex;justify-content:space-between;align-items:center;
+      background:#F8FAFC;border:1px solid #E2E8F0;border-radius:5px;
+      padding:3px 10px;margin-bottom:4px;
+      font-size:6.5pt;font-weight:700;color:#334155;
+    }
+    .meta-pill{display:inline-flex;align-items:center;gap:3px;}
     .meta-pill strong{color:#0F2044;}
 
-    /* TABLE */
-    table{width:100%;border-collapse:collapse;font-size:8pt;border:2px solid #0F2044;page-break-inside:auto;}
+    /* ── TABLE ──────────────────────────────────────────── */
+    table{
+      width:100%;border-collapse:collapse;
+      font-size:7.5pt;border:2px solid #0F2044;
+      page-break-inside:auto;
+    }
     thead{display:table-header-group;}
     tr{page-break-inside:avoid;page-break-after:auto;}
-    th{background:linear-gradient(135deg,#0F2044,#1E3A5F);color:#fff;font-weight:800;
-      padding:7px 5px;text-align:right;border:1px solid #1E293B;font-size:8pt;}
+    th{
+      background:linear-gradient(135deg,#0F2044,#1E3A5F)!important;
+      color:#fff!important;font-weight:800;
+      padding:6px 5px;text-align:right;
+      border:1px solid #1E293B;font-size:7.5pt;
+      -webkit-print-color-adjust:exact!important;
+      print-color-adjust:exact!important;
+    }
     th.tc,td.tc{text-align:center;}
-    td{border:1px solid #CBD5E1;vertical-align:middle;padding:4px 6px;font-size:8pt;}
+    td{border:1px solid #CBD5E1;vertical-align:middle;padding:0;}
 
-    /* STATUS */
-    .sb{display:inline-block;padding:2px 7px;border-radius:10px;font-size:7.5pt;font-weight:800;}
-    .sd{background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;}
-    .sn{background:#FEF2F2;color:#991B1B;border:1px solid #FECACA;}
-    .su{background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;}
+    /* ── STATUS BADGES ──────────────────────────────────── */
+    .sd{display:inline-block;padding:1px 5px;border-radius:8px;font-size:7pt;font-weight:800;
+        background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;}
+    .sn{display:inline-block;padding:1px 5px;border-radius:8px;font-size:7pt;font-weight:800;
+        background:#FEF2F2;color:#991B1B;border:1px solid #FECACA;}
+    .su{display:inline-block;padding:1px 5px;border-radius:8px;font-size:7pt;font-weight:800;
+        background:#F1F5F9;color:#475569;border:1px solid #CBD5E1;}
 
-    /* SIGNATURES */
-    .sigs-section{margin-top:9mm;border-top:2px solid #0F2044;padding-top:7px;page-break-inside:avoid;break-inside:avoid;}
-    .sigs-title{text-align:center;font-size:7.5pt;font-weight:800;color:#0F2044;margin-bottom:7px;}
-    .sigs-boxes{display:flex;justify-content:space-between;gap:10px;}
-    .sig-box{flex:1;text-align:center;background:#FAFCFF;border:1.5px solid #CBD5E1;border-radius:8px;padding:7px 10px;}
-    .sig-box.primary{border-color:#0F2044;background:#EEF2FF;}
-    .sig-rtitle{font-size:8pt;font-weight:800;color:#0F2044;border-bottom:1px solid #CBD5E1;padding-bottom:3px;margin-bottom:4px;}
-    .sig-name{font-size:8.5pt;font-weight:800;color:#1E293B;margin-bottom:2px;}
-    .sig-job{font-size:7pt;color:#64748B;margin-bottom:4px;}
-    .sig-img-area{height:36px;display:flex;align-items:center;justify-content:center;}
-    .sig-img{max-height:34px;max-width:130px;object-fit:contain;}
-    .sig-line{border-top:1px solid #94A3B8;margin:5px 10px 3px;}
-    .sig-lbl{font-size:6.5pt;color:#94A3B8;}
+    /* ── SIGNATURES ─────────────────────────────────────── */
+    .sigs{
+      margin-top:6mm;border-top:2px solid #0F2044;
+      padding-top:5px;page-break-inside:avoid;break-inside:avoid;
+    }
+    .sigs-ttl{text-align:center;font-size:7pt;font-weight:800;color:#0F2044;margin-bottom:5px;}
+    .sigs-row{display:flex;justify-content:space-between;gap:8px;}
+    .sig{flex:1;text-align:center;background:#FAFCFF;border:1.5px solid #CBD5E1;border-radius:7px;padding:5px 8px;}
+    .sig.main{border-color:#0F2044;background:#EEF2FF;}
+    .sig-rt{font-size:7.5pt;font-weight:800;color:#0F2044;border-bottom:1px solid #CBD5E1;padding-bottom:3px;margin-bottom:3px;}
+    .sig-nm{font-size:8pt;font-weight:800;color:#1E293B;margin-bottom:1px;}
+    .sig-jb{font-size:6.5pt;color:#64748B;margin-bottom:4px;}
+    .sig-ia{height:32px;display:flex;align-items:center;justify-content:center;}
+    .sig-img{max-height:30px;max-width:120px;object-fit:contain;}
+    .sig-ln{border-top:1px solid #94A3B8;margin:4px 8px 2px;}
+    .sig-lb{font-size:6pt;color:#94A3B8;}
 
-    /* FOOTER */
-    .doc-footer{margin-top:6px;padding-top:5px;border-top:1px dashed #CBD5E1;
+    /* ── FOOTER ─────────────────────────────────────────── */
+    .doc-footer{
+      margin-top:5px;padding-top:4px;border-top:1px dashed #CBD5E1;
       display:flex;justify-content:space-between;align-items:center;
-      font-size:6.5pt;color:#94A3B8;font-weight:600;}
+      font-size:6pt;color:#94A3B8;font-weight:600;
+    }
 
     .ab{page-break-inside:avoid;break-inside:avoid;}
   </style>
@@ -1117,10 +1188,10 @@ export function printOfficialOperationalPlan(
 <body>
 <div class="pw">
 
-  <!-- LETTERHEAD -->
+  <!-- ══════ LETTERHEAD ══════ -->
   <div class="hdr ab">
-    <div class="hdr-logo-box" style="justify-content:flex-start;">
-      <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" class="hdr-logo"/>
+    <div style="width:140px;display:flex;align-items:center;justify-content:flex-start;">
+      <img src="/ministry-logo.png" alt="وزارة التربية" class="hdr-logo"/>
     </div>
     <div class="hdr-center">
       <div class="hdr-sub">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
@@ -1128,75 +1199,70 @@ export function printOfficialOperationalPlan(
         الخطة الإجرائية للتعليم الإلكتروني والحلول الرقمية
         <span class="hdr-year">العام الأكاديمي: ${academicYear}</span>
       </div>
-      <div class="hdr-sub" style="margin-top:5px;">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين — قسم المشاريع والحلول الرقمية والتعليم الإلكتروني</div>
+      <div class="hdr-sub" style="margin-top:3px;">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين — قسم المشاريع والحلول الرقمية والتعليم الإلكتروني</div>
       <div class="hdr-code">كود الوثيقة: QSTSS-OP-${academicYear} &nbsp;|&nbsp; تاريخ الإصدار: ${printDate}</div>
     </div>
-    <div class="hdr-logo-box" style="justify-content:flex-end;">
-      <img src="/school-logo.png" alt="مدرسة قطر للعلوم والتكنولوجيا" class="hdr-logo"/>
+    <div style="width:140px;display:flex;align-items:center;justify-content:flex-end;">
+      <img src="/school-logo.png" alt="مدرسة قطر" class="hdr-logo"/>
     </div>
   </div>
 
-  <!-- KPI CARDS -->
-  <div class="kpi-row ab">
-    <div class="kpi-card kc-navy">
-      <div class="kpi-icon">🎯</div>
+  <!-- ══════ KPI STRIP ══════ -->
+  <div class="kpi-strip ab">
+    <div class="kpi-item navy">
+      <div class="kpi-ico">🎯</div>
       <div class="kpi-val">${state.objectives.length}</div>
       <div class="kpi-lbl">الأهداف الاستراتيجية</div>
-      <div class="kpi-sub">مجالات الخطة المعتمدة</div>
     </div>
-    <div class="kpi-card kc-blue">
-      <div class="kpi-icon">📑</div>
+    <div class="kpi-item blue">
+      <div class="kpi-ico">📑</div>
       <div class="kpi-val">${totalActions}</div>
       <div class="kpi-lbl">إجمالي الإجراءات</div>
-      <div class="kpi-sub">إجراء تشغيلي وتنفيذي</div>
     </div>
-    <div class="kpi-card kc-green">
-      <div class="kpi-icon">✅</div>
+    <div class="kpi-item green">
+      <div class="kpi-ico">✅</div>
       <div class="kpi-val">${executedCount}</div>
       <div class="kpi-lbl">تم التنفيذ</div>
-      <div class="kpi-sub">إجراءات منجزة وموثقة</div>
     </div>
-    <div class="kpi-card kc-red">
-      <div class="kpi-icon">⏳</div>
+    <div class="kpi-item red">
+      <div class="kpi-ico">⏳</div>
       <div class="kpi-val">${unexecutedCount}</div>
       <div class="kpi-lbl">لم يتم التنفيذ</div>
-      <div class="kpi-sub">قيد المتابعة / متبقية</div>
     </div>
-    <div class="kpi-card kc-gray">
-      <div class="kpi-icon">📋</div>
+    <div class="kpi-item gray">
+      <div class="kpi-ico">📋</div>
       <div class="kpi-val">${undefinedCount}</div>
       <div class="kpi-lbl">غير محدد</div>
-      <div class="kpi-sub">مستثنى من النسبة</div>
     </div>
-    <div class="kpi-card kc-purple">
-      <div class="kpi-icon">📈</div>
-      <div class="kpi-val">${compRate}%</div>
+    <div class="kpi-item purple">
+      <div class="kpi-ico">📈</div>
+      <div class="kpi-val" style="color:#8B5CF6;">${compRate}%</div>
       <div class="kpi-lbl">نسبة الإنجاز</div>
-      <div class="pb-bg"><div class="pb-fill" style="width:${compRate}%;"></div></div>
+      <div class="pb"><div class="pb-fill" style="width:${compRate}%;"></div></div>
     </div>
   </div>
 
-  <!-- META BAR -->
+  <!-- ══════ META BAR ══════ -->
   <div class="meta-bar ab">
     <span class="meta-pill">🏫 <strong>مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</strong></span>
-    <span class="meta-pill">📅 العام: <strong>${academicYear}</strong></span>
+    <span class="meta-pill">📅 <strong>${academicYear}</strong></span>
     <span class="meta-pill">🔄 آخر مزامنة: <strong>${state.lastSyncedAt ? new Date(state.lastSyncedAt).toLocaleDateString('ar-QA') : 'غير محدد'}</strong></span>
-    <span class="meta-pill">🖨️ تاريخ الطباعة: <strong>${printDate} — ${printTime}</strong></span>
-    <span class="meta-pill">📌 الحالة: <strong style="color:#065F46;">وثيقة رسمية معتمدة</strong></span>
+    <span class="meta-pill">🖨️ <strong>${printDate} — ${printTime}</strong></span>
+    <span class="meta-pill">📌 <strong style="color:#065F46;">وثيقة رسمية معتمدة</strong></span>
   </div>
 
-  <!-- TABLE -->
+  <!-- ══════ OFFICIAL TABLE ══════ -->
   <table>
     <thead>
       <tr>
-        <th class="tc" style="width:30px;">م.</th>
-        <th style="width:195px;">الأهداف الاستراتيجية</th>
-        <th style="min-width:235px;">الإجراءات التنفيذية</th>
-        <th style="width:150px;">الفئة المستهدفة</th>
-        <th style="width:120px;">الإطار الزمني</th>
-        <th class="tc" style="width:112px;">حالة التنفيذ</th>
-        <th style="min-width:185px;">الملاحظات والمخرجات</th>
-        <th class="tc" style="width:88px;">المصدر</th>
+        <th class="tc" style="width:28px;">م.</th>
+        <th style="width:185px;">الأهداف الاستراتيجية</th>
+        <th style="min-width:220px;">الإجراءات التنفيذية</th>
+        <th style="width:140px;">الفئة المستهدفة</th>
+        <th style="width:115px;">الإطار الزمني</th>
+        <th class="tc" style="width:108px;">حالة التنفيذ</th>
+        <th style="min-width:175px;">الملاحظات والمخرجات</th>
+        <th class="tc" style="width:82px;">المصدر</th>
       </tr>
     </thead>
     <tbody>
@@ -1204,44 +1270,38 @@ export function printOfficialOperationalPlan(
     </tbody>
   </table>
 
-  <!-- SIGNATURES -->
-  <div class="sigs-section">
-    <div class="sigs-title">— التوقيعات والاعتمادات الرسمية —</div>
-    <div class="sigs-boxes">
-      <div class="sig-box">
-        <div class="sig-rtitle">إعداد وتوثيق الخطة</div>
-        <div class="sig-name">م. أحمد عادل طبيشات</div>
-        <div class="sig-job">منسق المشاريع والتعليم الإلكتروني</div>
-        <div class="sig-img-area">
-          <img class="sig-img" src="/signature-ahmad.png" alt="توقيع م. أحمد عادل طبيشات" onerror="this.style.display='none'"/>
-        </div>
-        <div class="sig-line"></div>
-        <div class="sig-lbl">التوقيع</div>
+  <!-- ══════ SIGNATURES ══════ -->
+  <div class="sigs">
+    <div class="sigs-ttl">— التوقيعات والاعتمادات الرسمية —</div>
+    <div class="sigs-row">
+      <div class="sig">
+        <div class="sig-rt">إعداد وتوثيق الخطة</div>
+        <div class="sig-nm">م. أحمد عادل طبيشات</div>
+        <div class="sig-jb">منسق المشاريع والتعليم الإلكتروني</div>
+        <div class="sig-ia"><img class="sig-img" src="/signature-ahmad.png" onerror="this.style.display='none'" alt=""/></div>
+        <div class="sig-ln"></div>
+        <div class="sig-lb">التوقيع</div>
       </div>
-      <div class="sig-box">
-        <div class="sig-rtitle">مراجعة واعتماد</div>
-        <div class="sig-name">د. راني التوم</div>
-        <div class="sig-job">النائب الأكاديمي للمدرسة</div>
-        <div class="sig-img-area">
-          <img class="sig-img" src="/signature-rani.png" alt="توقيع د. راني التوم" onerror="this.style.display='none'"/>
-        </div>
-        <div class="sig-line"></div>
-        <div class="sig-lbl">التوقيع</div>
+      <div class="sig">
+        <div class="sig-rt">مراجعة واعتماد</div>
+        <div class="sig-nm">د. راني التوم</div>
+        <div class="sig-jb">النائب الأكاديمي للمدرسة</div>
+        <div class="sig-ia"><img class="sig-img" src="/signature-rani.png" onerror="this.style.display='none'" alt=""/></div>
+        <div class="sig-ln"></div>
+        <div class="sig-lb">التوقيع</div>
       </div>
-      <div class="sig-box primary">
-        <div class="sig-rtitle">يعتمد، مدير المدرسة</div>
-        <div class="sig-name">محمد علي مندني العمادي</div>
-        <div class="sig-job">مدير مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
-        <div class="sig-img-area">
-          <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة" onerror="this.style.display='none'"/>
-        </div>
-        <div class="sig-line"></div>
-        <div class="sig-lbl">التوقيع والختم الرسمي</div>
+      <div class="sig main">
+        <div class="sig-rt">يعتمد، مدير المدرسة</div>
+        <div class="sig-nm">محمد علي مندني العمادي</div>
+        <div class="sig-jb">مدير مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
+        <div class="sig-ia"><img class="sig-img" src="/principal-signature.png" onerror="this.style.display='none'" alt=""/></div>
+        <div class="sig-ln"></div>
+        <div class="sig-lb">التوقيع والختم الرسمي</div>
       </div>
     </div>
   </div>
 
-  <!-- FOOTER -->
+  <!-- ══════ FOOTER ══════ -->
   <div class="doc-footer">
     <span>📄 QSTSS-OP-${academicYear} | وثيقة رسمية — للاستخدام المؤسسي الداخلي</span>
     <span>وزارة التربية والتعليم والتعليم العالي — دولة قطر | ${printDate}</span>
@@ -1250,13 +1310,13 @@ export function printOfficialOperationalPlan(
 </div>
 <script>
   window.onload = function() {
-    setTimeout(function() { window.focus(); window.print(); }, 800);
+    setTimeout(function() { window.focus(); window.print(); }, 600);
   };
 </script>
 </body>
 </html>`;
 
-  const printWindow = window.open('', '_blank', 'width=1500,height=1000');
+  const printWindow = window.open('', '_blank', 'width=1600,height=1100');
   if (printWindow) {
     printWindow.document.open();
     printWindow.document.write(html);
