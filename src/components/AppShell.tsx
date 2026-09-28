@@ -16,8 +16,9 @@ import ModelLessonsEvaluationPage from './pages/ModelLessonsEvaluationPage';
 import ElearningSmsPage from './pages/ElearningSmsPage';
 import ClassSubjectAnalysisPage from './pages/ClassSubjectAnalysisPage';
 import EventsMeetingsPage from './pages/EventsMeetingsPage';
+import OperationalPlanPage from './pages/OperationalPlanPage';
 
-type Page = 'dashboard'|'teachers'|'evaluation'|'class_analysis'|'model_lessons'|'events_meetings'|'profile'|'analytics'|'reports'|'settings'|'takreem'|'achievements'|'professional_development'|'elearning_sms';
+type Page = 'dashboard'|'operational_plan'|'teachers'|'evaluation'|'class_analysis'|'model_lessons'|'events_meetings'|'profile'|'analytics'|'reports'|'settings'|'takreem'|'achievements'|'professional_development'|'elearning_sms';
 
 interface Props { user: User; onLogout: () => void; }
 
@@ -35,6 +36,7 @@ export default function AppShell({ user, onLogout }: Props) {
 
   const nav: { id: Page; label: string; icon: string; show: boolean }[] = [
     { id:'dashboard',  label:'لوحة المؤشرات',  icon:'📊', show:true },
+    { id:'operational_plan', label:'الخطة الإجرائية', icon:'🎯', show:true },
     { id:'teachers',   label:'إدارة المعلمين',  icon:'👨‍🏫', show:true },
     { id:'evaluation', label:'تقييم نظام قطر للتعليم',  icon:'📝', show:true },
     { id:'class_analysis', label:'تحليل الشعب والمواد', icon:'🏫', show:true },
@@ -192,6 +194,7 @@ export default function AppShell({ user, onLogout }: Props) {
         {/* Page content */}
         <main style={{ flex:1, overflow:'auto' }}>
           {page === 'dashboard'  && <Dashboard  currentUser={user} onViewTeacher={goProfile} onNavigate={setPage} selectedYear={selectedYear} />}
+          {page === 'operational_plan' && <OperationalPlanPage currentUser={user} selectedYear={selectedYear} onNavigate={(p) => setPage(p as Page)} />}
           {page === 'teachers'   && <TeachersPage currentUser={user} onViewTeacher={goProfile} selectedYear={selectedYear} />}
           {page === 'evaluation' && <EvaluationPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
           {page === 'class_analysis' && <ClassSubjectAnalysisPage currentUser={user} selectedYear={selectedYear} onNavigate={setPage} />}

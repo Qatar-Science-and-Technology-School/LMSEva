@@ -30,6 +30,7 @@ export const COLLECTIONS = {
   monthlyNotes: 'monthlyNotes',
   achievements: 'achievements',
   elearningSms: 'elearning_sms',
+  operationalPlan: 'operational_plan',
 } as const;
 
 export const LEGACY_LOCAL_STORAGE_KEYS = {
@@ -46,6 +47,7 @@ export const LEGACY_LOCAL_STORAGE_KEYS = {
   monthlyNotes: ['monthly_task_notes', 'monthly_notes', 'qstss_monthly_notes'],
   achievements: ['system_achievements', 'achievements', 'qstss_achievements'],
   elearningSms: ['qstss_elearning_sms', 'elearning_sms'],
+  operationalPlan: ['qstss_operational_plan_v2', 'qstss_operational_plan_v1', 'operational_plan'],
 } as const;
 
 type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS];
