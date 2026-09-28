@@ -1038,17 +1038,33 @@ export function printOfficialOperationalPlan(
             print-color-adjust: exact !important;
           }
           @page {
+            size: 420mm 297mm;
             size: A3 landscape;
+            margin: 0;
+          }
+          html, body {
             margin: 0 !important;
+            padding: 0 !important;
+            width: 420mm;
+            min-height: 297mm;
+            background: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           body {
             font-family: 'Cairo', system-ui, -apple-system, sans-serif;
-            background: #ffffff;
             color: #0F172A;
             direction: rtl;
-            padding: 10mm 14mm !important;
             font-size: 8.5pt;
             line-height: 1.35;
+          }
+          .page-wrapper {
+            width: 420mm;
+            min-height: 297mm;
+            padding: 10mm 14mm;
+            box-sizing: border-box;
+            margin: 0 auto;
+            background: #ffffff;
           }
           .avoid-break {
             page-break-inside: avoid;
@@ -1219,89 +1235,92 @@ export function printOfficialOperationalPlan(
         </style>
       </head>
       <body>
-        <!-- Header -->
-        <div class="official-header avoid-break">
-          <div class="header-logo-box" style="justify-content: flex-start;">
-            <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" class="header-logo" />
-          </div>
-          <div class="header-center">
-            <div class="header-banner">
-              الخطة الإجرائية للتعليم الإلكتروني والحلول الرقمية | العام الأكاديمي: ${academicYear}
+        <div class="page-wrapper">
+          <!-- Header -->
+          <div class="official-header avoid-break">
+            <div class="header-logo-box" style="justify-content: flex-start;">
+              <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" class="header-logo" />
             </div>
-          </div>
-          <div class="header-logo-box" style="justify-content: flex-end;">
-            <img src="/school-logo.png" alt="مدرسة قطر للعلوم والتكنولوجيا" class="header-logo" />
-          </div>
-        </div>
-
-        <!-- Meta / KPI Bar -->
-        <div class="stats-bar avoid-break">
-          <span class="stats-pill">🎯 الأهداف الاستراتيجية: <strong>${state.objectives.length} أهداف</strong></span>
-          <span class="stats-pill">📑 إجمالي الإجراءات: <strong>${totalActions} إجراء</strong></span>
-          <span class="stats-pill" style="color: #065F46;">✅ المنفذ: <strong>${executedCount}</strong></span>
-          <span class="stats-pill" style="color: #991B1B;">⏳ قيد التنفيذ: <strong>${unexecutedCount}</strong></span>
-          <span class="stats-pill" style="color: #0284C7;">📈 نسبة الإنجاز: <strong>${compRate}%</strong></span>
-          <span class="stats-pill" style="color: #64748B;">كود الوثيقة: <strong>QSTSS-OP-${academicYear}</strong></span>
-        </div>
-
-        <!-- Official Table -->
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 35px;" class="text-center">م.</th>
-              <th style="width: 210px;">الأهداف</th>
-              <th style="min-width: 270px;">الإجراءات لكل هدف</th>
-              <th style="width: 165px;">الفئة المستهدفة</th>
-              <th style="width: 130px;">وقت التنفيذ</th>
-              <th style="width: 110px;" class="text-center">حالة التنفيذ</th>
-              <th style="min-width: 210px;">ملاحظات</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-
-        <!-- Signatures Footer -->
-        <div class="signatures-container avoid-break">
-          <!-- 1. Coordinator -->
-          <div class="sig-box">
-            <div class="sig-title">إعداد وتوثيق الخطة</div>
-            <div class="sig-name">م. أحمد عادل طبيشات</div>
-            <div class="sig-role">منسق المشاريع والتعليم الإلكتروني</div>
-            <div class="sig-img-container">
-              <img class="sig-img" src="/signature-ahmad.png" alt="توقيع م. أحمد عادل طبيشات" />
+            <div class="header-center">
+              <div class="header-banner">
+                الخطة الإجرائية للتعليم الإلكتروني والحلول الرقمية | العام الأكاديمي: ${academicYear}
+              </div>
+            </div>
+            <div class="header-logo-box" style="justify-content: flex-end;">
+              <img src="/school-logo.png" alt="مدرسة قطر للعلوم والتكنولوجيا" class="header-logo" />
             </div>
           </div>
 
-          <!-- 2. Academic Vice Principal -->
-          <div class="sig-box">
-            <div class="sig-title">مراجعة واعتماد</div>
-            <div class="sig-name">د. راني التوم</div>
-            <div class="sig-role">النائب الأكاديمي للمدرسة</div>
-            <div class="sig-img-container">
-              <img class="sig-img" src="/signature-rani.png" alt="توقيع د. راني التوم" />
+          <!-- Meta / KPI Bar -->
+          <div class="stats-bar avoid-break">
+            <span class="stats-pill">🎯 الأهداف الاستراتيجية: <strong>${state.objectives.length} أهداف</strong></span>
+            <span class="stats-pill">📑 إجمالي الإجراءات: <strong>${totalActions} إجراء</strong></span>
+            <span class="stats-pill" style="color: #065F46;">✅ المنفذ: <strong>${executedCount}</strong></span>
+            <span class="stats-pill" style="color: #991B1B;">⏳ قيد التنفيذ: <strong>${unexecutedCount}</strong></span>
+            <span class="stats-pill" style="color: #0284C7;">📈 نسبة الإنجاز: <strong>${compRate}%</strong></span>
+            <span class="stats-pill" style="color: #64748B;">كود الوثيقة: <strong>QSTSS-OP-${academicYear}</strong></span>
+          </div>
+
+          <!-- Official Table -->
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 35px;" class="text-center">م.</th>
+                <th style="width: 210px;">الأهداف</th>
+                <th style="min-width: 270px;">الإجراءات لكل هدف</th>
+                <th style="width: 165px;">الفئة المستهدفة</th>
+                <th style="width: 130px;">وقت التنفيذ</th>
+                <th style="width: 110px;" class="text-center">حالة التنفيذ</th>
+                <th style="min-width: 210px;">ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <!-- Signatures Footer -->
+          <div class="signatures-container avoid-break">
+            <!-- 1. Coordinator -->
+            <div class="sig-box">
+              <div class="sig-title">إعداد وتوثيق الخطة</div>
+              <div class="sig-name">م. أحمد عادل طبيشات</div>
+              <div class="sig-role">منسق المشاريع والتعليم الإلكتروني</div>
+              <div class="sig-img-container">
+                <img class="sig-img" src="/signature-ahmad.png" alt="توقيع م. أحمد عادل طبيشات" />
+              </div>
+            </div>
+
+            <!-- 2. Academic Vice Principal -->
+            <div class="sig-box">
+              <div class="sig-title">مراجعة واعتماد</div>
+              <div class="sig-name">د. راني التوم</div>
+              <div class="sig-role">النائب الأكاديمي للمدرسة</div>
+              <div class="sig-img-container">
+                <img class="sig-img" src="/signature-rani.png" alt="توقيع د. راني التوم" />
+              </div>
+            </div>
+
+            <!-- 3. School Principal -->
+            <div class="sig-box" style="border: 1.5px solid #0F2044; background: #FFFFFF;">
+              <div class="sig-title">يعتمد، مدير المدرسة</div>
+              <div class="sig-name" style="font-size: 9pt; color: #0F2044;">محمد علي مندني العمادي</div>
+              <div class="sig-role">مدير مدرسة قطر للعلوم والتكنولوجيا</div>
+              <div class="sig-img-container">
+                <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة محمد علي مندني العمادي" />
+              </div>
             </div>
           </div>
 
-          <!-- 3. School Principal -->
-          <div class="sig-box" style="border: 1.5px solid #0F2044; background: #FFFFFF;">
-            <div class="sig-title">يعتمد، مدير المدرسة</div>
-            <div class="sig-name" style="font-size: 9pt; color: #0F2044;">محمد علي مندني العمادي</div>
-            <div class="sig-role">مدير مدرسة قطر للعلوم والتكنولوجيا</div>
-            <div class="sig-img-container">
-              <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة محمد علي مندني العمادي" />
-            </div>
+          <div class="footer-note">
+            وثيقة رسمية معتمدة صادرة عن مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين — وزارة التربية والتعليم والتعليم العالي
           </div>
-        </div>
-
-        <div class="footer-note">
-          وثيقة رسمية معتمدة صادرة عن مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين — وزارة التربية والتعليم والتعليم العالي
         </div>
 
         <script>
           window.onload = function() {
             setTimeout(function() {
+              window.focus();
               window.print();
             }, 600);
           };
@@ -1315,6 +1334,7 @@ export function printOfficialOperationalPlan(
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
+    printWindow.focus();
   } else {
     window.print();
   }

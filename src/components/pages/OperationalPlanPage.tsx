@@ -417,12 +417,15 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
       <style>{`
         @media print {
           @page {
-            size: A3 landscape !important;
-            margin: 0 !important;
+            size: 420mm 297mm;
+            size: A3 landscape;
+            margin: 0;
           }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
+            width: 420mm !important;
+            min-height: 297mm !important;
             background: #FFFFFF !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -438,6 +441,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
             padding: 10mm 14mm !important;
             box-sizing: border-box !important;
             background: #FFFFFF !important;
+            margin: 0 auto !important;
           }
           .print-table {
             width: 100% !important;
@@ -1131,7 +1135,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
 
         {/* ─── Screen Print Preview Tab ─────────────────────────────────────── */}
         {activeTab === 'print_preview' && (
-          <div style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <div className="no-print" style={{ background: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid #E2E8F0' }}>
               <div>
                 <h3 style={{ margin: 0, color: '#0F2044', fontSize: '1.1rem', fontWeight: 900 }}>
@@ -1861,7 +1865,7 @@ function OfficialPrintDocument({
 }) {
   return (
     <div style={{
-      width: isPreview ? '100%' : '420mm',
+      width: '100%',
       boxSizing: 'border-box',
       background: '#FFFFFF',
       color: '#0F172A',
