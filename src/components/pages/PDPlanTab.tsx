@@ -9,6 +9,7 @@ import {
 import { OfficialReportHeader } from './PDReports';
 import type { Workshop, IndividualPDRecord } from '@/lib/pdData';
 import { type Teacher, type Department, resolveTeacherDepartment, getDepartmentStaffCount } from '@/lib/data';
+import { getDocument, setSingleDocument, COLLECTIONS } from '@/lib/firestoreDb';
 
 interface MeeeRecord {
   id: string;
@@ -485,6 +486,45 @@ export default function PDPlanTab({
     return [];
   });
 
+  // مزامنة تعديلات خطة التطوير المهني مع سحابة Firebase Firestore
+  useEffect(() => {
+    let isMounted = true;
+    getDocument<{ customRows?: PlanRow[]; deletedRowIds?: string[] }>(COLLECTIONS.pdPlan, 'plan_edits')
+      .then(cloudData => {
+        if (!isMounted || !cloudData) return;
+        if (Array.isArray(cloudData.customRows) && cloudData.customRows.length > 0) {
+          setCustomRows(cloudData.customRows);
+          try {
+            localStorage.setItem('qstss_custom_pd_plan_2627', JSON.stringify(cloudData.customRows));
+          } catch (e) {}
+        }
+        if (Array.isArray(cloudData.deletedRowIds) && cloudData.deletedRowIds.length > 0) {
+          setDeletedRowIds(cloudData.deletedRowIds);
+          try {
+            localStorage.setItem('qstss_deleted_plan_row_ids', JSON.stringify(cloudData.deletedRowIds));
+          } catch (e) {}
+        }
+      })
+      .catch(err => {
+        console.warn('Error loading PD plan edits from Firestore:', err);
+      });
+    return () => { isMounted = false; };
+  }, []);
+
+  const persistPDPlanToFirestore = (updatedCustomRows: PlanRow[] | null, updatedDeletedIds: string[]) => {
+    try {
+      setSingleDocument(COLLECTIONS.pdPlan, 'plan_edits', {
+        customRows: updatedCustomRows,
+        deletedRowIds: updatedDeletedIds,
+        updatedAt: new Date().toISOString(),
+      }).catch(err => {
+        console.warn('Failed to sync PD plan edits to Firestore:', err);
+      });
+    } catch (err) {
+      console.warn('Error triggering Firestore sync for PD plan:', err);
+    }
+  };
+
   // ── 1. Individual PD Statistics (Dynamic from individualRecords) ─────────────
   const individualStats = useMemo(() => {
     const targetYear = filterYear && filterYear !== 'all' ? filterYear : '2026-2027';
@@ -766,6 +806,7 @@ export default function PDPlanTab({
     } catch (e) {
       console.error(e);
     }
+    persistPDPlanToFirestore(next, deletedRowIds);
     setEditingRow(null);
     setIsAddingRow(false);
   };
@@ -782,6 +823,7 @@ export default function PDPlanTab({
     } catch (e) {
       console.error(e);
     }
+    persistPDPlanToFirestore(next, newDeleted);
   };
 
   const handleMoveRow = (index: number, direction: 'up' | 'down') => {
@@ -796,6 +838,7 @@ export default function PDPlanTab({
     } catch (e) {
       console.error(e);
     }
+    persistPDPlanToFirestore(next, deletedRowIds);
   };
 
   const handleResetToDefault = () => {
@@ -808,6 +851,7 @@ export default function PDPlanTab({
     } catch (e) {
       console.error(e);
     }
+    persistPDPlanToFirestore(null, []);
   };
 
   const handlePrint = () => {

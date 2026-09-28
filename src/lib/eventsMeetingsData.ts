@@ -3,6 +3,7 @@
 // Events & Meetings Data Model, Seed Data, and Storage Helpers
 // التقرير الشهري المعتمد لشهر سبتمبر 2026م (العام الأكاديمي 2026-2027)
 // =============================================================================
+import { getCollection, saveCollection, COLLECTIONS } from './firestoreDb';
 
 export type EventCategory = 'اجتماع' | 'فعالية' | 'زيارة' | 'ورشة' | 'مسابقة' | 'مهمة';
 
@@ -769,6 +770,17 @@ export const INITIAL_EVENTS_MEETINGS: EventMeetingItem[] = [
 // LocalStorage Persistence Key - Updated to v5 to strictly flush any previous mock data
 const LOCAL_STORAGE_KEY = 'qstss_events_meetings_september_2026_v5';
 
+// Background sync from Firestore to keep local storage updated
+if (typeof window !== 'undefined') {
+  try {
+    getCollection<EventMeetingItem>(COLLECTIONS.eventsMeetings).then(cloudItems => {
+      if (cloudItems && cloudItems.length > 0) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cloudItems));
+      }
+    }).catch(() => {});
+  } catch (e) {}
+}
+
 export function loadEventsMeetings(): EventMeetingItem[] {
   if (typeof window === 'undefined') return INITIAL_EVENTS_MEETINGS;
   try {
@@ -789,6 +801,7 @@ export function loadEventsMeetings(): EventMeetingItem[] {
   // If not found or outdated mock data, save initial official data
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_EVENTS_MEETINGS));
+    saveCollection(COLLECTIONS.eventsMeetings, INITIAL_EVENTS_MEETINGS).catch(() => {});
   } catch (e) {}
   return INITIAL_EVENTS_MEETINGS;
 }
@@ -799,5 +812,13 @@ export function saveEventsMeetings(items: EventMeetingItem[]): void {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
   } catch (err) {
     console.error('Error saving events & meetings to localStorage:', err);
+  }
+  // Save to Firebase Firestore cloud storage
+  try {
+    saveCollection(COLLECTIONS.eventsMeetings, items).catch(err => {
+      console.warn('Error saving events & meetings to Firestore:', err);
+    });
+  } catch (err) {
+    console.warn('Error triggering Firestore save for events & meetings:', err);
   }
 }

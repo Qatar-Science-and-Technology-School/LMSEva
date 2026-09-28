@@ -15,6 +15,7 @@ import {
 } from '@/lib/data';
 import type { User, Evaluation, Teacher, Department } from '@/lib/data';
 import { printTeacherCertificate, printBatchCertificates } from '@/lib/certificatePrinter';
+import { getDocument, setSingleDocument, COLLECTIONS } from '@/lib/firestoreDb';
 import * as XLSX from 'xlsx';
 import PrintHeader from '@/components/PrintHeader';
 
@@ -171,16 +172,46 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
   const [editingDeptRank, setEditingDeptRank] = useState<number | null>(null);
   const [tempDeptName, setTempDeptName] = useState('');
 
-  // Load saved custom names from localStorage
+  // Helper to persist custom honorees to Firestore
+  const persistToFirestore = async (top10: Record<number, string>, deptChampions: Record<number, string>) => {
+    try {
+      await setSingleDocument(COLLECTIONS.takreemSettings, 'custom_honorees', {
+        top10,
+        deptChampions,
+      });
+    } catch (err) {
+      console.warn('Failed to sync custom honorees to Firestore:', err);
+    }
+  };
+
+  // Load saved custom names from Firestore (with localStorage fallback/instant cache)
   useEffect(() => {
+    // 1. Instant local read
     try {
       const savedTop10 = localStorage.getItem('takreem_custom_top10_names');
       if (savedTop10) setCustomTop10Names(JSON.parse(savedTop10));
       const savedDept = localStorage.getItem('takreem_custom_dept_champions');
       if (savedDept) setCustomDeptChampions(JSON.parse(savedDept));
-    } catch (e) {
-      console.error('Failed to load custom names from localStorage', e);
-    }
+    } catch (e) {}
+
+    // 2. Authoritative cloud read from Firestore
+    getDocument<{ top10?: Record<number, string>; deptChampions?: Record<number, string> }>(
+      COLLECTIONS.takreemSettings,
+      'custom_honorees'
+    ).then((cloudData) => {
+      if (cloudData) {
+        if (cloudData.top10) {
+          setCustomTop10Names(cloudData.top10);
+          try { localStorage.setItem('takreem_custom_top10_names', JSON.stringify(cloudData.top10)); } catch (e) {}
+        }
+        if (cloudData.deptChampions) {
+          setCustomDeptChampions(cloudData.deptChampions);
+          try { localStorage.setItem('takreem_custom_dept_champions', JSON.stringify(cloudData.deptChampions)); } catch (e) {}
+        }
+      }
+    }).catch(err => {
+      console.warn('Failed to load custom honorees from Firestore:', err);
+    });
   }, []);
 
   const handleSaveTop10 = (rank: number, newName: string) => {
@@ -191,6 +222,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       try {
         localStorage.setItem('takreem_custom_top10_names', JSON.stringify(updated));
       } catch (e) {}
+      persistToFirestore(updated, customDeptChampions);
       return updated;
     });
     setEditingTop10Rank(null);
@@ -203,6 +235,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       try {
         localStorage.setItem('takreem_custom_top10_names', JSON.stringify(updated));
       } catch (e) {}
+      persistToFirestore(updated, customDeptChampions);
       return updated;
     });
     setEditingTop10Rank(null);
@@ -216,6 +249,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       try {
         localStorage.setItem('takreem_custom_dept_champions', JSON.stringify(updated));
       } catch (e) {}
+      persistToFirestore(customTop10Names, updated);
       return updated;
     });
     setEditingDeptRank(null);
@@ -228,6 +262,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       try {
         localStorage.setItem('takreem_custom_dept_champions', JSON.stringify(updated));
       } catch (e) {}
+      persistToFirestore(customTop10Names, updated);
       return updated;
     });
     setEditingDeptRank(null);
@@ -690,6 +725,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                       if (confirm('هل ترغب في استعادة جميع أسماء العشرة الأوائل إلى الأسماء الافتراضية؟')) {
                         setCustomTop10Names({});
                         try { localStorage.removeItem('takreem_custom_top10_names'); } catch (e) {}
+                        persistToFirestore({}, customDeptChampions);
                       }
                     }}
                     style={{
@@ -1037,6 +1073,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                       if (confirm('هل ترغب في استعادة جميع أسماء فرسان الأقسام إلى الأسماء الافتراضية؟')) {
                         setCustomDeptChampions({});
                         try { localStorage.removeItem('takreem_custom_dept_champions'); } catch (e) {}
+                        persistToFirestore(customTop10Names, {});
                       }
                     }}
                     style={{

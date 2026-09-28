@@ -5,6 +5,7 @@
 // =============================================================================
 
 import { SECTIONS_LMS_STATS } from './lmsReportSeptember2026';
+import { getCollection, saveCollection, COLLECTIONS } from './firestoreDb';
 
 export type DistanceLearningReason =
   | 'عذر طبي'
@@ -546,12 +547,25 @@ export const INITIAL_DISTANCE_LEARNING_RECORDS: DistanceLearningRecord[] = [
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// التخزين واسترجاع البيانات (Local Persistence)
+// التخزين واسترجاع البيانات (Local Persistence & Cloud Sync with Firebase Firestore)
 // ─────────────────────────────────────────────────────────────────────────────
 const STORAGE_PREFIX = 'qstss_distance_learning_records_';
 
 export function getDistanceLearningStorageKey(academicYear: string = '2026-2027'): string {
   return `${STORAGE_PREFIX}${academicYear}`;
+}
+
+// مزامنة فورية في الخلفية مع Firebase Firestore
+if (typeof window !== 'undefined') {
+  try {
+    getCollection<DistanceLearningRecord>(COLLECTIONS.distanceLearning).then(cloudItems => {
+      if (cloudItems && cloudItems.length > 0) {
+        const key = getDistanceLearningStorageKey('2026-2027');
+        localStorage.setItem(key, JSON.stringify(cloudItems));
+        window.dispatchEvent(new CustomEvent('qstss_distance_learning_updated', { detail: { academicYear: '2026-2027', count: cloudItems.length } }));
+      }
+    }).catch(() => {});
+  } catch (e) {}
 }
 
 export function loadDistanceLearningRecords(academicYear: string = '2026-2027'): DistanceLearningRecord[] {
@@ -565,7 +579,7 @@ export function loadDistanceLearningRecords(academicYear: string = '2026-2027'):
         return parsed;
       }
     }
-    // حفظ البيانات الأولية إذا لم تكن موجودة
+    // حفظ البيانات الأولية إذا لم تكن موجودة محلياً وسحابياً
     saveDistanceLearningRecords(INITIAL_DISTANCE_LEARNING_RECORDS, academicYear);
     return INITIAL_DISTANCE_LEARNING_RECORDS;
   } catch (error) {
@@ -585,7 +599,16 @@ export function saveDistanceLearningRecords(
     // إرسال حدث مخصص لتحديث أي مكونات أخرى تستمع
     window.dispatchEvent(new CustomEvent('qstss_distance_learning_updated', { detail: { academicYear, count: records.length } }));
   } catch (error) {
-    console.error('Error saving distance learning records:', error);
+    console.error('Error saving distance learning records to localStorage:', error);
+  }
+
+  // حفظ التعديلات في سحابة Firebase Firestore
+  try {
+    saveCollection(COLLECTIONS.distanceLearning, records).catch(err => {
+      console.warn('Error saving distance learning records to Firestore:', err);
+    });
+  } catch (err) {
+    console.warn('Error triggering Firestore save for distance learning:', err);
   }
 }
 
@@ -593,3 +616,4 @@ export function resetDistanceLearningRecords(academicYear: string = '2026-2027')
   saveDistanceLearningRecords(INITIAL_DISTANCE_LEARNING_RECORDS, academicYear);
   return INITIAL_DISTANCE_LEARNING_RECORDS;
 }
+

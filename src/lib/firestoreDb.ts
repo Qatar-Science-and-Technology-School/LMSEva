@@ -2,6 +2,7 @@ import { firestore } from './firebase';
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   setDoc,
   deleteDoc,
@@ -31,6 +32,10 @@ export const COLLECTIONS = {
   achievements: 'achievements',
   elearningSms: 'elearning_sms',
   operationalPlan: 'operational_plan',
+  eventsMeetings: 'events_meetings',
+  distanceLearning: 'distance_learning',
+  takreemSettings: 'takreem_settings',
+  pdPlan: 'pd_plan',
 } as const;
 
 export const LEGACY_LOCAL_STORAGE_KEYS = {
@@ -258,5 +263,41 @@ export async function seedIfEmpty<T extends { id?: string }>(
   } catch (error) {
     console.error(`Error during seedIfEmpty for ${collectionName}:`, error);
     return seedData;
+  }
+}
+
+/**
+ * Get a specific single document by ID from a collection
+ */
+export async function getDocument<T>(collectionName: string, docId: string): Promise<T | null> {
+  try {
+    const docRef = doc(firestore, collectionName, docId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data() as T;
+    }
+    return null;
+  } catch (error) {
+    console.warn(`[Firestore] getDocument failed for ${collectionName}/${docId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Set/save a specific single document by ID in a collection
+ */
+export async function setSingleDocument<T extends object>(
+  collectionName: string,
+  docId: string,
+  data: T
+): Promise<void> {
+  try {
+    const docRef = doc(firestore, collectionName, docId);
+    const sanitized = sanitizeForFirestore(data);
+    await setDoc(docRef, { ...sanitized, updatedAt: new Date().toISOString() });
+    invalidateCache(collectionName);
+  } catch (error) {
+    console.error(`[Firestore] setSingleDocument failed for ${collectionName}/${docId}:`, error);
+    throw error;
   }
 }
