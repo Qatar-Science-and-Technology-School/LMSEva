@@ -27,6 +27,7 @@ import { SingleWorkshopReport, SingleIndividualPDReport, PDReportsCenterTab } fr
 import MeeeCertifiedReportModal from './MeeeCertifiedReportModal';
 import { RichBulletTextarea, FormattedReportPoints } from '@/components/RichBulletTextarea';
 import PDPlanTab from './PDPlanTab';
+import SelfDevelopmentTab from './SelfDevelopmentTab';
 
 // ─── Automated Arabic to English Translation Helper for Workshops ───────────────
 const AR_EN_DICTIONARY: [RegExp, string][] = [
@@ -137,7 +138,7 @@ export async function translateArabicToEnglish(text: string): Promise<string> {
   return translated.replace(/\b\w/g, char => char.toUpperCase());
 }
 
-type TabType = 'overview' | 'all' | 'individual' | 'meee' | 'attendance' | 'evidence' | 'reports' | 'plan';
+type TabType = 'overview' | 'all' | 'individual' | 'meee' | 'self_development' | 'attendance' | 'evidence' | 'reports' | 'plan';
 
 interface MeeeRecord {
   id: string;
@@ -630,6 +631,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
           { id: 'individual', label: 'التطوير الفردي للمعلمين', icon: <UserPlus size={18} /> },
           { id: 'reports', label: 'التقارير الرسمية المعتمدة', icon: <FileText size={18} /> },
           { id: 'meee', label: 'شهادة MEEE', icon: <Award size={18} /> },
+          { id: 'self_development', label: 'التطوير الذاتي', icon: <GraduationCap size={18} /> },
           { id: 'attendance', label: 'سجلات الحضور', icon: <ListChecks size={18} /> },
           { id: 'plan', label: 'خطة التطوير المهني', icon: <Layers size={18} /> },
         ].map(tab => (
@@ -733,6 +735,8 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
             onPrint={() => printReport('meee_report')}
             COLORS={COLORS}
           />
+        ) : activeTab === 'self_development' ? (
+          <SelfDevelopmentTab academicYear={filterYear} canEdit={canEdit} />
         ) : activeTab === 'individual' ? (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr', gap: '1.25rem', marginBottom: '2rem' }}>

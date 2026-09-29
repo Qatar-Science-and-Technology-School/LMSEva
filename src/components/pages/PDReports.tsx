@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { SCHOOL_NAME, getDeptName } from '@/lib/data';
 import type { Workshop, IndividualPDRecord, PDAttendee } from '@/lib/pdData';
+import { loadSelfDevelopmentRecords, SelfDevelopmentRecord, calculateSelfDevelopmentStats } from '@/lib/selfDevelopmentData';
+import { printComprehensiveSelfDevelopmentReport, printSingleSelfDevelopmentCard } from '@/lib/selfDevelopmentReportPrinter';
 import { FormattedReportPoints, RichBulletTextarea } from '@/components/RichBulletTextarea';
 
 interface OfficialHeaderProps {
@@ -2579,8 +2581,14 @@ export function PDReportsCenterTab({
   canEdit?: boolean;
   onUpdateWorkshop?: (w: Workshop) => void;
 }) {
-  const [reportSubTab, setReportSubTab] = useState<'workshops' | 'individual' | 'annual'>('workshops');
+  const [reportSubTab, setReportSubTab] = useState<'workshops' | 'individual' | 'self_dev' | 'annual'>('workshops');
   
+  // Self Development records for Projects Coordinator
+  const selfDevRecords = useMemo(() => {
+    return loadSelfDevelopmentRecords(filterYear);
+  }, [filterYear]);
+  const selfDevStats = useMemo(() => calculateSelfDevelopmentStats(selfDevRecords), [selfDevRecords]);
+
   // Workshops filtering and selection
   const yearWorkshops = useMemo(() => {
     return workshops.filter(w => filterYear === 'all' || w.academicYear === filterYear);
@@ -2643,6 +2651,20 @@ export function PDReportsCenterTab({
           }}
         >
           <Zap size={18} /> تقارير التدريب والدعم الفردي (مع إقرار وتوقيع الحاضر)
+        </button>
+
+        <button
+          onClick={() => setReportSubTab('self_dev')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.85rem 1.6rem', borderRadius: '14px', border: 'none',
+            background: reportSubTab === 'self_dev' ? '#0284C7' : '#F1F5F9',
+            color: reportSubTab === 'self_dev' ? '#fff' : '#475569',
+            fontWeight: 900, cursor: 'pointer', fontSize: '0.95rem',
+            boxShadow: reportSubTab === 'self_dev' ? '0 4px 12px rgba(2,132,199,0.25)' : 'none'
+          }}
+        >
+          <Award size={18} /> تقارير التطوير الذاتي لمنسق المشاريع
         </button>
 
         <button
@@ -2810,6 +2832,137 @@ export function PDReportsCenterTab({
               <p style={{ color: '#64748B' }}>يرجى اختيار عام دراسي آخر أو إضافة جلسة تدريب فردي جديدة.</p>
             </div>
           )}
+        </div>
+      )}
+
+      {reportSubTab === 'self_dev' && (
+        <div>
+          {/* Action Bar */}
+          <div className="no-print" style={{ 
+            background: '#F8FAFC', padding: '1.25rem 1.5rem', borderRadius: '18px', 
+            border: '1px solid #E2E8F0', marginBottom: '1.5rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem', flexWrap: 'wrap'
+          }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#0F2044', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Award size={20} color="#0284C7" /> تقرير وسجل التطوير الذاتي لمنسق المشاريع
+              </h3>
+              <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem', color: '#64748B' }}>
+                م. أحمد عادل طبيشات — منسق المشاريع الإلكترونية والحلول الرقمية (إجمالي {selfDevRecords.length} شهادة ودورة معتمدة)
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <button
+                onClick={() => printComprehensiveSelfDevelopmentReport(selfDevRecords, filterYear)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)', color: '#fff', border: 'none',
+                  padding: '0.85rem 1.6rem', borderRadius: '12px', fontWeight: 900,
+                  cursor: 'pointer', fontSize: '0.9rem',
+                  boxShadow: '0 2px 8px rgba(2,132,199,0.25)'
+                }}
+              >
+                <Printer size={18} /> طباعة السجل الرسمي الشامل (A4 عرضي مع التواقيع)
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Summary Cards */}
+          <div className="no-print" style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem'
+          }}>
+            <div style={{ background: '#fff', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 700 }}>إجمالي الشهادات والدورات</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0F2044', marginTop: '0.25rem' }}>{selfDevStats.totalCertificates}</div>
+            </div>
+            <div style={{ background: '#fff', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 700 }}>إجمالي الساعات التدريبية</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0284C7', marginTop: '0.25rem' }}>{selfDevStats.totalHours} <span style={{ fontSize: '0.9rem' }}>ساعة</span></div>
+            </div>
+            <div style={{ background: '#fff', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 700 }}>شهادات تخصصية نشطة</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#16A34A', marginTop: '0.25rem' }}>{selfDevStats.activeCount}</div>
+            </div>
+            <div style={{ background: '#fff', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 700 }}>جهات الاعتماد الدولية والمحلية</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#7C3AED', marginTop: '0.25rem' }}>{selfDevStats.uniqueIssuersCount}</div>
+            </div>
+          </div>
+
+          {/* List / Preview of Records with Print Card buttons */}
+          <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem 1.5rem', background: '#F8FAFC', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h4 style={{ margin: 0, fontWeight: 900, color: '#0F2044', fontSize: '1rem' }}>سجل الشهادات والدورات المعتمدة لمنسق المشاريع</h4>
+              <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: 700 }}>العام الأكاديمي: {filterYear === 'all' ? 'جميع الأعوام' : filterYear}</span>
+            </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
+                <thead>
+                  <tr style={{ background: '#0F2044', color: '#fff', textAlign: 'right' }}>
+                    <th style={{ padding: '0.85rem 1rem' }}>#</th>
+                    <th style={{ padding: '0.85rem 1rem' }}>اسم الشهادة / الدورة التدريبية</th>
+                    <th style={{ padding: '0.85rem 1rem' }}>الجهة المانحة</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>التصنيف</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>الساعات</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>تاريخ الإصدار</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>معرف الاعتماد</th>
+                    <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>إجراء</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selfDevRecords.map((r, idx) => (
+                    <tr key={r.id} style={{ borderBottom: '1px solid #F1F5F9', background: idx % 2 === 0 ? '#fff' : '#F8FAFC' }}>
+                      <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#64748B' }}>{idx + 1}</td>
+                      <td style={{ padding: '0.85rem 1rem' }}>
+                        <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.title}</div>
+                        {r.titleEn && <div style={{ fontSize: '0.75rem', color: '#64748B', direction: 'ltr', textAlign: 'right' }}>{r.titleEn}</div>}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#334155' }}>
+                        {r.issuer}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
+                        <span style={{ 
+                          display: 'inline-block', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800,
+                          background: '#EFF6FF', color: '#1D4ED8'
+                        }}>
+                          {r.category}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', textAlign: 'center', fontWeight: 900, color: '#0284C7' }}>
+                        {r.hours} س
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', textAlign: 'center', color: '#475569', fontWeight: 700 }}>
+                        {r.issueDate}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', textAlign: 'center', fontFamily: 'monospace', fontSize: '0.78rem', color: '#64748B' }}>
+                        {r.credentialId || '—'}
+                      </td>
+                      <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
+                        <button
+                          onClick={() => printSingleSelfDevelopmentCard(r)}
+                          style={{
+                            background: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px',
+                            padding: '0.4rem 0.75rem', fontSize: '0.78rem', fontWeight: 800, color: '#0F2044',
+                            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem'
+                          }}
+                        >
+                          <Printer size={14} /> طباعة بطاقة
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {selfDevRecords.length === 0 && (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '3rem', color: '#94A3B8' }}>
+                        لا توجد شهادات مسجلة لهذا العام الأكاديمي.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
     </div>

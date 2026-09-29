@@ -36,6 +36,7 @@ export const COLLECTIONS = {
   distanceLearning: 'distance_learning',
   takreemSettings: 'takreem_settings',
   pdPlan: 'pd_plan',
+  selfDevelopment: 'self_development',
 } as const;
 
 export const LEGACY_LOCAL_STORAGE_KEYS = {

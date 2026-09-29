@@ -5,6 +5,7 @@
 
 import { db, DailyTask, Achievement, ElearningSms } from './data';
 import { loadEventsMeetings, EventMeetingItem } from './eventsMeetingsData';
+import { loadSelfDevelopmentRecords, SelfDevelopmentRecord } from './selfDevelopmentData';
 import { getCollection, saveCollection, COLLECTIONS } from './firestoreDb';
 
 export type ExecutionStatus = 'تم التنفيذ' | 'لم يتم التنفيذ' | 'غير محدد';
@@ -13,6 +14,7 @@ export type SourceModule =
   | 'workshops'
   | 'individual_pd'
   | 'meee'
+  | 'self_development'
   | 'daily_tasks'
   | 'events_meetings'
   | 'achievements'
@@ -71,6 +73,7 @@ export const SOURCE_MODULE_LABELS: Record<SourceModule, string> = {
   workshops: 'الورش التدريبية (التطوير المهني)',
   individual_pd: 'التطوير المهني الفردي',
   meee: 'شهادات مايكروسوفت MEEE',
+  self_development: 'التطوير الذاتي (منسق المشاريع)',
   daily_tasks: 'مهام العمل اليومية',
   events_meetings: 'الفعاليات والاجتماعات',
   achievements: 'الإنجازات والمسابقات',
@@ -282,6 +285,37 @@ export async function extractLiveSourceActions(academicYear: string = '2026-2027
     });
   } catch (err) {
     console.error('Error fetching MEEE records for operational plan:', err);
+  }
+
+  // 3b. Self Development Certifications & Courses for Projects Coordinator
+  try {
+    const selfDevRecords = loadSelfDevelopmentRecords(academicYear);
+    const relevantSelfDev = (selfDevRecords || []).filter(
+      r => r && (!r.academicYear || r.academicYear === academicYear || academicYear === 'all')
+    );
+
+    for (const sdev of relevantSelfDev) {
+      const sourceId = `self_dev_${sdev.id}`;
+      const status: ExecutionStatus =
+        sdev.status === 'معتمدة وسارية' || sdev.status === 'مكتملة' ? 'تم التنفيذ' : 'لم يتم التنفيذ';
+
+      items.push({
+        id: `act_${sourceId}`,
+        objectiveId: 'obj-01',
+        title: `تطوير ذاتي (منسق المشاريع): ${sdev.title} — ${sdev.issuer}`,
+        targetAudience: 'منسق المشاريع والحلول الرقمية والتعليم الإلكتروني (م. أحمد طبيشات)',
+        timeframe: sdev.issueDate || academicYear,
+        status,
+        notes: `شهادة/دورة تخصصية معتمدة من ${sdev.issuer} (${sdev.hours} ساعة تدريبية) في مجال ${sdev.category}. كود الاعتماد: ${sdev.credentialId || 'معتمد'}. ${sdev.impactOnWork || ''}`,
+        sourceModule: 'self_development',
+        sourceId,
+        sourceLabel: SOURCE_MODULE_LABELS.self_development,
+        sourceLink: 'professional_development',
+        order: orderCounter++,
+      });
+    }
+  } catch (err) {
+    console.error('Error fetching self development records for operational plan:', err);
   }
 
   // 4. Daily Tasks & Operational Platform Actions (db.getDailyTasks)
