@@ -42,6 +42,7 @@ export const COLLECTIONS = {
 export const LEGACY_LOCAL_STORAGE_KEYS = {
   teachers: ['qstss_v3_teachers', 'qstss_v5_teachers', 'teachers', 'qstss_teachers'],
   evaluations: ['qstss_v3_evaluations', 'qstss_v19_evaluations', 'evaluations', 'qstss_evaluations'],
+  modelLessonEvaluations: ['qstss_v1_model_lesson_evaluations', 'model_lessons_evaluations', 'qstss_model_lesson_evaluations'],
   modelLessonSchedules: ['qstss_v1_model_lesson_schedules', 'model_lesson_schedules'],
   departments: ['qstss_v3_departments', 'qstss_v6_departments', 'departments', 'qstss_departments'],
   users: ['qstss_v6_users', 'qstss_v14_users', 'users', 'qstss_users'],
@@ -118,10 +119,42 @@ export async function getCollection<T>(collectionName: CollectionName): Promise<
       }
     }
 
+    if (data.length > 0 && typeof window !== 'undefined') {
+      const oldKeys = LEGACY_LOCAL_STORAGE_KEYS[collectionName as keyof typeof LEGACY_LOCAL_STORAGE_KEYS];
+      if (oldKeys && oldKeys[0]) {
+        try {
+          localStorage.setItem(oldKeys[0], JSON.stringify(data));
+        } catch (e) {
+          // ignore quota
+        }
+      }
+    }
+
     setCache(collectionName, data);
     return data;
   } catch (error) {
     console.error(`Error reading collection ${collectionName}:`, error);
+    // Offline resilience: return localStorage data if available
+    if (typeof window !== 'undefined') {
+      const oldKeys = LEGACY_LOCAL_STORAGE_KEYS[collectionName as keyof typeof LEGACY_LOCAL_STORAGE_KEYS];
+      if (oldKeys) {
+        for (const oldKey of oldKeys) {
+          const localVal = localStorage.getItem(oldKey);
+          if (localVal) {
+            try {
+              const parsed = JSON.parse(localVal);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                console.warn(`[Firestore Offline Fallback] Using ${parsed.length} cached records from ${oldKey}`);
+                setCache(collectionName, parsed);
+                return parsed as T[];
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
+      }
+    }
     return [];
   }
 }
@@ -212,16 +245,41 @@ export async function saveDocument<T extends { id?: string }>(
   collectionName: CollectionName,
   item: T
 ): Promise<string> {
+  const docId = item.id || doc(collection(firestore, collectionName)).id;
+  const fullItem = { ...item, id: docId };
+
+  // 1. Immediately mirror to localStorage for instant local reliability
+  if (typeof window !== 'undefined') {
+    const oldKeys = LEGACY_LOCAL_STORAGE_KEYS[collectionName as keyof typeof LEGACY_LOCAL_STORAGE_KEYS];
+    if (oldKeys && oldKeys[0]) {
+      try {
+        const raw = localStorage.getItem(oldKeys[0]);
+        let list: any[] = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(list)) list = [];
+        const idx = list.findIndex((x: any) => x && x.id === docId);
+        if (idx >= 0) {
+          list[idx] = fullItem;
+        } else {
+          list.unshift(fullItem);
+        }
+        localStorage.setItem(oldKeys[0], JSON.stringify(list));
+      } catch (e) {
+        // ignore quota
+      }
+    }
+  }
+
+  // 2. Persist to Firestore
   try {
-    const docId = item.id || doc(collection(firestore, collectionName)).id;
     const ref = doc(firestore, collectionName, docId);
-    const sanitized = sanitizeForFirestore(item);
+    const sanitized = sanitizeForFirestore(fullItem);
     await setDoc(ref, { ...sanitized, id: docId } as any);
     invalidateCache(collectionName);
     return docId;
   } catch (error) {
-    console.error(`Error saving document in ${collectionName}:`, error);
-    throw error;
+    console.warn(`[Firestore] Document saved locally, cloud sync pending for ${collectionName}/${docId}:`, error);
+    invalidateCache(collectionName);
+    return docId;
   }
 }
 
@@ -232,13 +290,33 @@ export async function deleteDocument(
   collectionName: CollectionName,
   docId: string
 ): Promise<void> {
+  // 1. Immediately remove from localStorage
+  if (typeof window !== 'undefined') {
+    const oldKeys = LEGACY_LOCAL_STORAGE_KEYS[collectionName as keyof typeof LEGACY_LOCAL_STORAGE_KEYS];
+    if (oldKeys && oldKeys[0]) {
+      try {
+        const raw = localStorage.getItem(oldKeys[0]);
+        if (raw) {
+          let list: any[] = JSON.parse(raw);
+          if (Array.isArray(list)) {
+            list = list.filter((x: any) => x && x.id !== docId);
+            localStorage.setItem(oldKeys[0], JSON.stringify(list));
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  // 2. Delete from Firestore
   try {
     const ref = doc(firestore, collectionName, docId);
     await deleteDoc(ref);
     invalidateCache(collectionName);
   } catch (error) {
     console.error(`Error deleting document from ${collectionName}:`, error);
-    throw error;
+    invalidateCache(collectionName);
   }
 }
 

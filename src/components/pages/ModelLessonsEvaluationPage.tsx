@@ -4,6 +4,7 @@ import { db, ACADEMIC_YEARS, getDeptName, generateId, SCHOOL_NAME, getUserDeptId
 import type { User, Teacher, Department, ModelLessonEvaluation, ModelLessonScheduleItem } from '@/lib/data';
 import { invalidateCache } from '@/lib/firestoreDb';
 import { RichBulletTextarea, FormattedReportPoints } from '@/components/RichBulletTextarea';
+import { syncOperationalPlan } from '@/lib/operationalPlanData';
 import * as XLSX from 'xlsx';
 import {
   generateIcsForLesson,
@@ -194,6 +195,19 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
   const [saveSuccessModal, setSaveSuccessModal] = useState<boolean>(false);
   const [sendReportModal, setSendReportModal] = useState<boolean>(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Smart Form State & Dirty Tracking to prevent data wipe/loss
+  const [isDirty, setIsDirty] = useState<boolean>(false);
+  const isDirtyRef = useRef<boolean>(false);
+  const editingIdRef = useRef<string | null>(null);
+  const isInternalLoadingRef = useRef<boolean>(false);
+
+  const markDirty = () => {
+    if (!isInternalLoadingRef.current) {
+      setIsDirty(true);
+      isDirtyRef.current = true;
+    }
+  };
 
   // History Filter State
   const [filterDept, setFilterDept] = useState('');
@@ -394,18 +408,109 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
     }
   };
 
+  // Previous evaluations for currently selected teacher (sorted newest first)
+  const selectedTeacherEvaluations = useMemo(() => {
+    if (!teacherId) return [];
+    return evaluations.filter(
+      e => e.teacherId === teacherId && (academicYear === 'all' || !e.academicYear || e.academicYear === academicYear)
+    ).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  }, [evaluations, teacherId, academicYear]);
+
+  // Overall School Evaluation Stats for top bar
+  const overallEvaluationStats = useMemo(() => {
+    const yearEvals = evaluations.filter(e => filterYear === 'all' || !e.academicYear || e.academicYear === filterYear);
+    const total = yearEvals.length;
+    const avgScore = total > 0 ? (yearEvals.reduce((s, e) => s + (Number(e.overallScore) || 0), 0) / total).toFixed(1) : '0';
+    const excellentCount = yearEvals.filter(e => (Number(e.overallScore) || 0) >= 9).length;
+    const veryGoodCount = yearEvals.filter(e => (Number(e.overallScore) || 0) >= 8 && (Number(e.overallScore) || 0) < 9).length;
+    const redefinitionCount = yearEvals.filter(e => (Number(e.scoreTechDepth) || 0) >= 9).length;
+    const uniqueTeachersCount = new Set(yearEvals.map(e => e.teacherId)).size;
+    return {
+      total,
+      avgScore,
+      excellentCount,
+      veryGoodCount,
+      redefinitionCount,
+      uniqueTeachersCount,
+    };
+  }, [evaluations, filterYear]);
+
+  // Safely load an evaluation into the form WITHOUT data loss
+  const loadEvaluationIntoForm = (ev: ModelLessonEvaluation, notify = true) => {
+    isInternalLoadingRef.current = true;
+    editingIdRef.current = ev.id;
+    setEditingId(ev.id);
+    setAcademicYear(ev.academicYear || currentYear);
+    setTeacherId(ev.teacherId);
+    setSelectedDeptId(ev.departmentId);
+    setDate(ev.date || new Date().toISOString().split('T')[0]);
+    setPeriod(ev.period || '1');
+    setClassGrade(ev.classGrade || '10');
+    setLessonPlanUrl(ev.lessonPlanUrl || '');
+    setAttendees(ev.attendees || '');
+    setSelectedTools(ev.toolsUsed ? ev.toolsUsed.split(' • ').map(s => s.trim()).filter(Boolean) : ['نظام قطر للتعليم (LMS)']);
+    setScoreAssessmentFeedback(Number(ev.scoreAssessmentFeedback) || 10);
+    setScoreTechDepth(Number(ev.scoreTechDepth) || 10);
+    setScoreLmsClarity(Number(ev.scoreLmsClarity) || 10);
+    setScoreClassroomMgmt(Number(ev.scoreClassroomMgmt) || 10);
+    setScoreStudentEngagement(Number(ev.scoreStudentEngagement) || 10);
+    setScoreTeacherTools(Number(ev.scoreTeacherTools) || 10);
+    setStrengths(ev.strengths || '');
+    setImprovements(ev.improvements || '');
+    setRecommendations(ev.recommendations || '');
+    setTeacherSignature(ev.teacherSignature || ev.teacherNameAr || '');
+    setIsDirty(false);
+    isDirtyRef.current = false;
+    setTimeout(() => {
+      isInternalLoadingRef.current = false;
+    }, 400);
+    if (notify) {
+      showToast(`✨ تم استرجاع وتحميل تقييم المعلم (${ev.teacherNameAr}) للتعديل`, 'info');
+    }
+  };
+
   const handleStartEvaluationFromSchedule = (item: ModelLessonScheduleItem) => {
-    setEditingId(null);
-    setTeacherId(item.teacherId);
-    setSelectedDeptId(item.departmentId);
-    setDate(item.date);
-    setPeriod(item.period);
-    setClassGrade(item.classGrade);
-    const toolsArr = item.toolsPlanned ? item.toolsPlanned.split(',').map(s => s.trim()).filter(Boolean) : [];
-    setSelectedTools(toolsArr.length ? toolsArr : ['نظام قطر للتعليم (LMS)']);
+    // Check if an evaluation already exists for this teacher on this scheduled date & period
+    const existing = evaluations.find(
+      e => e.teacherId === item.teacherId && e.date === item.date && e.period === item.period
+    ) || evaluations.find(e => e.teacherId === item.teacherId && e.date === item.date);
+
+    if (existing) {
+      loadEvaluationIntoForm(existing, false);
+      showToast(`✨ تم العثور على تقييم سابق لهذه الحصة المجدولة وتم استرجاعه للتعديل`, 'info');
+    } else {
+      isInternalLoadingRef.current = true;
+      editingIdRef.current = null;
+      setEditingId(null);
+      setTeacherId(item.teacherId);
+      setSelectedDeptId(item.departmentId);
+      setDate(item.date);
+      setPeriod(item.period);
+      setClassGrade(item.classGrade);
+      const toolsArr = item.toolsPlanned ? item.toolsPlanned.split(',').map(s => s.trim()).filter(Boolean) : [];
+      setSelectedTools(toolsArr.length ? toolsArr : ['نظام قطر للتعليم (LMS)']);
+      setScoreAssessmentFeedback(10);
+      setScoreTechDepth(10);
+      setScoreLmsClarity(10);
+      setScoreClassroomMgmt(10);
+      setScoreStudentEngagement(10);
+      setScoreTeacherTools(10);
+      setStrengths('');
+      setImprovements('');
+      setRecommendations('');
+      setLessonPlanUrl('');
+      setAttendees('');
+      const t = teachers.find(x => x.id === item.teacherId);
+      setTeacherSignature(t?.nameAr || item.teacherNameAr);
+      setIsDirty(false);
+      isDirtyRef.current = false;
+      setTimeout(() => {
+        isInternalLoadingRef.current = false;
+      }, 400);
+      showToast('✨ تم تجهيز استمارة التقييم للمعلم ' + item.teacherNameAr + ' - الحصة ' + item.period, 'info');
+    }
     setActiveSubTab('form');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast('✨ تم تجهيز استمارة التقييم للمعلم ' + item.teacherNameAr + ' - الحصة ' + item.period, 'info');
   };
 
   const exportScheduleToExcel = () => {
@@ -465,15 +570,83 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
     return teachers.find(t => t.id === teacherId);
   }, [teachers, teacherId]);
 
-  // Handle Teacher selection
+  // Handle Teacher selection: automatically restores previous evaluation if one exists
   const handleTeacherChange = (tid: string) => {
     if (!isAdmin) return;
-    setTeacherId(tid);
-    const t = teachers.find(item => item.id === tid);
-    if (t) {
-      setSelectedDeptId(t.departmentId);
-      setTeacherSignature(t.nameAr);
+    if (!tid) {
+      resetForm();
+      return;
     }
+    const t = teachers.find(item => item.id === tid);
+    if (!t) return;
+
+    setTeacherId(tid);
+    setSelectedDeptId(t.departmentId);
+    setTeacherSignature(t.nameAr);
+
+    // Look up if this teacher already has evaluations in this academic year
+    const teacherEvals = evaluations.filter(
+      e => e.teacherId === tid && (academicYear === 'all' || !e.academicYear || e.academicYear === academicYear)
+    ).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+
+    if (teacherEvals.length > 0) {
+      // Auto-load most recent evaluation so NO PREVIOUS DATA IS LOST!
+      loadEvaluationIntoForm(teacherEvals[0], true);
+    } else {
+      // Clean slate for new teacher
+      isInternalLoadingRef.current = true;
+      editingIdRef.current = null;
+      setEditingId(null);
+      setDate(new Date().toISOString().split('T')[0]);
+      setPeriod('1');
+      setClassGrade('10-1');
+      setLessonPlanUrl('');
+      setAttendees('');
+      setSelectedTools(['نظام قطر للتعليم (LMS)', 'ClassPoint']);
+      setScoreAssessmentFeedback(10);
+      setScoreTechDepth(10);
+      setScoreLmsClarity(10);
+      setScoreClassroomMgmt(10);
+      setScoreStudentEngagement(10);
+      setScoreTeacherTools(10);
+      setStrengths('');
+      setImprovements('');
+      setRecommendations('');
+      setIsDirty(false);
+      isDirtyRef.current = false;
+      setTimeout(() => {
+        isInternalLoadingRef.current = false;
+      }, 400);
+      showToast(`📝 بدء تقييم جديد للمعلم (${t.nameAr})`, 'info');
+    }
+  };
+
+  const handleStartNewLessonForSameTeacher = () => {
+    if (!teacherId || !selectedTeacher) return;
+    isInternalLoadingRef.current = true;
+    editingIdRef.current = null;
+    setEditingId(null);
+    setDate(new Date().toISOString().split('T')[0]);
+    setPeriod('2');
+    setClassGrade('10-1');
+    setLessonPlanUrl('');
+    setAttendees('');
+    setSelectedTools(['نظام قطر للتعليم (LMS)', 'ClassPoint']);
+    setScoreAssessmentFeedback(10);
+    setScoreTechDepth(10);
+    setScoreLmsClarity(10);
+    setScoreClassroomMgmt(10);
+    setScoreStudentEngagement(10);
+    setScoreTeacherTools(10);
+    setStrengths('');
+    setImprovements('');
+    setRecommendations('');
+    setIsDirty(false);
+    isDirtyRef.current = false;
+    setTimeout(() => {
+      isInternalLoadingRef.current = false;
+    }, 400);
+    showToast(`➕ تم فتح استمارة تقييم حصة جديدة للمعلم (${selectedTeacher.nameAr}) مع الاحتفاظ بالتقييم السابق في الأرشيف`, 'info');
   };
 
   // Score mapping helper
@@ -491,6 +664,7 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
 
   const setScoreValue = (num: number, val: number) => {
     const clamped = Math.min(10, Math.max(0, val));
+    markDirty();
     switch (num) {
       case 1: setScoreAssessmentFeedback(clamped); break;
       case 2: setScoreTechDepth(clamped); break;
@@ -541,7 +715,6 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
     scoreTeacherTools,
   ]);
 
-
   const getPerformanceBadge = (score: number) => {
     if (score >= 9) return { label: 'ممتاز / Excellent', color: '#10B981', bg: 'rgba(16,185,129,0.15)' };
     if (score >= 8) return { label: 'جيد جداً / Very Good', color: '#0096C7', bg: 'rgba(0,150,199,0.15)' };
@@ -549,9 +722,156 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
     return { label: 'يحتاج متابعة / Needs Improvement', color: '#EF4444', bg: 'rgba(239,68,68,0.15)' };
   };
 
+  // Live SAMR Level Evaluation Info based on scoreTechDepth
+  const samrInfo = useMemo(() => {
+    const val = scoreTechDepth || 0;
+    if (val >= 9) {
+      return {
+        level: 'إعادة تعريف (Redefinition)',
+        levelEn: 'Redefinition',
+        stage: 'التحول الجذري المتقدم (Transformation)',
+        color: '#7C3AED',
+        bgColor: '#F5F3FF',
+        borderColor: '#C4B5FD',
+        badge: '🚀 مستوى ريادي فائق',
+        desc: 'التكنولوجيا تتيح تصميم مهام تعليمية إبداعية جديدة تماماً تفوق الغرفة الصفية التقليدية وتوظف الذكاء الاصطناعي.',
+      };
+    }
+    if (val >= 8) {
+      return {
+        level: 'تعديل وتطوير (Modification)',
+        levelEn: 'Modification',
+        stage: 'التعديل والتحول (Transformation)',
+        color: '#0284C7',
+        bgColor: '#F0F9FF',
+        borderColor: '#BAE6FD',
+        badge: '✨ مستوى متقدم',
+        desc: 'التكنولوجيا تتيح إعادة تصميم الأنشطة والمهام التعليمية بصورة جوهرية وتفاعلية تحقق نواتج تعلم متميزة.',
+      };
+    }
+    if (val >= 6.5) {
+      return {
+        level: 'تعزيز وتوسيع (Augmentation)',
+        levelEn: 'Augmentation',
+        stage: 'التحسين الإثرائي (Enhancement)',
+        color: '#059669',
+        bgColor: '#ECFDF5',
+        borderColor: '#A7F3D0',
+        badge: '📈 مستوى متمكن',
+        desc: 'التكنولوجيا تعمل كبديل مباشر للأداة التقليدية مع تحسينات وظيفية ملحوظة في تفاعل الطلاب.',
+      };
+    }
+    return {
+      level: 'استبدال مباشر (Substitution)',
+      levelEn: 'Substitution',
+      stage: 'التحسين الأولي (Enhancement)',
+      color: '#D97706',
+      bgColor: '#FFFBEB',
+      borderColor: '#FDE68A',
+      badge: '🌱 مستوى تأسيسي',
+      desc: 'التكنولوجيا تعمل كبديل مباشر للأداة القديمة دون إحداث تغيير جوهري في طبيعة المهمة التعليمية.',
+    };
+  }, [scoreTechDepth]);
+
+  // Smart AI Suggestions based on real evaluation inputs
+  const generateSmartStrengths = () => {
+    const suggestions: string[] = [];
+    if (scoreTechDepth >= 9) {
+      suggestions.push('• توظيف استثنائي ومبتكر للحلول التقنية يرفع نواتج التعلم إلى مستوى إعادة التعريف (Redefinition) وفق نموذج SAMR.');
+    } else if (scoreTechDepth >= 8) {
+      suggestions.push('• دمج فعال ومدروس للتقنيات والوسائط التفاعلية يدعم تعديل وتطوير المهام التعليمية (Modification).');
+    }
+    if (selectedTools.includes('نظام قطر للتعليم (LMS)')) {
+      suggestions.push('• جاهزية نموذجية واستثمار كامل لمصادر التعلم والأنشطة والتقييمات على نظام قطر للتعليم LMS.');
+    }
+    if (selectedTools.includes('أدوات الذكاء الاصطناعي (AI Tools)')) {
+      suggestions.push('• ريادة في توظيف أدوات الذكاء الاصطناعي التوليدي لإنشاء محتوى تفاعلي وتقديم تغذية راجعة مخصصة للطلاب.');
+    }
+    if (scoreStudentEngagement >= 9) {
+      suggestions.push('• تفاعل طلابي عالي وحماسي مع الأنشطة التشاركية الرقمية ونسب مشاركة إيجابية ممتازة.');
+    }
+    if (scoreAssessmentFeedback >= 9) {
+      suggestions.push('• تقويم تكويني دقيق ولحظي يزود الطلاب بتغذية راجعة فورية لتعزيز الفهم وتصويب المفاهيم.');
+    }
+    if (scoreClassroomMgmt >= 9) {
+      suggestions.push('• إدارة صفية رقمية محكمة، مع التزام تام بقواعد الاستخدام الآمن والمسؤول للأجهزة والمنصات.');
+    }
+    if (suggestions.length === 0) {
+      suggestions.push('• الالتزام بتطبيق المعايير التقنية الأساسية واستثمار المنصات الرقمية المعتمدة.');
+    }
+    return suggestions.join('\n');
+  };
+
+  const generateSmartImprovements = () => {
+    const suggestions: string[] = [];
+    if (scoreAssessmentFeedback < 8.5) {
+      suggestions.push('• تنويع أساليب التقويم الإلكتروني التكويني لتقيس مهارات التفكير العليا والتحليل بدلاً من الاقتصار على أسئلة التذكر.');
+    }
+    if (scoreTechDepth < 8.5) {
+      suggestions.push('• تعميق توظيف التقنية للانتقال من مجرد الاستبدال والتعزيز إلى تعديل وإعادة تعريف المهمة التعليمية (SAMR Model).');
+    }
+    if (scoreStudentEngagement < 8.5) {
+      suggestions.push('• إتاحة مساحة أكبر لمشاركة الطلاب الرقمية والعمل الجماعي التشاركي بدلاً من الاستخدام الفردي المحدود.');
+    }
+    if (scoreClassroomMgmt < 8.5) {
+      suggestions.push('• ضبط التوقيت المخصص للأنشطة الرقمية ومراقبة وتوجيه شاشات الطلاب بفاعلية أكبر أثناء الحصة.');
+    }
+    if (scoreLmsClarity < 8.5) {
+      suggestions.push('• تعزيز تنظيم وهيكلة محتوى الدرس على نظام قطر للتعليم LMS وإرفاق مصادر إثرائية داعمة لكافة المستويات.');
+    }
+    if (suggestions.length === 0) {
+      suggestions.push('• الاستمرار في الممارسات التقنية المتميزة ومشاركة الخبرات الإثرائية مع معلمي القسم.');
+    }
+    return suggestions.join('\n');
+  };
+
+  const generateSmartRecommendations = () => {
+    const suggestions: string[] = [];
+    suggestions.push('• توثيق وتعميم هذا الدرس النموذجي كأفضل ممارسة في تفعيل التعليم الإلكتروني على مستوى القسم الأكاديمي والمدرسة.');
+    if (selectedTools.includes('أدوات الذكاء الاصطناعي (AI Tools)')) {
+      suggestions.push('• تقديم ورشة مصغرة أو مشاركة خبرات توظيف أدوات الذكاء الاصطناعي في مجتمعات التعلم المهنية (PLC).');
+    }
+    suggestions.push('• الاستمرار في استثمار أدوات التقييم اللحظي ومتابعة انعكاس التفاعل على حل التقييمات عبر منصة QES.');
+    suggestions.push('• تبادل الزيارات الصفية النموذجية مع الزملاء لنقل الأثر وتعزيز مهارات دمج التقنية وفق معايير وزارة التربية والتعليم.');
+    return suggestions.join('\n');
+  };
+
+  const handleApplySmartStrengths = () => {
+    markDirty();
+    const generated = generateSmartStrengths();
+    setStrengths(prev => prev.trim() ? `${prev}\n${generated}` : generated);
+    showToast('✨ تم توليد وإضافة نقاط القوة بالذكاء الاصطناعي', 'success');
+  };
+
+  const handleApplySmartImprovements = () => {
+    markDirty();
+    const generated = generateSmartImprovements();
+    setImprovements(prev => prev.trim() ? `${prev}\n${generated}` : generated);
+    showToast('🎯 تم توليد وإضافة مجالات التحسين بالذكاء الاصطناعي', 'success');
+  };
+
+  const handleApplySmartRecommendations = () => {
+    markDirty();
+    const generated = generateSmartRecommendations();
+    setRecommendations(prev => prev.trim() ? `${prev}\n${generated}` : generated);
+    showToast('💡 تم توليد وإضافة التوصيات الإجرائية بالذكاء الاصطناعي', 'success');
+  };
+
+  const handleApplyFullSmartReport = () => {
+    markDirty();
+    const s = generateSmartStrengths();
+    const imp = generateSmartImprovements();
+    const rec = generateSmartRecommendations();
+    setStrengths(prev => prev.trim() ? `${prev}\n${s}` : s);
+    setImprovements(prev => prev.trim() ? `${prev}\n${imp}` : imp);
+    setRecommendations(prev => prev.trim() ? `${prev}\n${rec}` : rec);
+    showToast('🚀 تم توليد وصياغة الملاحظات والتوجيهات التربوية بالكامل بالذكاء الاصطناعي', 'success');
+  };
+
   // Toggle Tool Preset
   const toggleTool = (toolName: string) => {
     if (!isAdmin) return;
+    markDirty();
     setSelectedTools(prev =>
       prev.includes(toolName) ? prev.filter(t => t !== toolName) : [...prev, toolName]
     );
@@ -562,6 +882,7 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
     if (!isAdmin) return;
     const trimmed = customToolText.trim();
     if (!trimmed) return;
+    markDirty();
     if (!selectedTools.includes(trimmed)) {
       setSelectedTools(prev => [...prev, trimmed]);
     }
@@ -572,7 +893,7 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
   const handleSaveEvaluation = async (isManual = true) => {
     if (!isAdmin) return;
     if (!teacherId) {
-      showToast('⚠️ يرجى اختيار اسم المعلم أولاً لحفظ التقييم', 'error');
+      if (isManual) showToast('⚠️ يرجى اختيار اسم المعلم أولاً لحفظ التقييم', 'error');
       return;
     }
 
@@ -580,19 +901,23 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
     if (!t) return;
     const deptName = getDeptName(t.departmentId, departments);
 
+    // Reliable docId resolution
+    const currentEditId = editingIdRef.current || editingId || null;
+    const docId = currentEditId || generateId();
+
     setAutoSaveStatus('saving');
 
     const evalObj: ModelLessonEvaluation = {
-      id: editingId || generateId(),
+      id: docId,
       teacherId: t.id,
       teacherNameAr: t.nameAr,
-      teacherNameEn: t.nameEn,
+      teacherNameEn: t.nameEn || '',
       departmentId: t.departmentId,
       departmentName: deptName,
-      academicYear,
-      date,
-      period,
-      classGrade,
+      academicYear: academicYear || currentYear,
+      date: date || new Date().toISOString().split('T')[0],
+      period: period || '1',
+      classGrade: classGrade || '10',
       toolsUsed: selectedTools.join(' • '),
       scoreAssessmentFeedback: Number(scoreAssessmentFeedback) || 0,
       scoreTechDepth: Number(scoreTechDepth) || 0,
@@ -601,9 +926,9 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
       scoreStudentEngagement: Number(scoreStudentEngagement) || 0,
       scoreTeacherTools: Number(scoreTeacherTools) || 0,
       overallScore,
-      strengths,
-      improvements,
-      recommendations,
+      strengths: strengths || '',
+      improvements: improvements || '',
+      recommendations: recommendations || '',
       lessonPlanUrl: lessonPlanUrl.trim(),
       attendees: attendees.trim(),
       teacherSignature: teacherSignature || t.nameAr,
@@ -611,23 +936,54 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
       eProjectsCoordSignature: 'م. أحمد طبيشات',
       evaluatorId: currentUser.id,
       evaluatorName: currentUser.name,
-      createdAt: editingId ? (evaluations.find(e => e.id === editingId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      createdAt: currentEditId
+        ? (evaluations.find(e => e.id === currentEditId)?.createdAt || new Date().toISOString())
+        : new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
     try {
       const savedId = await db.saveModelLessonEvaluation(evalObj);
-      if (!editingId) {
-        setEditingId(savedId);
+      editingIdRef.current = savedId;
+      setEditingId(savedId);
+      setIsDirty(false);
+      isDirtyRef.current = false;
+
+      // Update in-memory evaluations state immediately
+      setEvaluations(prev => {
+        const idx = prev.findIndex(e => e.id === savedId);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = evalObj;
+          return next;
+        }
+        return [evalObj, ...prev];
+      });
+
+      // Update matching schedule item if exists
+      const matchingSchedule = schedules.find(
+        s => s.teacherId === t.id && (s.date === date || !date) && s.status === 'مجدولة'
+      );
+      if (matchingSchedule) {
+        const updatedSched: ModelLessonScheduleItem = {
+          ...matchingSchedule,
+          status: 'تم التنفيذ',
+          updatedAt: new Date().toISOString(),
+        };
+        db.saveModelLessonSchedule(updatedSched).catch(console.warn);
+        setSchedules(prev => prev.map(s => s.id === updatedSched.id ? updatedSched : s));
       }
+
+      // Sync with operational plan
+      syncOperationalPlan(null, academicYear).catch(console.warn);
+
       setAutoSaveStatus('saved');
       const nowStr = new Date().toLocaleTimeString('ar-QA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       setLastSavedTime(nowStr);
-      await reloadData();
 
       if (isManual) {
         setSaveSuccessModal(true);
-        showToast(`✅ تم حفظ واعتماد تقييم المعلم (${t.nameAr}) بنجاح في Firebase`, 'success');
+        showToast(`✅ تم حفظ واعتماد تقييم المعلم (${t.nameAr}) برصيد ${overallScore}/10 بنجاح`, 'success');
       }
     } catch (err) {
       console.error('Save error:', err);
@@ -638,9 +994,9 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
     }
   };
 
-  // Debounced Auto-Save
+  // Debounced Auto-Save: ONLY runs if isDirty is true (user actually modified something)
   useEffect(() => {
-    if (!isAdmin || !teacherId || loading) return;
+    if (!isAdmin || !teacherId || loading || isInternalLoadingRef.current || !isDirtyRef.current) return;
 
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
@@ -648,8 +1004,10 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
 
     setAutoSaveStatus('saving');
     autoSaveTimerRef.current = setTimeout(() => {
-      handleSaveEvaluation(false);
-    }, 1800);
+      if (isDirtyRef.current && teacherId) {
+        handleSaveEvaluation(false);
+      }
+    }, 2200);
 
     return () => {
       if (autoSaveTimerRef.current) {
@@ -657,7 +1015,6 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
       }
     };
   }, [
-    isAdmin,
     teacherId,
     selectedDeptId,
     date,
@@ -676,11 +1033,14 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
     lessonPlanUrl,
     attendees,
     teacherSignature,
+    isDirty,
   ]);
 
   // Reset Form
   const resetForm = () => {
     if (!isAdmin) return;
+    isInternalLoadingRef.current = true;
+    editingIdRef.current = null;
     setEditingId(null);
     setTeacherId('');
     setSelectedDeptId('');
@@ -701,40 +1061,21 @@ export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: 
     setImprovements('');
     setRecommendations('');
     setTeacherSignature('');
+    setIsDirty(false);
+    isDirtyRef.current = false;
     setAutoSaveStatus('idle');
     setSaveSuccessModal(false);
+    setTimeout(() => {
+      isInternalLoadingRef.current = false;
+    }, 300);
     showToast('تم تفريغ النموذج لتقييم جديد', 'info');
   };
 
   // View / Edit from history
   const handleViewOrEdit = (ev: ModelLessonEvaluation) => {
-    setEditingId(ev.id);
-    setAcademicYear(ev.academicYear || currentYear);
-    setTeacherId(ev.teacherId);
-    setSelectedDeptId(ev.departmentId);
-    setDate(ev.date);
-    setPeriod(ev.period || '1');
-    setClassGrade(ev.classGrade || '10');
-    setLessonPlanUrl(ev.lessonPlanUrl || '');
-    setAttendees(ev.attendees || '');
-    setSelectedTools(ev.toolsUsed ? ev.toolsUsed.split(' • ').map(s => s.trim()) : []);
-    setScoreAssessmentFeedback(ev.scoreAssessmentFeedback);
-    setScoreTechDepth(ev.scoreTechDepth);
-    setScoreLmsClarity(ev.scoreLmsClarity);
-    setScoreClassroomMgmt(ev.scoreClassroomMgmt);
-    setScoreStudentEngagement(ev.scoreStudentEngagement);
-    setScoreTeacherTools(ev.scoreTeacherTools);
-    setStrengths(ev.strengths || '');
-    setImprovements(ev.improvements || '');
-    setRecommendations(ev.recommendations || '');
-    setTeacherSignature(ev.teacherSignature || ev.teacherNameAr);
+    loadEvaluationIntoForm(ev, true);
     setActiveSubTab('form');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (isAdmin) {
-      showToast('تم تحميل التقييم في النموذج للتعديل', 'info');
-    } else {
-      showToast('تم فتح تفاصيل التقييم للمشاهدة والطباعة', 'info');
-    }
   };
 
   // Delete evaluation (Admin only)
@@ -1335,6 +1676,45 @@ ${SCHOOL_NAME}`
             <span>📊</span>
             <span>سجل التقييمات ({evaluations.length})</span>
           </button>
+        </div>
+      </div>
+
+      {/* Executive Smart Statistics Bar across entire Model Lessons System */}
+      <div
+        className="no-print"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '1rem',
+          marginBottom: '1.5rem',
+        }}
+      >
+        <div style={{ background: '#fff', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+          <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 700 }}>إجمالي الحصص المقيمة المعتمدة</div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0F2044', marginTop: '0.25rem' }}>
+            {overallEvaluationStats.total} <span style={{ fontSize: '0.82rem', color: '#64748B', fontWeight: 600 }}>حصة نموذجية</span>
+          </div>
+        </div>
+
+        <div style={{ background: '#fff', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+          <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 700 }}>المتوسط المدرسي العام للتقييم</div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0284C7', marginTop: '0.25rem' }}>
+            {overallEvaluationStats.avgScore} <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: 700 }}>/ 10</span>
+          </div>
+        </div>
+
+        <div style={{ background: '#fff', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+          <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 700 }}>تغطية الكادر التدريسي (معلمون مقيمون)</div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#10B981', marginTop: '0.25rem' }}>
+            {overallEvaluationStats.uniqueTeachersCount} <span style={{ fontSize: '0.82rem', color: '#64748B', fontWeight: 600 }}>معلماً</span>
+          </div>
+        </div>
+
+        <div style={{ background: '#fff', padding: '1rem 1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+          <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 700 }}>حصص مستوى التحول وإعادة التعريف (SAMR)</div>
+          <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#7C3AED', marginTop: '0.25rem' }}>
+            {overallEvaluationStats.redefinitionCount} <span style={{ fontSize: '0.82rem', color: '#7C3AED', fontWeight: 800 }}>🚀 ريادي فائق</span>
+          </div>
         </div>
       </div>
 
@@ -2127,6 +2507,145 @@ ${SCHOOL_NAME}`
                 marginBottom: '1.5rem',
               }}
             >
+              {/* 0. Smart Evaluation Mode Banner */}
+              {teacherId && (
+                <div
+                  style={{
+                    background: editingId ? 'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)' : 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+                    border: `1.5px solid ${editingId ? '#3B82F6' : '#22C55E'}`,
+                    borderRadius: '12px',
+                    padding: '0.9rem 1.25rem',
+                    marginBottom: '1.25rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        background: editingId ? '#2563EB' : '#16A34A',
+                        color: '#fff',
+                        padding: '0.35rem 0.85rem',
+                        borderRadius: '20px',
+                        fontSize: '0.8rem',
+                        fontWeight: 800,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                      }}
+                    >
+                      <span>{editingId ? '🔄' : '✨'}</span>
+                      <span>{editingId ? 'وضع تعديل تقييم معتمد ومحفوظ' : 'تقييم حصة جديدة للمعلم'}</span>
+                    </span>
+
+                    <div style={{ fontSize: '0.84rem', color: '#0F2044', fontWeight: 700 }}>
+                      المعلم: <strong style={{ color: '#0096C7' }}>{selectedTeacher?.nameAr}</strong>
+                      {editingId && (
+                        <span style={{ marginRight: '0.5rem', color: '#475569' }}>
+                          • الحصة: {date} (الصف {classGrade}) • النتيجة الحالية: <strong style={{ color: '#10B981' }}>{overallScore}/10</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Sync Status Badge */}
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', fontWeight: 700 }}>
+                      {autoSaveStatus === 'saving' ? (
+                        <span style={{ color: '#D97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span>⏳</span> جاري الحفظ السحابي التلقائي...
+                        </span>
+                      ) : isDirty ? (
+                        <span style={{ color: '#D97706', background: '#FEF3C7', padding: '2px 8px', borderRadius: '12px', border: '1px solid #FDE68A' }}>
+                          🟡 لديك تعديلات غير محفوظة
+                        </span>
+                      ) : (
+                        <span style={{ color: '#059669', background: '#D1FAE5', padding: '2px 8px', borderRadius: '12px', border: '1px solid #A7F3D0' }}>
+                          🟢 محفوظ ومتزامن مع السحابة {lastSavedTime && `(${lastSavedTime})`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action shortcuts */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {/* If multiple evaluations exist for this teacher, allow switching between them */}
+                    {selectedTeacherEvaluations.length > 1 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#1E293B' }}>
+                          حصص المعلم ({selectedTeacherEvaluations.length}):
+                        </span>
+                        <select
+                          value={editingId || ''}
+                          onChange={e => {
+                            const targetEval = selectedTeacherEvaluations.find(ev => ev.id === e.target.value);
+                            if (targetEval) loadEvaluationIntoForm(targetEval, true);
+                          }}
+                          style={{
+                            padding: '0.35rem 0.65rem',
+                            borderRadius: '8px',
+                            border: '1.5px solid #93C5FD',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            color: '#0F2044',
+                            background: '#fff',
+                            outline: 'none',
+                          }}
+                        >
+                          {selectedTeacherEvaluations.map((evItem, idx) => (
+                            <option key={evItem.id} value={evItem.id}>
+                              حصة {idx + 1}: {evItem.date || 'بلا تاريخ'} - الصف {evItem.classGrade || ''} ({evItem.overallScore || 0}/10)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {editingId && (
+                      <button
+                        type="button"
+                        onClick={handleStartNewLessonForSameTeacher}
+                        style={{
+                          background: '#0F2044',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '0.4rem 0.85rem',
+                          borderRadius: '8px',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                        }}
+                      >
+                        <span>➕</span>
+                        <span>تقييم حصة ثانية لهذا المعلم</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      style={{
+                        background: '#fff',
+                        color: '#64748B',
+                        border: '1px solid #CBD5E1',
+                        padding: '0.4rem 0.8rem',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      🔄 إلغاء وبدء تقييم جديد
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* 1. On-Screen Interactive Meta Grid */}
               <div
                 style={{
@@ -2178,7 +2697,10 @@ ${SCHOOL_NAME}`
                   <select
                     disabled={!isAdmin}
                     value={selectedDeptId}
-                    onChange={e => setSelectedDeptId(e.target.value)}
+                    onChange={e => {
+                      setSelectedDeptId(e.target.value);
+                      markDirty();
+                    }}
                     style={{
                       width: '100%',
                       padding: '0.6rem 0.8rem',
@@ -2209,7 +2731,10 @@ ${SCHOOL_NAME}`
                     type="date"
                     disabled={!isAdmin}
                     value={date}
-                    onChange={e => setDate(e.target.value)}
+                    onChange={e => {
+                      setDate(e.target.value);
+                      markDirty();
+                    }}
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.8rem',
@@ -2232,7 +2757,10 @@ ${SCHOOL_NAME}`
                   <select
                     disabled={!isAdmin}
                     value={period}
-                    onChange={e => setPeriod(e.target.value)}
+                    onChange={e => {
+                      setPeriod(e.target.value);
+                      markDirty();
+                    }}
                     style={{
                       width: '100%',
                       padding: '0.6rem 0.8rem',
@@ -2263,7 +2791,10 @@ ${SCHOOL_NAME}`
                   <select
                     disabled={!isAdmin}
                     value={classGrade}
-                    onChange={e => setClassGrade(e.target.value)}
+                    onChange={e => {
+                      setClassGrade(e.target.value);
+                      markDirty();
+                    }}
                     style={{
                       width: '100%',
                       padding: '0.6rem 0.8rem',
@@ -2310,7 +2841,10 @@ ${SCHOOL_NAME}`
                       disabled={!isAdmin}
                       placeholder="انسخ رابط OneDrive هنا (https://...)"
                       value={lessonPlanUrl}
-                      onChange={e => setLessonPlanUrl(e.target.value)}
+                      onChange={e => {
+                        setLessonPlanUrl(e.target.value);
+                        markDirty();
+                      }}
                       style={{
                         flex: 1,
                         padding: '0.55rem 0.8rem',
@@ -2363,7 +2897,10 @@ ${SCHOOL_NAME}`
                     disabled={!isAdmin}
                     placeholder="مثال: د. راني التوم - نائب المدير، أ. أحمد - منسق STEM..."
                     value={attendees}
-                    onChange={e => setAttendees(e.target.value)}
+                    onChange={e => {
+                      setAttendees(e.target.value);
+                      markDirty();
+                    }}
                     style={{
                       width: '100%',
                       padding: '0.55rem 0.8rem',
@@ -2639,6 +3176,225 @@ ${SCHOOL_NAME}`
                 })}
               </div>
 
+              {/* 3.5 Live SAMR Model Pedagogical Depth Analysis Card */}
+              <div
+                style={{
+                  background: samrInfo.bgColor,
+                  border: `2px solid ${samrInfo.borderColor}`,
+                  borderRadius: '14px',
+                  padding: '1.25rem',
+                  marginBottom: '1.5rem',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.04)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <span style={{ fontSize: '1.4rem' }}>🔬</span>
+                    <div>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 900, color: '#0F2044', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span>تحليل عمق الدمج التكنولوجي وفق نموذج SAMR العالمي</span>
+                        <span
+                          style={{
+                            background: samrInfo.color,
+                            color: '#fff',
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            padding: '0.2rem 0.65rem',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          {samrInfo.badge}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: 600 }}>
+                        SAMR Model Pedagogical Depth Evaluation & Analysis (Based on Criterion #2: {scoreTechDepth}/10)
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 700 }}>المرحلة:</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 900, color: samrInfo.color, background: '#fff', padding: '0.25rem 0.75rem', borderRadius: '8px', border: `1.5px solid ${samrInfo.borderColor}` }}>
+                      {samrInfo.stage}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 4 SAMR Levels Stepper Grid */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '0.65rem',
+                    marginBottom: '0.85rem',
+                  }}
+                >
+                  {[
+                    { key: 'S', title: '1. استبدال مباشر', titleEn: 'Substitution', min: 0, max: 7.9, active: scoreTechDepth < 8, color: '#D97706', bg: '#FEF3C7', border: '#FDE68A' },
+                    { key: 'A', title: '2. زيادة وتحسين', titleEn: 'Augmentation', min: 8, max: 8.4, active: scoreTechDepth >= 8 && scoreTechDepth < 8.5, color: '#0284C7', bg: '#E0F2FE', border: '#BAE6FD' },
+                    { key: 'M', title: '3. تعديل وتطوير', titleEn: 'Modification', min: 8.5, max: 8.9, active: scoreTechDepth >= 8.5 && scoreTechDepth < 9, color: '#2563EB', bg: '#DBEAFE', border: '#BFDBFE' },
+                    { key: 'R', title: '4. إعادة تعريف جذري', titleEn: 'Redefinition', min: 9, max: 10, active: scoreTechDepth >= 9, color: '#7C3AED', bg: '#EDE9FE', border: '#DDD6FE' },
+                  ].map(step => (
+                    <div
+                      key={step.key}
+                      style={{
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        background: step.active ? step.bg : '#FFFFFF',
+                        border: step.active ? `2px solid ${step.color}` : '1.5px solid #E2E8F0',
+                        boxShadow: step.active ? `0 4px 10px rgba(0,0,0,0.08)` : 'none',
+                        transition: 'all 0.2s',
+                        position: 'relative',
+                        opacity: step.active ? 1 : 0.65,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 900, color: step.active ? step.color : '#475569' }}>
+                          {step.title}
+                        </span>
+                        {step.active && (
+                          <span style={{ fontSize: '0.7rem', background: step.color, color: '#fff', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900 }}>
+                            ✓
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 700 }}>
+                        {step.titleEn} ({step.min}-{step.max} درجات)
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* SAMR Description & Pedagogical Advice */}
+                <div style={{ background: '#FFFFFF', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #E2E8F0', fontSize: '0.8rem', color: '#334155', lineHeight: 1.5 }}>
+                  <strong style={{ color: samrInfo.color }}>التشخيص التربوي للمستوى الحالي: </strong>
+                  {samrInfo.desc}
+                </div>
+              </div>
+
+              {/* 3.6 AI Pedagogical Assistant Bar (المساعد التربوي الذكي) */}
+              {isAdmin && (
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #0A1931 0%, #1E3A8A 50%, #0F2044 100%)',
+                    borderRadius: '14px',
+                    padding: '1.25rem',
+                    marginBottom: '1.5rem',
+                    color: '#fff',
+                    boxShadow: '0 6px 20px rgba(15,32,68,0.25)',
+                    border: '1.5px solid #3B82F6',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <span style={{ fontSize: '1.8rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🤖</span>
+                      <div>
+                        <div style={{ fontSize: '0.98rem', fontWeight: 900, color: '#90E0EF', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span>المساعد التربوي الذكي لصياغة تقارير التقييم والتغذية الراجعة</span>
+                          <span style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: '#fff', fontSize: '0.68rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: '10px' }}>
+                            AI Smart Engine
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: '#CBD5E1', marginTop: '2px' }}>
+                          يحلل الذكاء الاصطناعي درجات المعايير الستة والأدوات الرقمية المختارة وعمق نموذج SAMR لتوليد صياغات تربوية نوعية ورسمية بنقرة واحدة.
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleApplyFullSmartReport}
+                      style={{
+                        background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                        color: '#0F2044',
+                        fontWeight: 900,
+                        fontSize: '0.85rem',
+                        padding: '0.6rem 1.25rem',
+                        borderRadius: '10px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        boxShadow: '0 4px 12px rgba(245,158,11,0.35)',
+                      }}
+                    >
+                      <span>⚡</span>
+                      <span>توليد التقرير التربوي الكامل ذكياً (Full AI Report)</span>
+                    </button>
+                  </div>
+
+                  {/* Individual AI Action Buttons */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleApplySmartStrengths}
+                      style={{
+                        background: 'rgba(16, 185, 129, 0.2)',
+                        border: '1px solid #10B981',
+                        color: '#A7F3D0',
+                        padding: '0.45rem 0.9rem',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span>✨</span>
+                      <span>توليد نقاط القوة الذكية (Strengths)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleApplySmartImprovements}
+                      style={{
+                        background: 'rgba(245, 158, 11, 0.2)',
+                        border: '1px solid #F59E0B',
+                        color: '#FDE68A',
+                        padding: '0.45rem 0.9rem',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span>🎯</span>
+                      <span>توليد مجالات التطوير الذكية (Improvements)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleApplySmartRecommendations}
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.2)',
+                        border: '1px solid #38BDF8',
+                        color: '#BAE6FD',
+                        padding: '0.45rem 0.9rem',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span>💡</span>
+                      <span>توليد التوصيات الإجرائية الذكية (Recommendations)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* 4. Overall Score & Feedback */}
               <div
                 style={{
@@ -2699,11 +3455,35 @@ ${SCHOOL_NAME}`
                     border: '1.5px solid #CBD5E1',
                   }}
                 >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#065F46' }}>جوانب القوة (Strengths)</span>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={handleApplySmartStrengths}
+                        style={{
+                          background: '#ECFDF5',
+                          border: '1px solid #10B981',
+                          color: '#047857',
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '6px',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✨ توليد ذكي
+                      </button>
+                    )}
+                  </div>
                   <RichBulletTextarea
                     predefinedOptions={PREDEFINED_STRENGTHS}
-                    label="جوانب القوة (Strengths)"
+                    label=""
                     value={strengths}
-                    onChange={val => setStrengths(val)}
+                    onChange={val => {
+                      setStrengths(val);
+                      markDirty();
+                    }}
                     disabled={!isAdmin}
                     colorTheme="emerald"
                     rows={3}
@@ -2720,11 +3500,35 @@ ${SCHOOL_NAME}`
                     border: '1.5px solid #CBD5E1',
                   }}
                 >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#92400E' }}>جوانب تحتاج إلى تحسين (Improvements)</span>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={handleApplySmartImprovements}
+                        style={{
+                          background: '#FFFBEB',
+                          border: '1px solid #F59E0B',
+                          color: '#B45309',
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '6px',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🎯 توليد ذكي
+                      </button>
+                    )}
+                  </div>
                   <RichBulletTextarea
                     predefinedOptions={PREDEFINED_IMPROVEMENTS}
-                    label="جوانب تحتاج إلى تحسين (Areas for Improvement)"
+                    label=""
                     value={improvements}
-                    onChange={val => setImprovements(val)}
+                    onChange={val => {
+                      setImprovements(val);
+                      markDirty();
+                    }}
                     disabled={!isAdmin}
                     colorTheme="amber"
                     rows={3}
@@ -2741,11 +3545,35 @@ ${SCHOOL_NAME}`
                     border: '1.5px solid #CBD5E1',
                   }}
                 >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1E40AF' }}>توصيات (Recommendations)</span>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={handleApplySmartRecommendations}
+                        style={{
+                          background: '#EFF6FF',
+                          border: '1px solid #3B82F6',
+                          color: '#1D4ED8',
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '6px',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        💡 توليد ذكي
+                      </button>
+                    )}
+                  </div>
                   <RichBulletTextarea
                     predefinedOptions={PREDEFINED_RECOMMENDATIONS}
-                    label="توصيات (Recommendations)"
+                    label=""
                     value={recommendations}
-                    onChange={val => setRecommendations(val)}
+                    onChange={val => {
+                      setRecommendations(val);
+                      markDirty();
+                    }}
                     disabled={!isAdmin}
                     colorTheme="blue"
                     rows={3}
@@ -2777,7 +3605,10 @@ ${SCHOOL_NAME}`
                     disabled={!isAdmin}
                     placeholder="توقيع المعلم (Signature)"
                     value={teacherSignature}
-                    onChange={e => setTeacherSignature(e.target.value)}
+                    onChange={e => {
+                      setTeacherSignature(e.target.value);
+                      markDirty();
+                    }}
                     style={{
                       width: '100%',
                       maxWidth: '220px',
@@ -2860,7 +3691,13 @@ ${SCHOOL_NAME}`
                     }}
                   >
                     <span>💾</span>
-                    <span>{autoSaveStatus === 'saving' ? 'جاري الحفظ...' : 'حفظ واعتماد التقييم في السحابة'}</span>
+                    <span>
+                      {autoSaveStatus === 'saving'
+                        ? 'جاري الحفظ في Firebase...'
+                        : editingId
+                        ? 'تحديث وحفظ التعديلات في السحابة'
+                        : 'اعتماد وحفظ التقييم الجديد في السحابة'}
+                    </span>
                   </button>
                 )}
 
