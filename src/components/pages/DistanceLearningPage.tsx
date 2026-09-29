@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { User } from '@/lib/data';
+import { isSuperAdmin, type User } from '@/lib/data';
 import {
   DistanceLearningRecord,
   DistanceLearningReason,
@@ -76,6 +76,9 @@ export default function DistanceLearningPage({
   currentUser,
   selectedYear = '2026-2027',
 }: DistanceLearningPageProps) {
+  // Permission Check: ONLY a.tubaishat1704@education.qa has add/edit/delete permissions
+  const isAdmin = isSuperAdmin(currentUser);
+
   // State
   const [records, setRecords] = useState<DistanceLearningRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -146,6 +149,7 @@ export default function DistanceLearningPage({
 
   // Open Add Modal
   const handleOpenAddModal = () => {
+    if (!isAdmin) return;
     setEditingRecord(null);
     const today = new Date().toISOString().split('T')[0];
     setFormData({
@@ -170,6 +174,7 @@ export default function DistanceLearningPage({
 
   // Open Edit Modal
   const handleOpenEditModal = (rec: DistanceLearningRecord) => {
+    if (!isAdmin) return;
     setEditingRecord(rec);
     const recGrade = rec.grade
       ? (GRADE_OPTIONS.includes(rec.grade)
@@ -200,6 +205,7 @@ export default function DistanceLearningPage({
   // Save Add/Edit
   const handleSaveRecord = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     if (!formData.eventTitle.trim() || !formData.studentName.trim()) {
       alert('يرجى كتابة اسم الطالب وفعالية التعلم عن بعد');
       return;
@@ -248,7 +254,7 @@ export default function DistanceLearningPage({
 
   // Delete
   const handleDeleteConfirm = () => {
-    if (!deletingRecord) return;
+    if (!isAdmin || !deletingRecord) return;
     const updated = records.filter(r => r.id !== deletingRecord.id);
     setRecords(updated);
     saveDistanceLearningRecords(updated, selectedYear);
@@ -257,6 +263,7 @@ export default function DistanceLearningPage({
 
   // Reset to default
   const handleResetData = () => {
+    if (!isAdmin) return;
     if (confirm('هل أنت متأكد من استعادة بيانات وسجلات التعلم عن بعد الافتراضية؟')) {
       const reset = resetDistanceLearningRecords(selectedYear);
       setRecords(reset);
@@ -515,28 +522,55 @@ export default function DistanceLearningPage({
             <span>طباعة التقرير الشامل A3</span>
           </button>
 
-          <button
-            onClick={handleOpenAddModal}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.55rem 1.1rem',
-              borderRadius: '10px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
-              color: '#FFFFFF',
-              cursor: 'pointer',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              boxShadow: '0 3px 8px rgba(2,132,199,0.3)',
-            }}
-          >
-            <Plus size={16} />
-            <span>إضافة سجل تعلم عن بعد</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleOpenAddModal}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.55rem 1.1rem',
+                borderRadius: '10px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
+                color: '#FFFFFF',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: 800,
+                boxShadow: '0 3px 8px rgba(2,132,199,0.3)',
+              }}
+            >
+              <Plus size={16} />
+              <span>إضافة سجل تعلم عن بعد</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Viewer Mode Banner */}
+      {!isAdmin && (
+        <div
+          className="no-print"
+          style={{
+            background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+            border: '1.5px solid #F59E0B',
+            borderRadius: '12px',
+            padding: '0.85rem 1.25rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            color: '#92400E',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+          }}
+        >
+          <span style={{ fontSize: '1.3rem' }}>🔒</span>
+          <div>
+            <strong>وضع الاطلاع والمشاهدة فقط:</strong> سجلات التعلم عن بعد معتمدة للقراءة والاطلاع والطباعة وتصدير التقارير. التعديل والإضافة والحذف متاحة حصرياً لمدير النظام.
+          </div>
+        </div>
+      )}
 
       {/* ─── KPI Cards ────────────────────────────────────────────────────── */}
       <div style={{
@@ -1164,41 +1198,44 @@ export default function DistanceLearningPage({
                               <Printer size={14} />
                             </button>
 
-                            {/* Edit */}
-                            <button
-                              onClick={() => handleOpenEditModal(rec)}
-                              title="تعديل السجل"
-                              style={{
-                                background: '#EFF6FF',
-                                border: '1px solid #BFDBFE',
-                                borderRadius: '6px',
-                                padding: '4px 6px',
-                                cursor: 'pointer',
-                                color: '#2563EB',
-                                display: 'flex',
-                                alignItems: 'center',
-                              }}
-                            >
-                              <Edit2 size={14} />
-                            </button>
+                            {/* Edit & Delete */}
+                            {isAdmin && (
+                              <>
+                                <button
+                                  onClick={() => handleOpenEditModal(rec)}
+                                  title="تعديل السجل"
+                                  style={{
+                                    background: '#EFF6FF',
+                                    border: '1px solid #BFDBFE',
+                                    borderRadius: '6px',
+                                    padding: '4px 6px',
+                                    cursor: 'pointer',
+                                    color: '#2563EB',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  <Edit2 size={14} />
+                                </button>
 
-                            {/* Delete */}
-                            <button
-                              onClick={() => setDeletingRecord(rec)}
-                              title="حذف السجل"
-                              style={{
-                                background: '#FEF2F2',
-                                border: '1px solid #FECACA',
-                                borderRadius: '6px',
-                                padding: '4px 6px',
-                                cursor: 'pointer',
-                                color: '#DC2626',
-                                display: 'flex',
-                                alignItems: 'center',
-                              }}
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                                <button
+                                  onClick={() => setDeletingRecord(rec)}
+                                  title="حذف السجل"
+                                  style={{
+                                    background: '#FEF2F2',
+                                    border: '1px solid #FECACA',
+                                    borderRadius: '6px',
+                                    padding: '4px 6px',
+                                    cursor: 'pointer',
+                                    color: '#DC2626',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                  }}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1391,34 +1428,38 @@ export default function DistanceLearningPage({
                       >
                         <Eye size={14} />
                       </button>
-                      <button
-                        onClick={() => handleOpenEditModal(rec)}
-                        title="تعديل"
-                        style={{
-                          background: '#EFF6FF',
-                          border: '1px solid #BFDBFE',
-                          borderRadius: '6px',
-                          padding: '4px 6px',
-                          cursor: 'pointer',
-                          color: '#2563EB',
-                        }}
-                      >
-                        <Edit2 size={14} />
-                      </button>
-                      <button
-                        onClick={() => setDeletingRecord(rec)}
-                        title="حذف"
-                        style={{
-                          background: '#FEF2F2',
-                          border: '1px solid #FECACA',
-                          borderRadius: '6px',
-                          padding: '4px 6px',
-                          cursor: 'pointer',
-                          color: '#DC2626',
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={() => handleOpenEditModal(rec)}
+                            title="تعديل"
+                            style={{
+                              background: '#EFF6FF',
+                              border: '1px solid #BFDBFE',
+                              borderRadius: '6px',
+                              padding: '4px 6px',
+                              cursor: 'pointer',
+                              color: '#2563EB',
+                            }}
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => setDeletingRecord(rec)}
+                            title="حذف"
+                            style={{
+                              background: '#FEF2F2',
+                              border: '1px solid #FECACA',
+                              borderRadius: '6px',
+                              padding: '4px 6px',
+                              cursor: 'pointer',
+                              color: '#DC2626',
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1429,7 +1470,7 @@ export default function DistanceLearningPage({
       )}
 
       {/* ─── Modal: Add / Edit Record ─────────────────────────────────────── */}
-      {showAddEditModal && (
+      {isAdmin && showAddEditModal && (
         <div style={{
           position: 'fixed',
           inset: 0,
@@ -1955,7 +1996,7 @@ export default function DistanceLearningPage({
       )}
 
       {/* ─── Modal: Delete Confirmation ───────────────────────────────────── */}
-      {deletingRecord && (
+      {isAdmin && deletingRecord && (
         <div style={{
           position: 'fixed',
           inset: 0,

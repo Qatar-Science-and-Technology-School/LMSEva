@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { 
   SCHOOL_NAME, db, generateId, 
-  ACADEMIC_YEARS, type ElearningSms, type User 
+  ACADEMIC_YEARS, type ElearningSms, type User, isSuperAdmin
 } from '@/lib/data';
 
 interface Props {
@@ -38,28 +38,9 @@ export default function ElearningSmsPage({ currentUser, selectedYear: propYear }
     sentDate: new Date().toISOString().split('T')[0],
   });
 
-  // إغلاق إضافة وتعديل الرسائل على جميع المستخدمين باستثناء منسق المشاريع ومدير النظام
+  // إغلاق إضافة وتعديل الرسائل على جميع المستخدمين باستثناء مدير النظام (a.tubaishat1704@education.qa)
   const canManageSms = useMemo(() => {
-    if (!currentUser) return false;
-    // حظر قطعي لمنسقي الأقسام والقيادة والمشاهدين والمعلمين
-    if (currentUser.role === 'coordinator' || currentUser.role === 'leader' || currentUser.role === 'viewer') {
-      return false;
-    }
-    // السماح فقط لمدير النظام ومنسق المشاريع الإلكترونية
-    if (currentUser.role === 'admin' || currentUser.role === 'evaluator') return true;
-    const email = (currentUser.email || '').toLowerCase().trim();
-    if (
-      email === 'a.tubaishat1704@education.qa' ||
-      email === 'admin@school.qa' ||
-      email === 'evaluator@school.qa'
-    ) return true;
-    const name = (currentUser.name || '').trim();
-    if (
-      name.includes('طبيشات') ||
-      name.includes('مدير النظام') ||
-      name.includes('منسق المشاريع')
-    ) return true;
-    return false;
+    return isSuperAdmin(currentUser);
   }, [currentUser]);
 
   const isAdmin = canManageSms;

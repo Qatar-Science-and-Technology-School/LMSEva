@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, SCHOOL_NAME } from '@/lib/data';
+import { User, SCHOOL_NAME, isSuperAdmin } from '@/lib/data';
 import {
   OperationalObjective,
   OperationalAction,
@@ -32,8 +32,8 @@ interface Props {
 }
 
 export default function OperationalPlanPage({ currentUser, selectedYear, onNavigate }: Props) {
-  // Permission check
-  const isAdmin = currentUser.role === 'admin' || currentUser.role === 'leader' || currentUser.role === 'evaluator';
+  // Permission check: ONLY a.tubaishat1704@education.qa has full admin/edit rights
+  const isAdmin = isSuperAdmin(currentUser);
 
   // Core State
   const [state, setState] = useState<OperationalPlanState | null>(null);
@@ -105,7 +105,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
 
   // Manual continuous sync
   const handleManualSync = async () => {
-    if (!state || syncing) return;
+    if (!state || !isAdmin || syncing) return;
     setSyncing(true);
     try {
       const updated = await syncOperationalPlan(state, selectedYear);
@@ -240,7 +240,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
   // ─── Objective Handlers (Add / Edit / Delete / Reorder) ────────────────────
   const handleAddObjectiveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!state || !newObjTitle.trim()) return;
+    if (!state || !isAdmin || !newObjTitle.trim()) return;
     const updated = addObjective(state, newObjTitle, newObjCode, newObjDesc);
     setState(updated);
     await saveOperationalPlan(updated);
@@ -251,6 +251,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
   };
 
   const handleOpenEditObjective = (obj: OperationalObjective) => {
+    if (!isAdmin) return;
     setEditingObjective(obj);
     setEditObjTitle(obj.title);
     setEditObjCode(obj.code);
@@ -259,7 +260,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
 
   const handleEditObjectiveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!state || !editingObjective || !editObjTitle.trim()) return;
+    if (!state || !isAdmin || !editingObjective || !editObjTitle.trim()) return;
     const updated = updateObjective(state, editingObjective.id, {
       title: editObjTitle.trim(),
       code: editObjCode.trim() || editingObjective.code,
@@ -271,7 +272,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
   };
 
   const handleDeleteObjectiveConfirm = async () => {
-    if (!state || !deletingObjectiveId) return;
+    if (!state || !isAdmin || !deletingObjectiveId) return;
     const reassignId = deleteReassignToId === 'DELETE_ACTIONS' ? undefined : deleteReassignToId;
     const updated = deleteObjective(state, deletingObjectiveId, reassignId);
     setState(updated);
@@ -303,7 +304,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
 
   const handleAddActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!state || !newActTitle.trim() || !newActObjectiveId) return;
+    if (!state || !isAdmin || !newActTitle.trim() || !newActObjectiveId) return;
     const updated = addAction(state, {
       objectiveId: newActObjectiveId,
       title: newActTitle,
@@ -323,7 +324,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
 
   const handleEditActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!state || !editingAction) return;
+    if (!state || !isAdmin || !editingAction) return;
     const updated = updateAction(state, editingAction.id, {
       title: editingAction.title,
       targetAudience: editingAction.targetAudience,
@@ -349,7 +350,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
   };
 
   const handleDeleteActionConfirm = async () => {
-    if (!state || !deletingActionId) return;
+    if (!state || !isAdmin || !deletingActionId) return;
     const updated = deleteAction(state, deletingActionId);
     setState(updated);
     await saveOperationalPlan(updated);
@@ -357,7 +358,7 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
   };
 
   const handleRestoreExcluded = async (sourceId: string) => {
-    if (!state) return;
+    if (!state || !isAdmin) return;
     const unexcluded = restoreExcludedAction(state, sourceId);
     const reSynced = await syncOperationalPlan(unexcluded, selectedYear);
     setState(reSynced);
@@ -635,6 +636,31 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
 
       {/* ─── Main Content Container ───────────────────────────────────────── */}
       <div style={{ maxWidth: '1600px', margin: '0 auto', padding: '1.5rem 1.5rem 0' }}>
+        {/* Viewer Mode Banner */}
+        {!isAdmin && (
+          <div
+            className="no-print"
+            style={{
+              background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+              border: '1.5px solid #F59E0B',
+              borderRadius: '12px',
+              padding: '0.85rem 1.25rem',
+              marginBottom: '1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              color: '#92400E',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+            }}
+          >
+            <span style={{ fontSize: '1.3rem' }}>🔒</span>
+            <div>
+              <strong>وضع الاطلاع والمشاهدة فقط:</strong> الخطة الإجرائية معتمدة للقراءة والاطلاع والطباعة وتصدير PDF. التعديل والإضافة والحذف والمزامنة متاحة حصرياً لمدير النظام.
+            </div>
+          </div>
+        )}
+
         {/* KPI Summary Cards Row */}
         <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
           {/* Total Objectives */}

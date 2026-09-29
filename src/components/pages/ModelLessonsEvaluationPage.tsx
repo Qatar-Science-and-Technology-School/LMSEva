@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { db, ACADEMIC_YEARS, getDeptName, generateId, SCHOOL_NAME, getUserDeptIds } from '@/lib/data';
+import { db, ACADEMIC_YEARS, getDeptName, generateId, SCHOOL_NAME, getUserDeptIds, isSuperAdmin } from '@/lib/data';
 import type { User, Teacher, Department, ModelLessonEvaluation, ModelLessonScheduleItem } from '@/lib/data';
 import { invalidateCache } from '@/lib/firestoreDb';
 import { RichBulletTextarea, FormattedReportPoints } from '@/components/RichBulletTextarea';
@@ -119,7 +119,7 @@ const CRITERIA_DEFINITIONS = [
 ];
 
 export default function ModelLessonsEvaluationPage({ currentUser, selectedYear: propYear }: Props) {
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin = isSuperAdmin(currentUser);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [evaluations, setEvaluations] = useState<ModelLessonEvaluation[]>([]);

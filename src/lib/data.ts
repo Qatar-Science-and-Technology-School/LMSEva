@@ -732,25 +732,47 @@ export function getTeacherRecognitionHistory(
   return history;
 }
 
-export const initialUsers:User[] = [
-  // ─ Admins ─────────────────────────────────────────────────────────────────
-  {id:'u1',  name:'م.أحمد طبيشات',  nameEn:'Ahmad Tubaishat',      email:'a.tubaishat1704@education.qa', password:'Admin@QSTSS2026',  role:'admin',   status:'active'},
-  {id:'u10', name:'م.أحمد طبيشات',  nameEn:'Ahmad Tubaishat',      email:'admin@school.qa',              password:'SysAdmin#2026!',  role:'admin',   status:'active'},
-  // ─ School Leadership ──────────────────────────────────────────────────
-  {id:'u2',  name:'د.راني التوم',   nameEn:'Dr. Rani Al-Toum',     email:'r.altoum1512@education.qa',    password:'Leader@QSTSS26', role:'leader',  status:'active'},
-  {id:'u12', name:'قيادة المدرسة', nameEn:'School Leader',        email:'leader@school.qa',             password:'SchoolLead#2026', role:'leader',  status:'active'},
-  // ─ Evaluator ──────────────────────────────────────────────────────────
-  {id:'u11', name:'منسق إلكتروني', nameEn:'Evaluator',            email:'evaluator@school.qa',          password:'EvalCoord@2026',   role:'evaluator', status:'active'},
-  // ─ E-Learning Specialist (View-Only) ──────────────────────────────────
-  {id:'u13', name:'أخصائي التعليم الإلكتروني', nameEn:'E-Learning Specialist', email:'elearning@school.qa', password:'ELearn@View2026', role:'viewer', status:'active'},
-  // ─ Official Coordinators ────────────────────────────────────────────
-  {id:'uc1', name:'يامن فرح',          nameEn:'YAMEN FARAH FARAH',    email:'y.farah2507@education.qa', username:'y.farah2507',    password:'Yamen@QSTSS26', role:'coordinator', employeeId:'27976002886', departmentId:'d_math',    departmentIds:['d_math'],    status:'active'},
-  {id:'uc2', name:'يوسف دحمان',        nameEn:'YOUSSEF DAHMAN',       email:'y.dahman0209@education.qa', username:'y.dahman0209',   password:'Youssef@QSTSS26', role:'coordinator', employeeId:'28852800073', departmentId:'d_english', departmentIds:['d_english'], status:'active'},
-  {id:'uc3', name:'د. محمد عمر سلامة',  nameEn:'MOHAMMED OMAR MOHD SALAMEH', email:'m.salameh1301@education.qa', username:'m.salameh1301', password:'Salameh@QSTSS26', role:'coordinator', employeeId:'28240001674', departmentIds:['d_energylab','d_fablab','d_robotlab'], status:'active'},
-  {id:'uc4', name:'د. ماهر علوان',      nameEn:'MAHER ISSA HASAN ELWAN', email:'m.elwan2704@education.qa', username:'m.elwan2704',   password:'Maher@QSTSS26', role:'coordinator', employeeId:'27440001203', departmentId:'d_islamic', departmentIds:['d_islamic'], status:'active'},
-  {id:'uc5', name:'أ. أسعد ناعس',       nameEn:'ASAAD MAHMOUD NAIS',   email:'n.asaad0108@education.qa', username:'n.asaad0108',   password:'Asaad@QSTSS26', role:'coordinator', employeeId:'27376001799', departmentId:'d_arabic',  departmentIds:['d_arabic'],  status:'active'},
-  {id:'uc6', name:'عيسى سويدان',        nameEn:'ESSA IBRAHEM MOUSA SWEIDAN', email:'e.sweidan0601@education.qa', username:'e.sweidan0601', password:'Essa@QSTSS26', role:'coordinator', employeeId:'28440000737', departmentId:'d_cs',      departmentIds:['d_cs'],      status:'active'},
-  {id:'uc7', name:'أحمد عقله فارس',    nameEn:'AHMAD OQLAH FARIS',    email:'a.faris1404@education.qa', username:'a.faris1404', password:'Ahmad@QSTSS26', role:'coordinator', departmentId:'d_stem',    departmentIds:['d_stem'],    status:'active'},
+export const SUPER_ADMIN_EMAIL = 'a.tubaishat1704@education.qa';
+
+/**
+ * Returns true ONLY for the system administrator: a.tubaishat1704@education.qa
+ * All other users are restricted to viewer (read-only) mode across all pages.
+ */
+export function isSuperAdmin(user?: User | null): boolean {
+  if (!user) return false;
+  const email = (user.email || '').trim().toLowerCase();
+  return email === SUPER_ADMIN_EMAIL.toLowerCase();
+}
+
+/**
+ * Ensures that any user other than a.tubaishat1704@education.qa has their role set to 'viewer'.
+ */
+export function normalizeUserRole(user: User): User {
+  if (isSuperAdmin(user)) {
+    return { ...user, role: 'admin' };
+  }
+  return { ...user, role: 'viewer' };
+}
+
+export const initialUsers: User[] = [
+  // ─ Super Admin (The ONLY user allowed to edit, sync, add, delete) ───────────
+  { id:'u1',  name:'م.أحمد طبيشات',  nameEn:'Ahmad Tubaishat',      email:'a.tubaishat1704@education.qa', password:'Admin@QSTSS2026',  role:'admin',   status:'active' },
+  { id:'u10', name:'م.أحمد طبيشات (مشاهد)', nameEn:'Ahmad Tubaishat (Viewer)', email:'admin@school.qa', password:'SysAdmin#2026!',  role:'viewer',  status:'active' },
+  // ─ School Leadership (Viewer Only) ─────────────────────────────────────────
+  { id:'u2',  name:'د.راني التوم',   nameEn:'Dr. Rani Al-Toum',     email:'r.altoum1512@education.qa',    password:'Leader@QSTSS26', role:'viewer',  status:'active' },
+  { id:'u12', name:'قيادة المدرسة', nameEn:'School Leader',        email:'leader@school.qa',             password:'SchoolLead#2026', role:'viewer',  status:'active' },
+  // ─ Evaluator (Viewer Only) ─────────────────────────────────────────────────
+  { id:'u11', name:'منسق إلكتروني', nameEn:'Evaluator',            email:'evaluator@school.qa',          password:'EvalCoord@2026',   role:'viewer',  status:'active' },
+  // ─ E-Learning Specialist (Viewer Only) ─────────────────────────────────────
+  { id:'u13', name:'أخصائي التعليم الإلكتروني', nameEn:'E-Learning Specialist', email:'elearning@school.qa', password:'ELearn@View2026', role:'viewer', status:'active' },
+  // ─ Official Coordinators (Viewer Only) ──────────────────────────────────────
+  { id:'uc1', name:'يامن فرح',          nameEn:'YAMEN FARAH FARAH',    email:'y.farah2507@education.qa', username:'y.farah2507',    password:'Yamen@QSTSS26', role:'viewer', employeeId:'27976002886', departmentId:'d_math',    departmentIds:['d_math'],    status:'active' },
+  { id:'uc2', name:'يوسف دحمان',        nameEn:'YOUSSEF DAHMAN',       email:'y.dahman0209@education.qa', username:'y.dahman0209',   password:'Youssef@QSTSS26', role:'viewer', employeeId:'28852800073', departmentId:'d_english', departmentIds:['d_english'], status:'active' },
+  { id:'uc3', name:'د. محمد عمر سلامة',  nameEn:'MOHAMMED OMAR MOHD SALAMEH', email:'m.salameh1301@education.qa', username:'m.salameh1301', password:'Salameh@QSTSS26', role:'viewer', employeeId:'28240001674', departmentIds:['d_energylab','d_fablab','d_robotlab'], status:'active' },
+  { id:'uc4', name:'د. ماهر علوان',      nameEn:'MAHER ISSA HASAN ELWAN', email:'m.elwan2704@education.qa', username:'m.elwan2704',   password:'Maher@QSTSS26', role:'viewer', employeeId:'27440001203', departmentId:'d_islamic', departmentIds:['d_islamic'], status:'active' },
+  { id:'uc5', name:'أ. أسعد ناعس',       nameEn:'ASAAD MAHMOUD NAIS',   email:'n.asaad0108@education.qa', username:'n.asaad0108',   password:'Asaad@QSTSS26', role:'viewer', employeeId:'27376001799', departmentId:'d_arabic',  departmentIds:['d_arabic'],  status:'active' },
+  { id:'uc6', name:'عيسى سويدان',        nameEn:'ESSA IBRAHEM MOUSA SWEIDAN', email:'e.sweidan0601@education.qa', username:'e.sweidan0601', password:'Essa@QSTSS26', role:'viewer', employeeId:'28440000737', departmentId:'d_cs',      departmentIds:['d_cs'],      status:'active' },
+  { id:'uc7', name:'أحمد عقله فارس',    nameEn:'AHMAD OQLAH FARIS',    email:'a.faris1404@education.qa', username:'a.faris1404', password:'Ahmad@QSTSS26', role:'viewer', departmentId:'d_stem',    departmentIds:['d_stem'],    status:'active' },
 ];
 
 // ── Helper: get coordinator’s department IDs as array ──────────────────────────
@@ -2412,9 +2434,9 @@ export const db = {
       } catch (e) {
         console.error("Failed to save updated users to Firestore:", e);
       }
-      return updated;
+      return updated.map(u => normalizeUserRole(u));
     }
-    return stored;
+    return stored.map(u => normalizeUserRole(u));
   },
   saveUsers: async (u: User[]): Promise<void> => {
     await saveCollection(COLLECTIONS.users, u);
@@ -2671,7 +2693,9 @@ export const db = {
     if (typeof window === 'undefined') return null;
     try {
       const s = localStorage.getItem(CURRENT_USER_KEY);
-      return s ? JSON.parse(s) : null;
+      if (!s) return null;
+      const u: User = JSON.parse(s);
+      return normalizeUserRole(u);
     } catch (e) {
       console.error("Error parsing current user session:", e);
       localStorage.removeItem(CURRENT_USER_KEY);
@@ -2681,18 +2705,25 @@ export const db = {
   setCurrentUser: (u: User | null) => {
     if (typeof window === 'undefined') return;
     try {
-      if (u) localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(u));
-      else localStorage.removeItem(CURRENT_USER_KEY);
+      if (u) {
+        const normalized = normalizeUserRole(u);
+        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(normalized));
+      } else {
+        localStorage.removeItem(CURRENT_USER_KEY);
+      }
     } catch (e) {
       console.error("Error writing current user session:", e);
     }
   },
   login: async (emailOrUser: string, password: string): Promise<User | null> => {
     const users = await seedIfEmpty<User>(COLLECTIONS.users, initialUsers);
-    return users.find(u =>
-      (u.email === emailOrUser || u.username === emailOrUser) &&
+    const found = users.find(u =>
+      (u.email?.toLowerCase().trim() === emailOrUser.toLowerCase().trim() ||
+       u.username?.toLowerCase().trim() === emailOrUser.toLowerCase().trim()) &&
       u.password === password && (u.status === 'active' || u.status === 'pending')
-    ) || null;
+    );
+    if (!found) return null;
+    return normalizeUserRole(found);
   },
   forceReseedAll: async (): Promise<void> => {
     await Promise.all([

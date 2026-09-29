@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { db, getDeptName, SUBJECT_TO_DEPT, getUserDeptIds } from '@/lib/data';
+import { db, getDeptName, SUBJECT_TO_DEPT, getUserDeptIds, isSuperAdmin } from '@/lib/data';
 import type { User, Teacher, Department, Evaluation } from '@/lib/data';
 import * as XLSX from 'xlsx';
 
@@ -12,7 +12,7 @@ const blankTeacher = (): Omit<Teacher,'id'|'createdAt'> => ({
 });
 
 export default function TeachersPage({ currentUser, onViewTeacher, selectedYear }: Props) {
-  const isAdmin = currentUser.role === 'admin';
+  const isAdmin = isSuperAdmin(currentUser);
   const isCoord = currentUser.role === 'coordinator';
 
   const [search,    setSearch]    = useState('');
@@ -68,10 +68,11 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
     ? departments.filter(d => coordDepts.includes(d.id))
     : departments;
 
-  function openAdd() { setForm(blankTeacher()); setEditId(null); setShowModal(true); }
-  function openEdit(t: Teacher) { setForm({ employeeId:t.employeeId, nameAr:t.nameAr, nameEn:t.nameEn, departmentId:t.departmentId, subject:t.subject, email:t.email, jobCategory:t.jobCategory, status:t.status }); setEditId(t.id); setShowModal(true); }
+  function openAdd() { if (!isAdmin) return; setForm(blankTeacher()); setEditId(null); setShowModal(true); }
+  function openEdit(t: Teacher) { if (!isAdmin) return; setForm({ employeeId:t.employeeId, nameAr:t.nameAr, nameEn:t.nameEn, departmentId:t.departmentId, subject:t.subject, email:t.email, jobCategory:t.jobCategory, status:t.status }); setEditId(t.id); setShowModal(true); }
 
   async function saveTeacher() {
+    if (!isAdmin) return;
     try {
       const list = await db.getTeachers();
       let updated: Teacher[];
@@ -98,6 +99,7 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
   }
 
   async function deleteTeacher(id: string) {
+    if (!isAdmin) return;
     const target = teachers.find(t => t.id === id);
     const name = target ? target.nameAr : 'المعلم';
     if (!confirm(`هل أنت متأكد من حذف المعلم "${name}" نهائياً من النظام؟`)) return;

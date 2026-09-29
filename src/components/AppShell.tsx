@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { SCHOOL_NAME, ACADEMIC_YEARS } from '@/lib/data';
+import { SCHOOL_NAME, ACADEMIC_YEARS, isSuperAdmin } from '@/lib/data';
 import type { User } from '@/lib/data';
 import Dashboard from './pages/Dashboard';
 import TeachersPage from './pages/TeachersPage';
@@ -29,11 +29,11 @@ export default function AppShell({ user, onLogout }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>(ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1]);
 
-  const isAdmin     = user.role === 'admin';
+  const isAdmin     = isSuperAdmin(user);
   const isEvaluator = false;
-  const isLeader    = user.role === 'leader' || user.role === 'admin';
-  const isCoord     = user.role === 'coordinator' || user.role === 'admin';
-  const isViewer    = user.role === 'viewer' || user.role === 'evaluator' || user.role === 'leader' || user.role === 'coordinator';
+  const isLeader    = false;
+  const isCoord     = false;
+  const isViewer    = !isAdmin;
 
   const nav: { id: Page; label: string; icon: string; show: boolean }[] = [
     { id:'dashboard',  label:'لوحة المؤشرات',  icon:'📊', show:true },
@@ -114,8 +114,8 @@ export default function AppShell({ user, onLogout }: Props) {
           {sidebarOpen && (
             <div style={{ marginBottom:'0.5rem' }}>
               <p style={{ fontSize:'0.75rem', color:'#fff', fontWeight:700, margin:0 }}>{user.name}</p>
-              <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', margin:'0.1rem 0 0' }}>
-                {roleLabel[user.role] || user.role}
+              <p style={{ fontSize:'0.65rem', color: isAdmin ? '#90E0EF' : '#FDE68A', margin:'0.1rem 0 0', fontWeight: 700 }}>
+                {isAdmin ? 'مدير النظام (كامل الصلاحيات)' : 'وضع المشاهدة والاطلاع فقط (Viewer)'}
               </p>
             </div>
           )}

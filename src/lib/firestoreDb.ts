@@ -185,10 +185,34 @@ function sanitizeForFirestore(val: any): any {
   return val;
 }
 
+/**
+ * Security Gate:
+ * Strictly verifies that only the system administrator (a.tubaishat1704@education.qa)
+ * is authorized to write, update, delete, or sync data to Firebase or local storage.
+ * All other users are restricted to viewer mode.
+ */
+export function isAuthorizedToSave(): boolean {
+  if (typeof window === 'undefined') return true; // allow static build/SSR
+  try {
+    const raw = localStorage.getItem('qstss_current_user') || localStorage.getItem('qstss_user') || localStorage.getItem('qstss_v3_user');
+    if (!raw) return false;
+    const user = JSON.parse(raw);
+    const email = (user?.email || '').trim().toLowerCase();
+    return email === 'a.tubaishat1704@education.qa';
+  } catch {
+    return false;
+  }
+}
+
 export async function saveCollection<T extends { id?: string }>(
   collectionName: CollectionName,
   data: T[]
 ): Promise<void> {
+  if (!isAuthorizedToSave()) {
+    console.warn(`[Permission Denied] Write operation on ${collectionName} was blocked. Only a.tubaishat1704@education.qa is permitted to edit or sync.`);
+    return;
+  }
+
   try {
     // Get existing docs
     const existing = await getDocs(collection(firestore, collectionName));
@@ -245,6 +269,11 @@ export async function saveDocument<T extends { id?: string }>(
   collectionName: CollectionName,
   item: T
 ): Promise<string> {
+  if (!isAuthorizedToSave()) {
+    console.warn(`[Permission Denied] Document save on ${collectionName} was blocked. Only a.tubaishat1704@education.qa is permitted to edit or sync.`);
+    return item.id || 'unauthorized';
+  }
+
   const docId = item.id || doc(collection(firestore, collectionName)).id;
   const fullItem = { ...item, id: docId };
 
@@ -290,6 +319,11 @@ export async function deleteDocument(
   collectionName: CollectionName,
   docId: string
 ): Promise<void> {
+  if (!isAuthorizedToSave()) {
+    console.warn(`[Permission Denied] Document delete on ${collectionName} was blocked. Only a.tubaishat1704@education.qa is permitted to delete.`);
+    return;
+  }
+
   // 1. Immediately remove from localStorage
   if (typeof window !== 'undefined') {
     const oldKeys = LEGACY_LOCAL_STORAGE_KEYS[collectionName as keyof typeof LEGACY_LOCAL_STORAGE_KEYS];
@@ -370,6 +404,11 @@ export async function setSingleDocument<T extends object>(
   docId: string,
   data: T
 ): Promise<void> {
+  if (!isAuthorizedToSave()) {
+    console.warn(`[Permission Denied] setSingleDocument on ${collectionName}/${docId} was blocked. Only a.tubaishat1704@education.qa is permitted to edit or sync.`);
+    return;
+  }
+
   try {
     const docRef = doc(firestore, collectionName, docId);
     const sanitized = sanitizeForFirestore(data);

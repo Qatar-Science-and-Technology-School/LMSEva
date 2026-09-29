@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, EVALUATION_CRITERIA, SCHOOL_NAME, getTeacherRecognitionHistory } from '@/lib/data';
+import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, EVALUATION_CRITERIA, SCHOOL_NAME, getTeacherRecognitionHistory, isSuperAdmin } from '@/lib/data';
 import { invalidateCache } from '@/lib/firestoreDb';
 import type { User, Teacher, Evaluation, Department, ModelLessonEvaluation, Achievement } from '@/lib/data';
 import type { IndividualPDRecord } from '@/lib/pdData';
@@ -10,6 +10,9 @@ import PrintHeader from '@/components/PrintHeader';
 interface Props { teacherId: string; currentUser: User; onBack: () => void; selectedYear?: string; }
 
 export default function TeacherProfilePage({ teacherId, currentUser, onBack, selectedYear: propYear }: Props) {
+  // Permission Check: ONLY a.tubaishat1704@education.qa has delete permissions
+  const isAdmin = isSuperAdmin(currentUser);
+
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -109,6 +112,7 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
   });
 
   const handleDeleteMonthlyEval = async (evalId: string, evalMonth: string, evalYear: string) => {
+    if (!isAdmin) return;
     if (!window.confirm(`⚠️ تأكيد حذف التقييم:\n\nهل أنت متأكد من رغبتك في حذف تقييم شهر (${evalMonth} ${evalYear}) لهذا المعلم نهائياً؟\n\nلا يمكن التراجع بعد الحذف.`)) return;
     try {
       await db.deleteEvaluation(evalId);
@@ -122,6 +126,7 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
   };
 
   const handleDeleteModelLesson = async (mlId: string, mlDate: string) => {
+    if (!isAdmin) return;
     if (!window.confirm(`⚠️ تأكيد حذف التقييم:\n\nهل أنت متأكد من رغبتك في حذف تقييم حصة التعليم الإلكتروني بتاريخ (${mlDate}) نهائياً؟\n\nلا يمكن التراجع بعد الحذف.`)) return;
     try {
       await db.deleteModelLessonEvaluation(mlId);
@@ -311,7 +316,7 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.78rem' }}>
                 <thead>
                   <tr style={{ borderBottom:'2px solid #E2E8F0', background:'#0F2044', color:'#fff' }}>
-                    {['الشهر','العام الأكاديمي','المجموع','المتوسط','مستوى الأداء','نقاط القوة','التوصيات','الإجراءات'].map(h => (
+                    {['الشهر','العام الأكاديمي','المجموع','المتوسط','مستوى الأداء','نقاط القوة','التوصيات', ...(isAdmin ? ['الإجراءات'] : [])].map(h => (
                       <th key={h} style={{ padding:'0.5rem 0.75rem', textAlign: h === 'الإجراءات' ? 'center' : 'right', fontWeight:700, whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -330,20 +335,22 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
                         </td>
                         <td style={{ padding:'0.5rem 0.75rem', color:'#374151', maxWidth:'140px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ev.strengths}</td>
                         <td style={{ padding:'0.5rem 0.75rem', color:'#64748B', maxWidth:'140px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ev.recommendations}</td>
-                        <td style={{ padding:'0.5rem 0.75rem', textAlign:'center' }}>
-                          <button
-                            onClick={() => handleDeleteMonthlyEval(ev.id, ev.month, ev.academicYear)}
-                            style={{ background:'#FEE2E2', color:'#991B1B', border:'1px solid #FECACA', padding:'0.2rem 0.5rem', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}
-                            title="حذف هذا التقييم"
-                          >
-                            🗑️ حذف
-                          </button>
-                        </td>
+                        {isAdmin && (
+                          <td style={{ padding:'0.5rem 0.75rem', textAlign:'center' }}>
+                            <button
+                              onClick={() => handleDeleteMonthlyEval(ev.id, ev.month, ev.academicYear)}
+                              style={{ background:'#FEE2E2', color:'#991B1B', border:'1px solid #FECACA', padding:'0.2rem 0.5rem', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700, cursor:'pointer' }}
+                              title="حذف هذا التقييم"
+                            >
+                              🗑️ حذف
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
                   {teacherEvals.length === 0 && (
-                    <tr><td colSpan={8} style={{ textAlign:'center', padding:'1.5rem', color:'#94A3B8' }}>لا توجد تقييمات شهرية مسجلة</td></tr>
+                    <tr><td colSpan={isAdmin ? 8 : 7} style={{ textAlign:'center', padding:'1.5rem', color:'#94A3B8' }}>لا توجد تقييمات شهرية مسجلة</td></tr>
                   )}
                 </tbody>
               </table>
@@ -378,13 +385,15 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
                       <span style={{ background:'#ECFDF5', color:'#065F46', padding:'3px 10px', borderRadius:'12px', fontSize:'0.82rem', fontWeight:900 }}>
                         {ml.overallScore} / 10
                       </span>
-                      <button
-                        onClick={() => handleDeleteModelLesson(ml.id, ml.date)}
-                        style={{ background:'#FEE2E2', color:'#991B1B', border:'1px solid #FECACA', padding:'3px 8px', borderRadius:'6px', fontSize:'0.72rem', fontWeight:700, cursor:'pointer' }}
-                        title="حذف تقييم هذه الحصة"
-                      >
-                        🗑️ حذف
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteModelLesson(ml.id, ml.date)}
+                          style={{ background:'#FEE2E2', color:'#991B1B', border:'1px solid #FECACA', padding:'3px 8px', borderRadius:'6px', fontSize:'0.72rem', fontWeight:700, cursor:'pointer' }}
+                          title="حذف تقييم هذه الحصة"
+                        >
+                          🗑️ حذف
+                        </button>
+                      )}
                     </div>
                   </div>
 

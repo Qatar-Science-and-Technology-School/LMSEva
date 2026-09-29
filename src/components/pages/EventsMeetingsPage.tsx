@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { User } from '@/lib/data';
+import { User, isSuperAdmin } from '@/lib/data';
 import {
   EventMeetingItem,
   EventCategory,
@@ -77,6 +77,9 @@ export default function EventsMeetingsPage({
   currentUser,
   selectedYear = '2026-2027',
 }: EventsMeetingsPageProps) {
+  // Permission Check: ONLY a.tubaishat1704@education.qa has add/edit/delete permissions
+  const isAdmin = isSuperAdmin(currentUser);
+
   // State
   const [items, setItems] = useState<EventMeetingItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -452,6 +455,7 @@ export default function EventsMeetingsPage({
 
   // Handle Form Open (New)
   function handleOpenAdd(preset?: 'remote_meeting' | 'remote_event') {
+    if (!isAdmin) return;
     setEditingItem(null);
     if (preset === 'remote_meeting') {
       setFormData({
@@ -513,6 +517,7 @@ export default function EventsMeetingsPage({
 
   // Handle Form Open (Edit)
   function handleOpenEdit(item: EventMeetingItem) {
+    if (!isAdmin) return;
     setEditingItem(item);
     setFormData({
       title: item.title,
@@ -536,6 +541,7 @@ export default function EventsMeetingsPage({
 
   // Handle Save
   function handleSaveForm() {
+    if (!isAdmin) return;
     if (!formData.title.trim()) {
       alert('يرجى إدخال عنوان الفعالية أو الاجتماع');
       return;
@@ -616,6 +622,7 @@ export default function EventsMeetingsPage({
 
   // Handle Delete
   function handleDelete(id: string) {
+    if (!isAdmin) return;
     if (confirm('هل أنت متأكد من حذف هذا السجل نهائياً؟')) {
       const updated = items.filter(i => i.id !== id);
       setItems(updated);
@@ -730,49 +737,53 @@ export default function EventsMeetingsPage({
 
         {/* Top Action Buttons */}
         <div style={{ display: 'flex', gap: '0.65rem', zIndex: 1, flexWrap: 'wrap' }}>
-          <button
-            onClick={() => handleOpenAdd()}
-            style={{
-              background: '#10B981',
-              color: '#fff',
-              border: 'none',
-              padding: '0.65rem 1.25rem',
-              borderRadius: '10px',
-              fontWeight: 800,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              boxShadow: '0 4px 14px rgba(16,185,129,0.35)',
-              transition: 'all 0.2s',
-            }}
-          >
-            <Plus size={16} />
-            <span>إضافة فعالية / اجتماع</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => handleOpenAdd()}
+              style={{
+                background: '#10B981',
+                color: '#fff',
+                border: 'none',
+                padding: '0.65rem 1.25rem',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                boxShadow: '0 4px 14px rgba(16,185,129,0.35)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <Plus size={16} />
+              <span>إضافة فعالية / اجتماع</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => handleOpenAdd('remote_meeting')}
-            style={{
-              background: '#0284C7',
-              color: '#fff',
-              border: 'none',
-              padding: '0.65rem 1.15rem',
-              borderRadius: '10px',
-              fontWeight: 800,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-              boxShadow: '0 4px 14px rgba(2,132,199,0.35)',
-              transition: 'all 0.2s',
-            }}
-          >
-            <Laptop size={16} />
-            <span>+ عن بعد (Online)</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => handleOpenAdd('remote_meeting')}
+              style={{
+                background: '#0284C7',
+                color: '#fff',
+                border: 'none',
+                padding: '0.65rem 1.15rem',
+                borderRadius: '10px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                boxShadow: '0 4px 14px rgba(2,132,199,0.35)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <Laptop size={16} />
+              <span>+ عن بعد (Online)</span>
+            </button>
+          )}
 
           <button
             onClick={() => printComprehensiveEventsMeetingsReport(filteredItems, { academicYear: selectedYear })}
@@ -816,6 +827,31 @@ export default function EventsMeetingsPage({
           </button>
         </div>
       </div>
+
+      {/* Viewer Mode Banner */}
+      {!isAdmin && (
+        <div
+          className="no-print"
+          style={{
+            background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+            border: '1.5px solid #F59E0B',
+            borderRadius: '12px',
+            padding: '0.85rem 1.25rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            color: '#92400E',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+          }}
+        >
+          <span style={{ fontSize: '1.3rem' }}>🔒</span>
+          <div>
+            <strong>وضع الاطلاع والمشاهدة فقط:</strong> سجل الفعاليات والاجتماعات متاح للقراءة والبحث والاطلاع والطباعة وتصدير Excel. التعديل والإضافة والحذف متاحة حصرياً لمدير النظام.
+          </div>
+        </div>
+      )}
 
       {/* ── 2. Quick KPIs Overview (6 Cards) ── */}
       <div
@@ -1735,21 +1771,23 @@ export default function EventsMeetingsPage({
           <p style={{ fontSize: '0.85rem', margin: '0 0 1.25rem' }}>
             يرجى تجربة تغيير معايير البحث أو تصفية البيانات، أو إضافة فعالية جديدة.
           </p>
-          <button
-            onClick={() => handleOpenAdd()}
-            style={{
-              background: '#0F2044',
-              color: '#fff',
-              border: 'none',
-              padding: '0.6rem 1.25rem',
-              borderRadius: '8px',
-              fontWeight: 800,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-            }}
-          >
-            إضافة أول فعالية / اجتماع الآن
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => handleOpenAdd()}
+              style={{
+                background: '#0F2044',
+                color: '#fff',
+                border: 'none',
+                padding: '0.6rem 1.25rem',
+                borderRadius: '8px',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+              }}
+            >
+              إضافة أول فعالية / اجتماع الآن
+            </button>
+          )}
         </div>
       ) : viewMode === 'cards' ? (
         /* ── Cards View ── */
@@ -1927,44 +1965,46 @@ export default function EventsMeetingsPage({
                     </button>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.3rem' }}>
-                    <button
-                      onClick={() => handleOpenEdit(item)}
-                      title="تعديل"
-                      style={{
-                        background: '#F8FAFC',
-                        color: '#0284C7',
-                        border: '1px solid #E2E8F0',
-                        borderRadius: '6px',
-                        width: '28px',
-                        height: '28px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Edit2 size={12} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      title="حذف"
-                      style={{
-                        background: '#FEF2F2',
-                        color: '#DC2626',
-                        border: '1px solid #FECACA',
-                        borderRadius: '6px',
-                        width: '28px',
-                        height: '28px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
+                  {isAdmin && (
+                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        title="تعديل"
+                        style={{
+                          background: '#F8FAFC',
+                          color: '#0284C7',
+                          border: '1px solid #E2E8F0',
+                          borderRadius: '6px',
+                          width: '28px',
+                          height: '28px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        title="حذف"
+                        style={{
+                          background: '#FEF2F2',
+                          color: '#DC2626',
+                          border: '1px solid #FECACA',
+                          borderRadius: '6px',
+                          width: '28px',
+                          height: '28px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -2042,20 +2082,24 @@ export default function EventsMeetingsPage({
                           >
                             <Eye size={12} />
                           </button>
-                          <button
-                            onClick={() => handleOpenEdit(item)}
-                            title="تعديل"
-                            style={{ background: '#E0F2FE', color: '#0284C7', border: 'none', borderRadius: '4px', padding: '0.25rem 0.45rem', cursor: 'pointer' }}
-                          >
-                            <Edit2 size={12} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            title="حذف"
-                            style={{ background: '#FEE2E2', color: '#DC2626', border: 'none', borderRadius: '4px', padding: '0.25rem 0.45rem', cursor: 'pointer' }}
-                          >
-                            <Trash2 size={12} />
-                          </button>
+                          {isAdmin && (
+                            <>
+                              <button
+                                onClick={() => handleOpenEdit(item)}
+                                title="تعديل"
+                                style={{ background: '#E0F2FE', color: '#0284C7', border: 'none', borderRadius: '4px', padding: '0.25rem 0.45rem', cursor: 'pointer' }}
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(item.id)}
+                                title="حذف"
+                                style={{ background: '#FEE2E2', color: '#DC2626', border: 'none', borderRadius: '4px', padding: '0.25rem 0.45rem', cursor: 'pointer' }}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

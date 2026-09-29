@@ -792,6 +792,7 @@ export default function PDPlanTab({
 
   // Handlers for Row Actions
   const handleSaveRow = (updatedRow: PlanRow) => {
+    if (!canEdit) return;
     const current = [...activePlanRows];
     const idx = current.findIndex(r => r.id === updatedRow.id);
     let next: PlanRow[];
@@ -812,6 +813,7 @@ export default function PDPlanTab({
   };
 
   const handleDeleteRow = (id: string) => {
+    if (!canEdit) return;
     if (!window.confirm('هل أنت متأكد من حذف هذا البند من خطة التطوير المهني؟')) return;
     const newDeleted = [...deletedRowIds, id];
     setDeletedRowIds(newDeleted);
@@ -827,6 +829,7 @@ export default function PDPlanTab({
   };
 
   const handleMoveRow = (index: number, direction: 'up' | 'down') => {
+    if (!canEdit) return;
     const targetIdx = direction === 'up' ? index - 1 : index + 1;
     if (targetIdx < 0 || targetIdx >= activePlanRows.length) return;
     const next = [...activePlanRows];
@@ -842,6 +845,7 @@ export default function PDPlanTab({
   };
 
   const handleResetToDefault = () => {
+    if (!canEdit) return;
     if (!window.confirm('هل أنت متأكد من استعادة الخطة الافتراضية؟ سيتم إلغاء كافة التعديلات اليدوية المحفوظة.')) return;
     setCustomRows(null);
     setDeletedRowIds([]);
@@ -884,22 +888,24 @@ export default function PDPlanTab({
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {/* Edit Plan Fields Toggle Button */}
-          <button
-            onClick={() => setIsEditMode(!isEditMode)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              background: isEditMode ? '#10B981' : '#F8FAFC',
-              color: isEditMode ? '#fff' : '#0F2044',
-              border: isEditMode ? 'none' : '1.5px solid #CBD5E1',
-              padding: '0.65rem 1.25rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem',
-              cursor: 'pointer',
-              boxShadow: isEditMode ? '0 4px 12px rgba(16,185,129,0.25)' : 'none',
-              transition: 'all 0.2s'
-            }}
-          >
-            {isEditMode ? <Check size={16} /> : <Edit3 size={16} />}
-            <span>{isEditMode ? '✓ إنهاء التعديل اليدوي' : '✏️ تعديل خانات الخطة يدوياً'}</span>
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setIsEditMode(!isEditMode)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                background: isEditMode ? '#10B981' : '#F8FAFC',
+                color: isEditMode ? '#fff' : '#0F2044',
+                border: isEditMode ? 'none' : '1.5px solid #CBD5E1',
+                padding: '0.65rem 1.25rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.85rem',
+                cursor: 'pointer',
+                boxShadow: isEditMode ? '0 4px 12px rgba(16,185,129,0.25)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              {isEditMode ? <Check size={16} /> : <Edit3 size={16} />}
+              <span>{isEditMode ? '✓ إنهاء التعديل اليدوي' : '✏️ تعديل خانات الخطة يدوياً'}</span>
+            </button>
+          )}
 
           {canEdit && onAddWorkshop && (
             <button

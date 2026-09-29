@@ -12,6 +12,7 @@ import {
   TOP_10_INDEX_TEACHERS,
   SEPTEMBER_2026_LMS_TEACHERS,
   SECTIONS_LMS_STATS,
+  isSuperAdmin,
 } from '@/lib/data';
 import type { User, Evaluation, Teacher, Department } from '@/lib/data';
 import { printTeacherCertificate, printBatchCertificates } from '@/lib/certificatePrinter';
@@ -143,6 +144,9 @@ export const DEPARTMENT_CHAMPIONS_10 = [
 ];
 
 export default function TakreemPage({ currentUser, selectedYear: propYear, onNavigateToPage }: Props) {
+  // Permission Check: ONLY a.tubaishat1704@education.qa has edit permissions
+  const isAdmin = isSuperAdmin(currentUser);
+
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -215,6 +219,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
   }, []);
 
   const handleSaveTop10 = (rank: number, newName: string) => {
+    if (!isAdmin) return;
     const trimmed = newName.trim();
     if (!trimmed) return;
     setCustomTop10Names(prev => {
@@ -229,6 +234,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
   };
 
   const handleResetTop10 = (rank: number) => {
+    if (!isAdmin) return;
     setCustomTop10Names(prev => {
       const updated = { ...prev };
       delete updated[rank];
@@ -242,6 +248,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
   };
 
   const handleSaveDeptChampion = (rank: number, newName: string) => {
+    if (!isAdmin) return;
     const trimmed = newName.trim();
     if (!trimmed) return;
     setCustomDeptChampions(prev => {
@@ -256,6 +263,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
   };
 
   const handleResetDeptChampion = (rank: number) => {
+    if (!isAdmin) return;
     setCustomDeptChampions(prev => {
       const updated = { ...prev };
       delete updated[rank];
@@ -652,6 +660,31 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
         </div>
       </div>
 
+      {/* Viewer Mode Banner */}
+      {!isAdmin && (
+        <div
+          className="no-print"
+          style={{
+            background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+            border: '1.5px solid #F59E0B',
+            borderRadius: '12px',
+            padding: '0.85rem 1.25rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            color: '#92400E',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+          }}
+        >
+          <span style={{ fontSize: '1.3rem' }}>🔒</span>
+          <div>
+            <strong>وضع الاطلاع والمشاهدة فقط:</strong> لوحات وبيانات تكريم المعلمين معتمدة للاطلاع والطباعة وتصدير الشهادات. تعديل أسماء المكرمين محصور بمدير النظام.
+          </div>
+        </div>
+      )}
+
       {/* Tabs Navigation */}
       <div
         className="no-print"
@@ -877,7 +910,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                               </span>
                             )}
                           </h3>
-                          {!isEditing && (
+                          {!isEditing && isAdmin && (
                             <button
                               type="button"
                               onClick={() => {
@@ -1238,7 +1271,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                               </span>
                             )}
                           </h3>
-                          {!isEditing && (
+                          {!isEditing && isAdmin && (
                             <button
                               type="button"
                               onClick={() => {

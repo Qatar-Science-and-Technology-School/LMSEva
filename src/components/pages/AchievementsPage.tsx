@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { 
   SCHOOL_NAME, db, generateId, ACADEMIC_YEARS, ACHIEVEMENT_NAMES, ACHIEVEMENT_RESULTS, classifyAchievement,
-  type Achievement, type User
+  isSuperAdmin, type Achievement, type User
 } from '@/lib/data';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
@@ -40,11 +40,11 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
   const [isCustomAchievement, setIsCustomAchievement] = useState(false);
   const [isCustomResult, setIsCustomResult] = useState(false);
 
-  // Permissions
-  const isAdmin = currentUser.role === 'admin';
-  const isEvaluator = currentUser.role === 'evaluator';
-  const canAdd = isAdmin || isEvaluator;
-  const canEdit = isAdmin || isEvaluator;
+  // Permissions: ONLY a.tubaishat1704@education.qa can add, edit, or delete
+  const isAdmin = isSuperAdmin(currentUser);
+  const isEvaluator = false;
+  const canAdd = isAdmin;
+  const canEdit = isAdmin;
   const canDelete = isAdmin;
 
   // Initialize
@@ -57,6 +57,7 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
   }, [propYear]);
 
   const saveAchievements = async (newData: Achievement[]) => {
+    if (!isAdmin) return;
     setAchievements(newData);
     await db.saveAchievements(newData);
   };

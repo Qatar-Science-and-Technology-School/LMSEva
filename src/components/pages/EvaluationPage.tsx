@@ -22,6 +22,7 @@ import {
   ZERO_LESSON_TEACHERS,
   generateSeptember2026Evaluations,
   isExcludedTeacher,
+  isSuperAdmin,
   type LmsReportTeacherRecord
 } from '@/lib/data';
 import { saveDocument, COLLECTIONS, invalidateCache } from '@/lib/firestoreDb';
@@ -458,24 +459,9 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
   const isCoord = currentUser.role === 'coordinator';
   const coordDepts = useMemo(() => getUserDeptIds(currentUser), [currentUser]);
 
+  // Only a.tubaishat1704@education.qa has permission to create, edit, save, or delete evaluations
   const canManageEvaluations = useMemo(() => {
-    if (!currentUser) return false;
-    if (currentUser.role === 'admin' || currentUser.role === 'evaluator') return true;
-    const email = (currentUser.email || '').toLowerCase().trim();
-    if (
-      email === 'a.tubaishat1704@education.qa' ||
-      email === 'admin@school.qa' ||
-      email === 'elearning@school.qa' ||
-      email === 'evaluator@school.qa'
-    ) return true;
-    const name = (currentUser.name || '').trim();
-    if (
-      name.includes('طبيشات') ||
-      name.includes('مدير النظام') ||
-      name.includes('منسق المشاريع') ||
-      name.includes('أخصائي التعليم')
-    ) return true;
-    return false;
+    return isSuperAdmin(currentUser);
   }, [currentUser]);
 
   const availableTeachers = useMemo(() => {

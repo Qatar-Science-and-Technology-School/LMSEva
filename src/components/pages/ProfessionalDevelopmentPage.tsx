@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import { 
   SCHOOL_NAME, ACADEMIC_YEARS, MONTHS, db, generateId, type User, getDeptName,
-  getDepartmentStaffCount, getInstitutionalEvaluation, resolveTeacherDepartment 
+  getDepartmentStaffCount, getInstitutionalEvaluation, resolveTeacherDepartment,
+  isSuperAdmin
 } from '@/lib/data';
 import { type Workshop, type PDAttendance, type PDEvidence, type IndividualPDRecord, type IndividualPDSkill, classifyIndividualSkill } from '@/lib/pdData';
 import { 
@@ -186,9 +187,9 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
   const [reportingWorkshop, setReportingWorkshop] = useState<Workshop | null>(null);
   const [reportingIndividual, setReportingIndividual] = useState<IndividualPDRecord | null>(null);
 
-  const isAdmin = currentUser.role === 'admin';
-  const isELearningCoord = currentUser.role === 'evaluator'; 
-  // Only admin can add/edit/delete in PD page
+  // Permissions: ONLY a.tubaishat1704@education.qa has edit/add/delete rights
+  const isAdmin = isSuperAdmin(currentUser);
+  const isELearningCoord = false; 
   const canEdit = isAdmin;
   const canDelete = isAdmin;
 

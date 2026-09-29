@@ -77,7 +77,7 @@ interface Props {
 
 export default function SelfDevelopmentTab({
   academicYear = '2026-2027',
-  canEdit = true,
+  canEdit = false,
 }: Props) {
   const [records, setRecords] = useState<SelfDevelopmentRecord[]>(() =>
     loadSelfDevelopmentRecords(academicYear)
@@ -210,6 +210,7 @@ export default function SelfDevelopmentTab({
   // حفظ السجل (إضافة أو تعديل)
   const handleSaveRecord = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canEdit) return;
     if (!formData.title || !formData.issuer) {
       alert('يرجى إدخال اسم الشهادة/الدورة والجهة المانحة.');
       return;
@@ -273,6 +274,7 @@ export default function SelfDevelopmentTab({
 
   // حذف السجل
   const handleDeleteRecord = async (id: string, title: string) => {
+    if (!canEdit) return;
     if (!window.confirm(`هل أنت متأكد من حذف الشهادة / الدورة:\n"${title}"؟`)) {
       return;
     }
@@ -284,6 +286,7 @@ export default function SelfDevelopmentTab({
 
   // استعادة الافتراضي
   const handleResetDefaults = async () => {
+    if (!canEdit) return;
     if (!window.confirm('هل أنت متأكد من استعادة السجل الافتراضي لكافة شهادات منسق المشاريع؟')) {
       return;
     }
