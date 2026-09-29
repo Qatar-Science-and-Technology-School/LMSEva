@@ -5,7 +5,7 @@
 // =============================================================================
 
 import { SECTIONS_LMS_STATS } from './lmsReportSeptember2026';
-import { getCollection, saveCollection, COLLECTIONS } from './firestoreDb';
+import { getCollection, saveCollection, isAuthorizedToSave, COLLECTIONS } from './firestoreDb';
 
 export type DistanceLearningReason =
   | 'عذر طبي'
@@ -593,6 +593,10 @@ export function saveDistanceLearningRecords(
   academicYear: string = '2026-2027'
 ): void {
   if (typeof window === 'undefined') return;
+  if (!isAuthorizedToSave()) {
+    console.warn('[Security] Unauthorized attempt to save distance learning records blocked.');
+    return;
+  }
   try {
     const key = getDistanceLearningStorageKey(academicYear);
     localStorage.setItem(key, JSON.stringify(records));
@@ -613,6 +617,7 @@ export function saveDistanceLearningRecords(
 }
 
 export function resetDistanceLearningRecords(academicYear: string = '2026-2027'): DistanceLearningRecord[] {
+  if (!isAuthorizedToSave()) return INITIAL_DISTANCE_LEARNING_RECORDS;
   saveDistanceLearningRecords(INITIAL_DISTANCE_LEARNING_RECORDS, academicYear);
   return INITIAL_DISTANCE_LEARNING_RECORDS;
 }

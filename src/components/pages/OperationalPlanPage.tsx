@@ -534,22 +534,24 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
               </button>
             </div>
 
-            {/* Manual Sync Button */}
-            <button
-              onClick={handleManualSync}
-              disabled={syncing}
-              title={`آخر مزامنة: ${state.lastSyncedAt ? new Date(state.lastSyncedAt).toLocaleString('ar-QA') : 'غير محدد'}`}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.4rem',
-                background: '#FFFFFF', border: '1px solid #CBD5E1', color: '#0F2044',
-                padding: '0.45rem 0.85rem', borderRadius: '8px', fontSize: '0.8rem',
-                fontWeight: 700, cursor: syncing ? 'not-allowed' : 'pointer',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-              }}
-            >
-              <span style={{ display: 'inline-block', animation: syncing ? 'spin 1s infinite linear' : 'none' }}>🔄</span>
-              <span>{syncing ? 'جاري المزامنة...' : 'تحديث البيانات الآن'}</span>
-            </button>
+            {/* Manual Sync Button (Admin Only) */}
+            {isAdmin && (
+              <button
+                onClick={handleManualSync}
+                disabled={syncing}
+                title={`آخر مزامنة: ${state.lastSyncedAt ? new Date(state.lastSyncedAt).toLocaleString('ar-QA') : 'غير محدد'}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  background: '#FFFFFF', border: '1px solid #CBD5E1', color: '#0F2044',
+                  padding: '0.45rem 0.85rem', borderRadius: '8px', fontSize: '0.8rem',
+                  fontWeight: 700, cursor: syncing ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                }}
+              >
+                <span style={{ display: 'inline-block', animation: syncing ? 'spin 1s infinite linear' : 'none' }}>🔄</span>
+                <span>{syncing ? 'جاري المزامنة...' : 'تحديث البيانات الآن'}</span>
+              </button>
+            )}
 
             {/* Print Official Button (Direct Standalone Window with Official Letterhead & Signatures) */}
             <button
@@ -1060,24 +1062,39 @@ export default function OperationalPlanPage({ currentUser, selectedYear, onNavig
                                     </span>
                                   </td>
 
-                                  {/* Execution Status Badge (Interactive Toggle for Admins) */}
+                                  {/* Execution Status Badge (Interactive Toggle for Admins, Static for Viewers) */}
                                   <td style={{ padding: '0.75rem 0.9rem', verticalAlign: 'top', textAlign: 'center' }}>
-                                    <button
-                                      onClick={() => isAdmin && handleToggleStatus(act.id)}
-                                      disabled={!isAdmin}
-                                      title={isAdmin ? 'اضغط لتغيير حالة التنفيذ مباشرة' : ''}
-                                      style={{
-                                        background: act.status === 'تم التنفيذ' ? '#ECFDF5' : act.status === 'لم يتم التنفيذ' ? '#FEF2F2' : '#F1F5F9',
-                                        color: act.status === 'تم التنفيذ' ? '#065F46' : act.status === 'لم يتم التنفيذ' ? '#991B1B' : '#475569',
-                                        border: `1px solid ${act.status === 'تم التنفيذ' ? '#A7F3D0' : act.status === 'لم يتم التنفيذ' ? '#FECACA' : '#CBD5E1'}`,
-                                        padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem',
-                                        fontWeight: 800, cursor: isAdmin ? 'pointer' : 'default',
-                                        display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap'
-                                      }}
-                                    >
-                                      <span>{act.status === 'تم التنفيذ' ? '✓' : act.status === 'لم يتم التنفيذ' ? '✗' : '—'}</span>
-                                      <span>{act.status}</span>
-                                    </button>
+                                    {isAdmin ? (
+                                      <button
+                                        onClick={() => handleToggleStatus(act.id)}
+                                        title="اضغط لتغيير حالة التنفيذ مباشرة"
+                                        style={{
+                                          background: act.status === 'تم التنفيذ' ? '#ECFDF5' : act.status === 'لم يتم التنفيذ' ? '#FEF2F2' : '#F1F5F9',
+                                          color: act.status === 'تم التنفيذ' ? '#065F46' : act.status === 'لم يتم التنفيذ' ? '#991B1B' : '#475569',
+                                          border: `1px solid ${act.status === 'تم التنفيذ' ? '#A7F3D0' : act.status === 'لم يتم التنفيذ' ? '#FECACA' : '#CBD5E1'}`,
+                                          padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem',
+                                          fontWeight: 800, cursor: 'pointer',
+                                          display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap'
+                                        }}
+                                      >
+                                        <span>{act.status === 'تم التنفيذ' ? '✓' : act.status === 'لم يتم التنفيذ' ? '✗' : '—'}</span>
+                                        <span>{act.status}</span>
+                                      </button>
+                                    ) : (
+                                      <span
+                                        style={{
+                                          background: act.status === 'تم التنفيذ' ? '#ECFDF5' : act.status === 'لم يتم التنفيذ' ? '#FEF2F2' : '#F1F5F9',
+                                          color: act.status === 'تم التنفيذ' ? '#065F46' : act.status === 'لم يتم التنفيذ' ? '#991B1B' : '#475569',
+                                          border: `1px solid ${act.status === 'تم التنفيذ' ? '#A7F3D0' : act.status === 'لم يتم التنفيذ' ? '#FECACA' : '#CBD5E1'}`,
+                                          padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem',
+                                          fontWeight: 800,
+                                          display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap'
+                                        }}
+                                      >
+                                        <span>{act.status === 'تم التنفيذ' ? '✓' : act.status === 'لم يتم التنفيذ' ? '✗' : '—'}</span>
+                                        <span>{act.status}</span>
+                                      </span>
+                                    )}
                                   </td>
 
                                   {/* Notes */}

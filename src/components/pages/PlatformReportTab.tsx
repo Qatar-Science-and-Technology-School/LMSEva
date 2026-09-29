@@ -56,6 +56,7 @@ interface Props {
   onNavigateToTakreem?: () => void;
   selectedMonth?: string;
   onMonthChange?: (month: string) => void;
+  canManageEvaluations?: boolean;
 }
 
 export default function PlatformReportTab({
@@ -69,6 +70,7 @@ export default function PlatformReportTab({
   onNavigateToTakreem,
   selectedMonth,
   onMonthChange,
+  canManageEvaluations = false,
 }: Props) {
   const [selectedMonthId, setSelectedMonthId] = useState(
     selectedMonth ? (EVALUATION_MONTHS.find(m => m.month === selectedMonth)?.id || '2026-09') : '2026-09'
@@ -284,27 +286,29 @@ export default function PlatformReportTab({
             </button>
           )}
 
-          <button
-            onClick={onSyncEvals}
-            disabled={isSyncing}
-            style={{
-              background: '#10B981',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '0.55rem 1rem',
-              fontWeight: 800,
-              fontSize: '0.82rem',
-              cursor: isSyncing ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              opacity: isSyncing ? 0.7 : 1,
-            }}
-          >
-            <span>{isSyncing ? '⏳' : '⚡'}</span>
-            {isSyncing ? 'جارٍ المزامنة...' : 'مزامنة مع التقييمات'}
-          </button>
+          {canManageEvaluations && (
+            <button
+              onClick={onSyncEvals}
+              disabled={isSyncing}
+              style={{
+                background: '#10B981',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.55rem 1rem',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: isSyncing ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                opacity: isSyncing ? 0.7 : 1,
+              }}
+            >
+              <span>{isSyncing ? '⏳' : '⚡'}</span>
+              {isSyncing ? 'جارٍ المزامنة...' : 'مزامنة مع التقييمات'}
+            </button>
+          )}
 
           <button
             onClick={onExportExcel}
@@ -364,49 +368,51 @@ export default function PlatformReportTab({
             بمجرد إرفاق الملف، سيقوم النظام تلقائياً باستخراج نشاط وتفاعل كافة المعلمين، احتساب مؤشرات الدروس والتسليمات والتغطية، تحديث لوحة الشرف وفرسان الأقسام، وتوليد شهادات الشكر والتقدير لشهر {currentMonthObj.month}.
           </p>
 
-          {/* Upload Box */}
-          <div
-            style={{
-              maxWidth: '560px',
-              margin: '0 auto 1.5rem',
-              border: '2px dashed #94A3B8',
-              borderRadius: '14px',
-              padding: '2rem 1.5rem',
-              background: '#F8FAFC',
-              position: 'relative',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            <input
-              type="file"
-              accept=".pdf,.xlsx,.xls"
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  setUploadedFileName(e.target.files[0].name);
-                  setUploadSuccess(true);
-                }
-              }}
+          {/* Upload Box (Admin Only) */}
+          {canManageEvaluations && (
+            <div
               style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                opacity: 0,
+                maxWidth: '560px',
+                margin: '0 auto 1.5rem',
+                border: '2px dashed #94A3B8',
+                borderRadius: '14px',
+                padding: '2rem 1.5rem',
+                background: '#F8FAFC',
+                position: 'relative',
                 cursor: 'pointer',
+                transition: 'all 0.2s',
               }}
-            />
-            <div style={{ fontSize: '2.4rem', marginBottom: '0.5rem' }}>📤</div>
-            <div style={{ fontWeight: 800, color: '#0F2044', fontSize: '1rem', marginBottom: '0.35rem' }}>
-              {uploadedFileName ? `تم اختيار الملف: ${uploadedFileName}` : `انقر هنا أو اسحب وأفلت تقرير شهر ${currentMonthObj.month} (PDF أو Excel)`}
+            >
+              <input
+                type="file"
+                accept=".pdf,.xlsx,.xls"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    setUploadedFileName(e.target.files[0].name);
+                    setUploadSuccess(true);
+                  }
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0,
+                  cursor: 'pointer',
+                }}
+              />
+              <div style={{ fontSize: '2.4rem', marginBottom: '0.5rem' }}>📤</div>
+              <div style={{ fontWeight: 800, color: '#0F2044', fontSize: '1rem', marginBottom: '0.35rem' }}>
+                {uploadedFileName ? `تم اختيار الملف: ${uploadedFileName}` : `انقر هنا أو اسحب وأفلت تقرير شهر ${currentMonthObj.month} (PDF أو Excel)`}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#64748B' }}>
+                يدعم ملفات التقارير الرسمية لنظام قطر للتعليم (ملفات PDF والتقارير المجدولة)
+              </div>
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#64748B' }}>
-              يدعم ملفات التقارير الرسمية لنظام قطر للتعليم (ملفات PDF والتقارير المجدولة)
-            </div>
-          </div>
+          )}
 
-          {uploadSuccess && (
+          {canManageEvaluations && uploadSuccess && (
             <div style={{ maxWidth: '560px', margin: '0 auto 1.5rem', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46', padding: '0.85rem 1.25rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.88rem' }}>
               ✅ تم استقبال ملف التقرير بنجاح: {uploadedFileName}
               <div style={{ fontSize: '0.78rem', fontWeight: 600, marginTop: '0.3rem', color: '#047857' }}>
@@ -417,24 +423,26 @@ export default function PlatformReportTab({
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
-            <button
-              onClick={() => onSelectTeacherForEval(teachers[0]?.id || 't1')}
-              style={{
-                background: '#0F2044',
-                color: '#fff',
-                border: 'none',
-                padding: '0.65rem 1.35rem',
-                borderRadius: '8px',
-                fontWeight: 800,
-                fontSize: '0.88rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.45rem',
-              }}
-            >
-              <span>📝</span> إدخال تقييمات شهر {currentMonthObj.month} يدوياً عبر النموذج
-            </button>
+            {canManageEvaluations && (
+              <button
+                onClick={() => onSelectTeacherForEval(teachers[0]?.id || 't1')}
+                style={{
+                  background: '#0F2044',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '0.65rem 1.35rem',
+                  borderRadius: '8px',
+                  fontWeight: 800,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                }}
+              >
+                <span>📝</span> إدخال تقييمات شهر {currentMonthObj.month} يدوياً عبر النموذج
+              </button>
+            )}
 
             {onNavigateToTakreem && (
               <button
@@ -1551,7 +1559,7 @@ export default function PlatformReportTab({
                           >
                             🎖️
                           </button>
-                          {sysId && (
+                          {sysId && canManageEvaluations && (
                             <button
                               onClick={() => onSelectTeacherForEval(sysId)}
                               style={{
@@ -1769,7 +1777,7 @@ export default function PlatformReportTab({
               >
                 <span>🎖️</span> طباعة شهادة شكر وتقدير
               </button>
-              {findSystemTeacherId(selectedTeacherModal.name) && (
+              {findSystemTeacherId(selectedTeacherModal.name) && canManageEvaluations && (
                 <button
                   onClick={() => {
                     const id = findSystemTeacherId(selectedTeacherModal.name);

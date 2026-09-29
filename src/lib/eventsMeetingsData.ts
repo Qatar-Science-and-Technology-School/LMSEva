@@ -3,7 +3,7 @@
 // Events & Meetings Data Model, Seed Data, and Storage Helpers
 // التقرير الشهري المعتمد لشهر سبتمبر 2026م (العام الأكاديمي 2026-2027)
 // =============================================================================
-import { getCollection, saveCollection, COLLECTIONS } from './firestoreDb';
+import { getCollection, saveCollection, isAuthorizedToSave, COLLECTIONS } from './firestoreDb';
 
 export type EventCategory = 'اجتماع' | 'فعالية' | 'زيارة' | 'ورشة' | 'مسابقة' | 'مهمة';
 
@@ -808,6 +808,10 @@ export function loadEventsMeetings(): EventMeetingItem[] {
 
 export function saveEventsMeetings(items: EventMeetingItem[]): void {
   if (typeof window === 'undefined') return;
+  if (!isAuthorizedToSave()) {
+    console.warn('[Security] Unauthorized attempt to save events and meetings blocked.');
+    return;
+  }
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
   } catch (err) {

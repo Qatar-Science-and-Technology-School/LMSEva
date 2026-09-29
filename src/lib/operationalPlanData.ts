@@ -6,7 +6,7 @@
 import { db, DailyTask, Achievement, ElearningSms } from './data';
 import { loadEventsMeetings, EventMeetingItem } from './eventsMeetingsData';
 import { loadSelfDevelopmentRecords, SelfDevelopmentRecord } from './selfDevelopmentData';
-import { getCollection, saveCollection, COLLECTIONS } from './firestoreDb';
+import { getCollection, saveCollection, COLLECTIONS, isAuthorizedToSave } from './firestoreDb';
 
 export type ExecutionStatus = 'تم التنفيذ' | 'لم يتم التنفيذ' | 'غير محدد';
 
@@ -659,7 +659,9 @@ export async function syncOperationalPlan(
     academicYear,
   };
 
-  await saveOperationalPlan(newState);
+  if (isAuthorizedToSave()) {
+    await saveOperationalPlan(newState);
+  }
   return newState;
 }
 
@@ -714,6 +716,11 @@ export async function loadOperationalPlan(academicYear: string = '2026-2027'): P
 }
 
 export async function saveOperationalPlan(state: OperationalPlanState): Promise<void> {
+  if (!isAuthorizedToSave()) {
+    console.warn('[Permission Denied] Operational plan save blocked. Only a.tubaishat1704@education.qa is authorized.');
+    return;
+  }
+
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(state));

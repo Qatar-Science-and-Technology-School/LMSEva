@@ -741,7 +741,8 @@ export const SUPER_ADMIN_EMAIL = 'a.tubaishat1704@education.qa';
 export function isSuperAdmin(user?: User | null): boolean {
   if (!user) return false;
   const email = (user.email || '').trim().toLowerCase();
-  return email === SUPER_ADMIN_EMAIL.toLowerCase();
+  const username = (user.username || '').trim().toLowerCase();
+  return email === SUPER_ADMIN_EMAIL.toLowerCase() || username === 'a.tubaishat1704';
 }
 
 /**

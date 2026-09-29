@@ -994,6 +994,10 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
   function printCurrentView() { window.print(); }
 
   async function handleSyncSeptember2026Evals() {
+    if (!canManageEvaluations) {
+      alert('عذراً، خاصية المزامنة وحفظ التقييمات متاحة فقط لمدير النظام.');
+      return;
+    }
     setIsSyncingEvals(true);
     setSyncSuccessMsg('');
     try {
@@ -1503,6 +1507,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                 syncSuccessMsg={syncSuccessMsg}
                 onExportExcel={handleExportSeptemberReportToExcel}
                 onNavigateToTakreem={() => onNavigateToPage?.('takreem')}
+                canManageEvaluations={canManageEvaluations}
               />
             </div>
           )}
@@ -1657,23 +1662,27 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                         <div style={{ fontSize: '0.88rem', color: '#92400E', fontWeight: 800 }}>
                           يوجد تقييم مسجل مسبقاً للمعلم ({selectedTeacher?.nameAr}) لشهر ({existingEval.month} {existingEval.academicYear}) بدرجة: {existingEval.totalScore}% ({existingEval.performanceLevel})
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: '#B45309', marginTop: '0.15rem' }}>
-                          اضغط على زر <strong>"✏️ تعديل وتحديث التقييم"</strong> لتحميل بياناته بالكامل والتعديل عليها، ثم اعتمادها بزر <strong>"تحديث التقييم"</strong> بالأسفل.
-                        </div>
+                        {canManageEvaluations && (
+                          <div style={{ fontSize: '0.75rem', color: '#B45309', marginTop: '0.15rem' }}>
+                            اضغط على زر <strong>"✏️ تعديل وتحديث التقييم"</strong> لتحميل بياناته بالكامل والتعديل عليها، ثم اعتمادها بزر <strong>"تحديث التقييم"</strong> بالأسفل.
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button onClick={loadExisting} style={{ fontSize: '0.82rem', background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)', border: 'none', color: '#fff', borderRadius: '8px', padding: '0.45rem 1rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 8px rgba(2,132,199,0.25)' }}>
-                        ✏️ تعديل هذا التقييم الآن
-                      </button>
-                      <button onClick={() => deleteEval(existingEval.id)} disabled={deleting} style={{ fontSize: '0.8rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '8px', padding: '0.45rem 0.85rem', fontWeight: 800, cursor: 'pointer' }}>
-                        🗑️ حذف
-                      </button>
-                    </div>
+                    {canManageEvaluations && (
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button onClick={loadExisting} style={{ fontSize: '0.82rem', background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)', border: 'none', color: '#fff', borderRadius: '8px', padding: '0.45rem 1rem', fontWeight: 800, cursor: 'pointer', boxShadow: '0 2px 8px rgba(2,132,199,0.25)' }}>
+                          ✏️ تعديل هذا التقييم الآن
+                        </button>
+                        <button onClick={() => deleteEval(existingEval.id)} disabled={deleting} style={{ fontSize: '0.8rem', background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', borderRadius: '8px', padding: '0.45rem 0.85rem', fontWeight: 800, cursor: 'pointer' }}>
+                          🗑️ حذف
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {editingId && (
+                {editingId && canManageEvaluations && (
                   <div style={{ marginTop: '1rem', background: 'linear-gradient(90deg, #E0F2FE 0%, #F0F9FF 100%)', border: '1.5px solid #0284C7', borderRadius: '10px', padding: '0.85rem 1.1rem', fontSize: '0.88rem', color: '#0C4A6E', fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <span style={{ fontSize: '1.2rem' }}>✏️</span>
@@ -1776,8 +1785,9 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                               max="20"
                               step="0.5"
                               value={currentScore}
+                              disabled={!canManageEvaluations}
                               onChange={e => setScore(i, e.target.value)}
-                              style={{ width: '130px', accentColor: barColor }}
+                              style={{ width: '130px', accentColor: barColor, cursor: canManageEvaluations ? 'pointer' : 'default' }}
                             />
                             <input
                               type="number"
@@ -1785,6 +1795,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                               max="20"
                               step="0.5"
                               value={currentScore}
+                              disabled={!canManageEvaluations}
                               onChange={e => setScore(i, e.target.value)}
                               style={{
                                 width: '65px',
@@ -1794,7 +1805,9 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                                 border: `2px solid ${barColor}`,
                                 fontSize: '0.95rem',
                                 fontWeight: 800,
-                                color: '#0F2044'
+                                color: '#0F2044',
+                                background: canManageEvaluations ? '#fff' : '#F1F5F9',
+                                cursor: canManageEvaluations ? 'auto' : 'default',
                               }}
                             />
                             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B' }}>/ 20</span>
@@ -1805,6 +1818,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <button
                               type="button"
+                              disabled={!canManageEvaluations}
                               onClick={() => setBooleanScore(i, true)}
                               style={{
                                 background: isYes ? '#D1FAE5' : '#F1F5F9',
@@ -1814,7 +1828,8 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                                 borderRadius: '8px',
                                 fontWeight: 800,
                                 fontSize: '0.82rem',
-                                cursor: 'pointer',
+                                cursor: canManageEvaluations ? 'pointer' : 'default',
+                                opacity: !canManageEvaluations && !isYes ? 0.6 : 1,
                                 transition: 'all 0.2s ease'
                               }}
                             >
@@ -1822,6 +1837,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                             </button>
                             <button
                               type="button"
+                              disabled={!canManageEvaluations}
                               onClick={() => setBooleanScore(i, false)}
                               style={{
                                 background: !isYes ? '#FEE2E2' : '#F1F5F9',
@@ -1831,7 +1847,8 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                                 borderRadius: '8px',
                                 fontWeight: 800,
                                 fontSize: '0.82rem',
-                                cursor: 'pointer',
+                                cursor: canManageEvaluations ? 'pointer' : 'default',
+                                opacity: !canManageEvaluations && isYes ? 0.6 : 1,
                                 transition: 'all 0.2s ease'
                               }}
                             >
@@ -1844,6 +1861,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <button
                               type="button"
+                              disabled={!canManageEvaluations}
                               onClick={() => setDescriptiveValue(i, true)}
                               style={{
                                 background: isYes ? '#EDE9FE' : '#F1F5F9',
@@ -1853,7 +1871,8 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                                 borderRadius: '8px',
                                 fontWeight: 800,
                                 fontSize: '0.82rem',
-                                cursor: 'pointer',
+                                cursor: canManageEvaluations ? 'pointer' : 'default',
+                                opacity: !canManageEvaluations && !isYes ? 0.6 : 1,
                                 transition: 'all 0.2s ease'
                               }}
                             >
@@ -1861,6 +1880,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                             </button>
                             <button
                               type="button"
+                              disabled={!canManageEvaluations}
                               onClick={() => setDescriptiveValue(i, false)}
                               style={{
                                 background: !isYes ? '#FEE2E2' : '#F1F5F9',
@@ -1870,7 +1890,8 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                                 borderRadius: '8px',
                                 fontWeight: 800,
                                 fontSize: '0.82rem',
-                                cursor: 'pointer',
+                                cursor: canManageEvaluations ? 'pointer' : 'default',
+                                opacity: !canManageEvaluations && isYes ? 0.6 : 1,
                                 transition: 'all 0.2s ease'
                               }}
                             >
@@ -1902,6 +1923,8 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                               : 'شواهد وملاحظات الأداء الخاصة بهذا المعيار (اختياري)...'
                         }
                         value={criteria[i]?.note || ''}
+                        disabled={!canManageEvaluations}
+                        readOnly={!canManageEvaluations}
                         onChange={e => setNote(i, e.target.value)}
                         style={{
                           width: '100%',
@@ -1910,7 +1933,8 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                           borderRadius: '6px',
                           border: '1px solid #CBD5E1',
                           fontSize: '0.78rem',
-                          background: '#fff'
+                          background: canManageEvaluations ? '#fff' : '#F8FAFC',
+                          cursor: canManageEvaluations ? 'auto' : 'default',
                         }}
                       />
                     </div>
@@ -1929,6 +1953,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                       label="🌟 نقاط القوة والتميز في تفعيل النظام"
                       value={strengths}
                       onChange={val => setStrengths(val)}
+                      disabled={!canManageEvaluations}
                       colorTheme="emerald"
                       rows={3}
                       placeholder="أبرز ما تميز به المعلم في نظام قطر للتعليم..."
@@ -1940,6 +1965,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                       label="🎯 فرص التحسين والتطوير"
                       value={improve}
                       onChange={val => setImprove(val)}
+                      disabled={!canManageEvaluations}
                       colorTheme="amber"
                       rows={3}
                       placeholder="الجوانب التي ينبغي للمعلم التركيز عليها..."
@@ -1951,6 +1977,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                       label="💡 توصيات المقيم والحلول المقترحة"
                       value={recommend}
                       onChange={val => setRecommend(val)}
+                      disabled={!canManageEvaluations}
                       colorTheme="teal"
                       rows={3}
                       placeholder="توصيات إجرائية محددة لدعم المعلم..."
@@ -1962,6 +1989,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                       label="📈 خطة التحسين ومتابعة الشهر القادم"
                       value={actionPlan}
                       onChange={val => setActionPlan(val)}
+                      disabled={!canManageEvaluations}
                       colorTheme="indigo"
                       rows={3}
                       placeholder="خطة التدريب أو المتابعة المحددة..."
@@ -1975,23 +2003,25 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                       <span style={{ fontSize: '0.75rem', color: '#64748B' }}>هل تم رفع واجب أسبوعي من قبل المعلم للطلاب؟</span>
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', marginRight: 'auto' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', background: hasWeeklyAssignment ? '#D1FAE5' : '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: hasWeeklyAssignment ? '1px solid #10B981' : '1px solid #CBD5E1', transition: 'all 0.2s' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: canManageEvaluations ? 'pointer' : 'default', background: hasWeeklyAssignment ? '#D1FAE5' : '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: hasWeeklyAssignment ? '1px solid #10B981' : '1px solid #CBD5E1', transition: 'all 0.2s' }}>
                         <input 
                           type="radio" 
                           name="weeklyAssignment" 
+                          disabled={!canManageEvaluations}
                           checked={hasWeeklyAssignment === true} 
                           onChange={() => setHasWeeklyAssignment(true)} 
-                          style={{ margin: 0, cursor: 'pointer' }}
+                          style={{ margin: 0, cursor: canManageEvaluations ? 'pointer' : 'default' }}
                         />
                         <span style={{ fontWeight: 700, color: hasWeeklyAssignment ? '#065F46' : '#475569', fontSize: '0.85rem' }}>نعم</span>
                       </label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', background: hasWeeklyAssignment === false ? '#FEE2E2' : '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: hasWeeklyAssignment === false ? '1px solid #EF4444' : '1px solid #CBD5E1', transition: 'all 0.2s' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: canManageEvaluations ? 'pointer' : 'default', background: hasWeeklyAssignment === false ? '#FEE2E2' : '#fff', padding: '0.5rem 1rem', borderRadius: '8px', border: hasWeeklyAssignment === false ? '1px solid #EF4444' : '1px solid #CBD5E1', transition: 'all 0.2s' }}>
                         <input 
                           type="radio" 
                           name="weeklyAssignment" 
+                          disabled={!canManageEvaluations}
                           checked={hasWeeklyAssignment === false} 
                           onChange={() => setHasWeeklyAssignment(false)} 
-                          style={{ margin: 0, cursor: 'pointer' }}
+                          style={{ margin: 0, cursor: canManageEvaluations ? 'pointer' : 'default' }}
                         />
                         <span style={{ fontWeight: 700, color: hasWeeklyAssignment === false ? '#991B1B' : '#475569', fontSize: '0.85rem' }}>لا</span>
                       </label>
@@ -2006,9 +2036,11 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                   <textarea
                     rows={2}
                     value={evidence}
+                    disabled={!canManageEvaluations}
+                    readOnly={!canManageEvaluations}
                     onChange={e => setEvidence(e.target.value)}
                     placeholder="https://..."
-                    style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.78rem', direction: 'ltr', textAlign: 'left' }}
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.78rem', direction: 'ltr', textAlign: 'left', background: canManageEvaluations ? '#fff' : '#F8FAFC' }}
                   />
                 </div>
 
@@ -2019,8 +2051,10 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                   <textarea
                     rows={2}
                     value={notes}
+                    disabled={!canManageEvaluations}
+                    readOnly={!canManageEvaluations}
                     onChange={e => setNotes(e.target.value)}
-                    style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.8rem' }}
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.8rem', background: canManageEvaluations ? '#fff' : '#F8FAFC' }}
                   />
                 </div>
               </div>
@@ -2235,13 +2269,15 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                         <th style={{ padding: '0.65rem', textAlign: 'center' }}>الدرجة (100%)</th>
                         <th style={{ padding: '0.65rem', textAlign: 'center' }}>التقدير</th>
                         <th style={{ padding: '0.65rem' }}>تاريخ الرصد</th>
-                        <th style={{ padding: '0.65rem', textAlign: 'center', borderRadius: '8px 0 0 0' }}>الإجراءات</th>
+                        {canManageEvaluations && (
+                          <th style={{ padding: '0.65rem', textAlign: 'center', borderRadius: '8px 0 0 0' }}>الإجراءات</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
                       {filteredHistory.length === 0 ? (
                         <tr>
-                          <td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: '#94A3B8' }}>
+                          <td colSpan={canManageEvaluations ? 9 : 8} style={{ padding: '2rem', textAlign: 'center', color: '#94A3B8' }}>
                             لا توجد تقييمات مطابقة للفلاتر المحددة
                           </td>
                         </tr>
@@ -2270,22 +2306,24 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                                 </span>
                               </td>
                               <td style={{ padding: '0.65rem', color: '#64748B', fontSize: '0.75rem' }}>{ev.evaluationDate}</td>
-                              <td style={{ padding: '0.65rem', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-                                  <button
-                                    onClick={() => loadEvaluationObj(ev)}
-                                    style={{ background: '#E0F2FE', color: '#0369A1', border: '1px solid #BAE6FE', padding: '0.25rem 0.55rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
-                                  >
-                                    ✏️ تعديل
-                                  </button>
-                                  <button
-                                    onClick={() => deleteEval(ev.id)}
-                                    style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', padding: '0.25rem 0.55rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
-                                  >
-                                    🗑️ حذف
-                                  </button>
-                                </div>
-                              </td>
+                              {canManageEvaluations && (
+                                <td style={{ padding: '0.65rem', textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                                    <button
+                                      onClick={() => loadEvaluationObj(ev)}
+                                      style={{ background: '#E0F2FE', color: '#0369A1', border: '1px solid #BAE6FE', padding: '0.25rem 0.55rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                      ✏️ تعديل
+                                    </button>
+                                    <button
+                                      onClick={() => deleteEval(ev.id)}
+                                      style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FECACA', padding: '0.25rem 0.55rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                      🗑️ حذف
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
                             </tr>
                           );
                         })
@@ -3281,7 +3319,9 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                         <th style={{ padding: '0.65rem' }}>القسم</th>
                         <th style={{ padding: '0.65rem' }}>الوظيفة / المادة</th>
                         <th style={{ padding: '0.65rem' }}>البريد الإلكتروني الوزاري</th>
-                        <th style={{ padding: '0.65rem', textAlign: 'center' }}>إجراء فوري</th>
+                        {canManageEvaluations && (
+                          <th style={{ padding: '0.65rem', textAlign: 'center' }}>إجراء فوري</th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -3294,54 +3334,56 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                           <td style={{ padding: '0.65rem', color: '#334155' }}>{getDeptName(t.departmentId, departments)}</td>
                           <td style={{ padding: '0.65rem', color: '#475569' }}>{t.subject}</td>
                           <td style={{ padding: '0.65rem', color: '#0284C7', direction: 'ltr', textAlign: 'right', fontSize: '0.75rem' }}>{t.email}</td>
-                          <td style={{ padding: '0.65rem', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-                              <button
-                                onClick={() => {
-                                  setTeacherId(t.id);
-                                  setEditingId(null);
-                                  setMainTab('form');
-                                }}
-                                style={{
-                                  background: '#0F2044',
-                                  color: '#fff',
-                                  border: 'none',
-                                  padding: '0.3rem 0.65rem',
-                                  borderRadius: '6px',
-                                  fontWeight: 800,
-                                  fontSize: '0.75rem',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                📝 تقييم
-                              </button>
-                              {allEvaluations.some(e => e.teacherId === t.id) && (
+                          {canManageEvaluations && (
+                            <td style={{ padding: '0.65rem', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
                                 <button
                                   onClick={() => {
-                                    const teacherEvals = allEvaluations
-                                      .filter(e => e.teacherId === t.id)
-                                      .sort((a, b) => b.academicYear.localeCompare(a.academicYear) || MONTHS.indexOf(b.month) - MONTHS.indexOf(a.month));
-                                    if (teacherEvals[0]) {
-                                      loadEvaluationObj(teacherEvals[0]);
-                                    }
+                                    setTeacherId(t.id);
+                                    setEditingId(null);
+                                    setMainTab('form');
                                   }}
                                   style={{
-                                    background: '#E0F2FE',
-                                    color: '#0369A1',
-                                    border: '1px solid #BAE6FE',
+                                    background: '#0F2044',
+                                    color: '#fff',
+                                    border: 'none',
                                     padding: '0.3rem 0.65rem',
                                     borderRadius: '6px',
                                     fontWeight: 800,
                                     fontSize: '0.75rem',
                                     cursor: 'pointer'
                                   }}
-                                  title="تعديل أحدث تقييم لهذا المعلم"
                                 >
-                                  ✏️ تعديل
+                                  📝 تقييم
                                 </button>
-                              )}
-                            </div>
-                          </td>
+                                {allEvaluations.some(e => e.teacherId === t.id) && (
+                                  <button
+                                    onClick={() => {
+                                      const teacherEvals = allEvaluations
+                                        .filter(e => e.teacherId === t.id)
+                                        .sort((a, b) => b.academicYear.localeCompare(a.academicYear) || MONTHS.indexOf(b.month) - MONTHS.indexOf(a.month));
+                                      if (teacherEvals[0]) {
+                                        loadEvaluationObj(teacherEvals[0]);
+                                      }
+                                    }}
+                                    style={{
+                                      background: '#E0F2FE',
+                                      color: '#0369A1',
+                                      border: '1px solid #BAE6FE',
+                                      padding: '0.3rem 0.65rem',
+                                      borderRadius: '6px',
+                                      fontWeight: 800,
+                                      fontSize: '0.75rem',
+                                      cursor: 'pointer'
+                                    }}
+                                    title="تعديل أحدث تقييم لهذا المعلم"
+                                  >
+                                    ✏️ تعديل
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>

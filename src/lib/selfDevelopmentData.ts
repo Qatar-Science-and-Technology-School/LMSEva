@@ -4,7 +4,7 @@
 // خاص بالشهادات المهنية والدورات التخصصية لمنسق المشاريع: م. أحمد عادل طبيشات
 // =============================================================================
 
-import { getCollection, saveCollection, COLLECTIONS } from './firestoreDb';
+import { getCollection, saveCollection, isAuthorizedToSave, COLLECTIONS } from './firestoreDb';
 
 export type SelfDevelopmentCategory =
   | 'الذكاء الاصطناعي والحلول الرقمية'
@@ -423,6 +423,10 @@ export function saveSelfDevelopmentRecords(
   academicYear: string = '2026-2027'
 ): void {
   if (typeof window === 'undefined') return;
+  if (!isAuthorizedToSave()) {
+    console.warn('[Security] Unauthorized attempt to save self development records blocked.');
+    return;
+  }
   try {
     const key = getSelfDevelopmentStorageKey(academicYear);
     localStorage.setItem(key, JSON.stringify(records));
@@ -447,6 +451,7 @@ export function saveSelfDevelopmentRecords(
 }
 
 export function resetSelfDevelopmentRecords(academicYear: string = '2026-2027'): SelfDevelopmentRecord[] {
+  if (!isAuthorizedToSave()) return INITIAL_SELF_DEVELOPMENT_RECORDS;
   saveSelfDevelopmentRecords(INITIAL_SELF_DEVELOPMENT_RECORDS, academicYear);
   return INITIAL_SELF_DEVELOPMENT_RECORDS;
 }

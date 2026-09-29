@@ -192,13 +192,14 @@ function sanitizeForFirestore(val: any): any {
  * All other users are restricted to viewer mode.
  */
 export function isAuthorizedToSave(): boolean {
-  if (typeof window === 'undefined') return true; // allow static build/SSR
+  if (typeof window === 'undefined') return false;
   try {
-    const raw = localStorage.getItem('qstss_current_user') || localStorage.getItem('qstss_user') || localStorage.getItem('qstss_v3_user');
+    const raw = localStorage.getItem('qstss_current_user');
     if (!raw) return false;
     const user = JSON.parse(raw);
     const email = (user?.email || '').trim().toLowerCase();
-    return email === 'a.tubaishat1704@education.qa';
+    const username = (user?.username || '').trim().toLowerCase();
+    return email === 'a.tubaishat1704@education.qa' || username === 'a.tubaishat1704';
   } catch {
     return false;
   }
