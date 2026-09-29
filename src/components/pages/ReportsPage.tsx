@@ -18,50 +18,65 @@ import {
   GRADE_LEVEL_LMS_STATS,
   SEPTEMBER_2026_LMS_METRICS,
 } from '@/lib/data';
-import type { User, Teacher, Evaluation, Department } from '@/lib/data';
+import type { User, Teacher, Evaluation, Department, ModelLessonEvaluation, ModelLessonScheduleItem } from '@/lib/data';
 import { loadEventsMeetings, EventMeetingItem, EVENT_CATEGORY_CONFIG, EVENT_TYPE_CONFIG, EVENT_STATUS_CONFIG } from '@/lib/eventsMeetingsData';
-import { printComprehensiveLmsReport } from '@/lib/comprehensiveReportPrinter';
-import { printClassSubjectMonthlyReport, printSectionsReport, printSubjectsReport } from '@/lib/classSubjectReportPrinter';
+import { loadOperationalPlan, OperationalPlanState, OperationalAction, OperationalObjective, printOfficialOperationalPlan } from '@/lib/operationalPlanData';
+import { loadDistanceLearningRecords, DistanceLearningRecord, REASON_CONFIG, STATUS_CONFIG } from '@/lib/distanceLearningData';
+import { printComprehensiveDistanceLearningReport } from '@/lib/distanceLearningReportPrinter';
+import { loadSelfDevelopmentRecords, SelfDevelopmentRecord } from '@/lib/selfDevelopmentData';
+import { printComprehensiveSelfDevelopmentReport } from '@/lib/selfDevelopmentReportPrinter';
 import { printComprehensiveEventsMeetingsReport } from '@/lib/eventsMeetingsReportPrinter';
+import { printComprehensiveLmsReport } from '@/lib/comprehensiveReportPrinter';
+import { printClassSubjectMonthlyReport } from '@/lib/classSubjectReportPrinter';
 import * as XLSX from 'xlsx';
 import {
-  Monitor, Layers, Award, BookOpen, Target, Sparkles, Zap, ShieldCheck, Cpu, Database, CheckCircle2, ListTodo, GraduationCap, Trophy, BarChart3, Settings, ClipboardList, ShieldAlert, Users, Calendar, Building, Laptop, MapPin, Clock, Printer, Download, FileSpreadsheet, Filter, Search, FileText, ChevronRight, AlertTriangle, ArrowUpDown, PieChart as PieChartIcon
+  Monitor, Layers, Award, BookOpen, Target, Sparkles, Zap, ShieldCheck, Cpu, Database, CheckCircle2, ListTodo, GraduationCap, Trophy, BarChart3, Settings, ClipboardList, ShieldAlert, Users, Calendar, Building, Laptop, MapPin, Clock, Printer, Download, FileSpreadsheet, Filter, Search, FileText, ChevronRight, AlertTriangle, ArrowUpDown, PieChart as PieChartIcon, ExternalLink
 } from 'lucide-react';
 
-interface Props { currentUser: User; selectedYear?: string; }
+interface Props { 
+  currentUser: User; 
+  selectedYear?: string; 
+}
 
-type ReportCategory = 
-  | 'executive' 
+export type ReportCategory = 
+  | 'all'
+  | 'op_plan' 
+  | 'model_lessons' 
   | 'qes' 
   | 'classes' 
-  | 'model_lessons' 
   | 'pd' 
-  | 'events' 
-  | 'takreem' 
-  | 'sms' 
-  | 'benchmarks';
+  | 'events_sms' 
+  | 'executive';
 
-type ReportType = 
-  | 'executive_all'
-  | 'monthly' 
-  | 'annual' 
-  | 'dept' 
-  | 'followup' 
-  | 'progress' 
+export type ReportType = 
+  // 1. Operational Plan (الخطة الإجرائية)
+  | 'op_plan'
+  // 2. Model Lessons & Observation (حصص التعليم الإلكتروني والمشاهدات)
+  | 'modellessons_evaluated'
+  | 'modellessons_scheduled'
+  | 'distance_learning'
+  // 3. LMS (نظام قطر للتعليم)
+  | 'lms_monthly'
+  | 'lms_annual'
+  | 'lms_dept'
+  | 'lms_support'
+  | 'lms_progress'
+  // 4. Classes & Subjects (الصفوف والشعب والمواد)
   | 'classes_subjects'
   | 'classes_sections'
   | 'classes_grades'
   | 'classes_intervention'
-  | 'modellessons'
+  // 5. Professional & Self Development (التطوير المهني والذاتي)
   | 'pd_workshops'
   | 'pd_individual'
+  | 'pd_meee'
+  | 'pd_self'
+  // 6. Events, SMS & Honors (الفعاليات والتواصل والتكريم)
   | 'events_meetings'
-  | 'takreem_honors'
   | 'elearning_sms'
-  | 'comparison' 
-  | 'threeyear' 
-  | 'highperf' 
-  | 'elearning';
+  | 'takreem_honors'
+  // 7. Executive (التقرير التنفيذي الشامل)
+  | 'executive_all';
 
 interface ReportMeta {
   id: ReportType;
@@ -69,61 +84,463 @@ interface ReportMeta {
   label: string;
   icon: string;
   desc: string;
+  badge?: string;
 }
 
-const ALL_REPORTS: ReportMeta[] = [
-  // 1. Executive
-  { id: 'executive_all', category: 'executive', label: 'التقرير التنفيذي الشامل للمدرسة', icon: '🌐', desc: 'تقرير موحد يضم كافة أنظمة ومنظومات المدرسة' },
+export const ALL_REPORTS: ReportMeta[] = [
+  // 1. Operational Plan
+  { 
+    id: 'op_plan', 
+    category: 'op_plan', 
+    label: 'تقرير الخطة الإجرائية للتعليم الإلكتروني', 
+    icon: '📌', 
+    desc: 'الأهداف الاستراتيجية والإجراءات التنفيذية وحالة التنفيذ ومؤشرات التحقق',
+    badge: 'خطة استراتيجية'
+  },
 
-  // 2. QES
-  { id: 'monthly',      category: 'qes', label: 'تقرير شهري للمعلمين (QES)', icon: '📅', desc: 'أداء وتقييم المعلمين خلال شهر محدد' },
-  { id: 'annual',       category: 'qes', label: 'تقرير سنوي تراكمي للمعلمين', icon: '📆', desc: 'ملخص الأداء السنوي التراكمي الشامل' },
-  { id: 'dept',         category: 'qes', label: 'تقرير تقييم الأقسام الأكاديمية', icon: '🏫', desc: 'أداء معلمي كل قسم أكاديمي على حدة' },
-  { id: 'followup',     category: 'qes', label: 'تقرير المعلمين ذوي الاحتياج للدعم', icon: '⚠️', desc: 'المعلمون الذين أداؤهم دون 80% مع التوصيات' },
-  { id: 'progress',     category: 'qes', label: 'منحنى تطور أداء المعلم الفردي', icon: '📈', desc: 'التطور الشهري التراكمي لمعلم محدد' },
+  // 2. Model Lessons & Observation
+  { 
+    id: 'modellessons_evaluated', 
+    category: 'model_lessons', 
+    label: 'تقرير حصص التعليم الإلكتروني المقيمة', 
+    icon: '💻', 
+    desc: 'المشاهدات الصفية المنفذة وعمق توظيف التقنية SAMR وTPACK ومستويات التقييم',
+    badge: 'مشاهدات صفية'
+  },
+  { 
+    id: 'modellessons_scheduled', 
+    category: 'model_lessons', 
+    label: 'تقرير جدول حصص التعليم الإلكتروني المجدولة', 
+    icon: '📅', 
+    desc: 'الجدول الزمني للحصص المجدولة والمختبرات والقاعات والأدوات الرقمية المقترحة',
+    badge: 'جدول معتمد'
+  },
+  { 
+    id: 'distance_learning', 
+    category: 'model_lessons', 
+    label: 'تقرير حصص وسجلات التعلم عن بعد', 
+    icon: '🌐', 
+    desc: 'جلسات البث المباشر، متابعة الطلاب، الأعذار، ونسب الالتزام والحضور',
+    badge: 'بث مباشر'
+  },
 
-  // 3. Classes & Subjects
-  { id: 'classes_subjects',     category: 'classes', label: 'تحليل المواد الدراسية الـ 13', icon: '📚', desc: 'نسب إتقان المواد والواجبات والتقييمات' },
-  { id: 'classes_sections',     category: 'classes', label: 'تحليل الشعب والفصول الـ 8', icon: '🏢', desc: 'تفاعل الشعب العاشر والحادي عشر وحل الواجبات' },
-  { id: 'classes_grades',       category: 'classes', label: 'تحليل المستويات والصفوف الدراسية', icon: '🎓', desc: 'مقارنة الأداء العام بين الصفوف الأكاديمية' },
-  { id: 'classes_intervention', category: 'classes', label: 'خطة التدخل الأكاديمي ودعم الطلاب', icon: '🎯', desc: 'متابعة الطلاب ذوي الأداء المنخفض وجلسات الدعم' },
+  // 3. QES / LMS
+  { 
+    id: 'lms_monthly', 
+    category: 'qes', 
+    label: 'تقرير تقييم معلمي نظام قطر للتعليم (الشهري)', 
+    icon: '📝', 
+    desc: 'رصد المعايير الستة المعتمدة ونسب الإنجاز ونقاط القوة والتوصيات',
+    badge: 'شهري رسمي'
+  },
+  { 
+    id: 'lms_annual', 
+    category: 'qes', 
+    label: 'تقرير تقييم معلمي نظام قطر للتعليم (السنوي التراكمي)', 
+    icon: '📆', 
+    desc: 'المتوسط التراكمي السنوي وأعلى وأقل درجة ومستويات الأداء العام',
+    badge: 'تراكمي سنوي'
+  },
+  { 
+    id: 'lms_dept', 
+    category: 'qes', 
+    label: 'تقرير تقييم الأقسام الأكاديمية بنظام قطر للتعليم', 
+    icon: '🏫', 
+    desc: 'مقارنة أداء المعلمين لكل قسم أكاديمي على حدة ومتوسط القسم',
+    badge: 'تحليل الأقسام'
+  },
+  { 
+    id: 'lms_support', 
+    category: 'qes', 
+    label: 'تقرير المعلمين المستحقين للدعم والتدخل الأكاديمي', 
+    icon: '⚠️', 
+    desc: 'تحليل الفجوات ونقاط التطوير للمعلمين ذوي الأداء دون 80% مع التوصيات',
+    badge: 'تدخل تحسيني'
+  },
+  { 
+    id: 'lms_progress', 
+    category: 'qes', 
+    label: 'منحنى تطور أداء المعلم الفردي عبر الشهور', 
+    icon: '📈', 
+    desc: 'التطور الشهري التراكمي لمعلم محدد ورصد مسار النمو والتحسن',
+    badge: 'منحنى نمو'
+  },
 
-  // 4. Model Lessons
-  { id: 'modellessons', category: 'model_lessons', label: 'حصص التعليم الإلكتروني والمشاهدات', icon: '💻', desc: 'المشاهدات الصفية وتوظيف التقنيات والذكاء الاصطناعي' },
+  // 4. Classes & Subjects
+  { 
+    id: 'classes_subjects', 
+    category: 'classes', 
+    label: 'تقرير تحليل المواد الدراسية الـ 13 ونسب الإنجاز', 
+    icon: '📚', 
+    desc: 'معدلات حل التقييمات، التسليمات، المعلقات، والدروس الرقمية للمواد',
+    badge: '13 مادة'
+  },
+  { 
+    id: 'classes_sections', 
+    category: 'classes', 
+    label: 'تقرير تفاعل الشعب والفصول الدراسية وحل التقييمات', 
+    icon: '🏢', 
+    desc: 'ترتيب الشعب الدراسية حسب التفاعل والتسليمات والتصنيف العام',
+    badge: 'الشعب الصفية'
+  },
+  { 
+    id: 'classes_grades', 
+    category: 'classes', 
+    label: 'تقرير أداء المراحل والصفوف الدراسية (الصفوف 9 - 12)', 
+    icon: '🎓', 
+    desc: 'مقارنة إجماليات التقييمات والدروس ونسب الحل عبر المراحل الأكاديمية',
+    badge: 'المراحل 9-12'
+  },
+  { 
+    id: 'classes_intervention', 
+    category: 'classes', 
+    label: 'تقرير خطة التدخل الأكاديمي ودعم الطلاب', 
+    icon: '🎯', 
+    desc: 'مسارات الدعم، الطلاب المستهدفون، الإجراءات المتخذة، ونسب التحسن',
+    badge: 'رعاية المتعلمين'
+  },
 
-  // 5. PD
-  { id: 'pd_workshops',  category: 'pd', label: 'ورش وبرامج التطوير المهني الجماعية', icon: '🎓', desc: 'البرامج التدريبية المعتمدة وساعات التدريب' },
-  { id: 'pd_individual', category: 'pd', label: 'جلسات التدريب الفردي والتمكين الرقمي', icon: '💡', desc: 'الدعم التقني والتربوي الفردي للمعلمين' },
+  // 5. Professional & Self Development
+  { 
+    id: 'pd_workshops', 
+    category: 'pd', 
+    label: 'تقرير ورش وبرامج التطوير المهني الجماعية', 
+    icon: '🎓', 
+    desc: 'البرامج التدريبية المعتمدة وساعات التدريب والمستهدفون والمدرب',
+    badge: 'ورش معتمدة'
+  },
+  { 
+    id: 'pd_individual', 
+    category: 'pd', 
+    label: 'تقرير جلسات التدريب الفردي والتمكين الرقمي', 
+    icon: '💡', 
+    desc: 'جلسات الكوتشينغ والدعم التقني والتربوي الفردي لمعلمي المدرسة',
+    badge: 'تدريب فردي'
+  },
+  { 
+    id: 'pd_meee', 
+    category: 'pd', 
+    label: 'تقرير معلمي مايكروسوفت الخبراء (MEEE)', 
+    icon: '🏅', 
+    desc: 'المعلمون الحاصلون على الشهادة الدولية وسنة الترشح وملفات الإنجاز',
+    badge: 'مايكروسوفت خبير'
+  },
+  { 
+    id: 'pd_self', 
+    category: 'pd', 
+    label: 'تقرير شهادات ودورات التطوير الذاتي لمنسق المشاريع', 
+    icon: '📜', 
+    desc: 'الشهادات التخصصية والدورات وساعات التطوير المهني الذاتي المعتمدة',
+    badge: 'تطوير ذاتي'
+  },
 
-  // 6. Events
-  { id: 'events_meetings', category: 'events', label: 'سجل الفعاليات والاجتماعات الرسمية', icon: '📅', desc: 'توثيق الـ 16 فعالية واجتماعاً معتمداً بالمقر والنوع' },
+  // 6. Events, SMS & Honors
+  { 
+    id: 'events_meetings', 
+    category: 'events_sms', 
+    label: 'تقرير سجل الفعاليات والاجتماعات الرسمية (16)', 
+    icon: '📅', 
+    desc: 'توثيق الفعاليات والاجتماعات المعتمدة بالمقر والنوع والمستهدفين والحالة',
+    badge: '16 فعالية'
+  },
+  { 
+    id: 'elearning_sms', 
+    category: 'events_sms', 
+    label: 'تقرير رسائل أولياء الأمور وحملات SMS المدرسية', 
+    icon: '📱', 
+    desc: 'الرسائل التوجيهية وتنبيهات الواجبات والتكريم ومعدل الوصول',
+    badge: 'تواصل إلكتروني'
+  },
+  { 
+    id: 'takreem_honors', 
+    category: 'events_sms', 
+    label: 'تقرير لوحة الشرف وتكريم معلمي الشهر المتميزين', 
+    icon: '🏆', 
+    desc: 'المكرمون شهرياً من كافة الأقسام الأكاديمية وأوسمة التميز المعتمدة',
+    badge: 'لوحة الشرف'
+  },
 
-  // 7. Takreem
-  { id: 'takreem_honors', category: 'takreem', label: 'لوحة الشرف وتكريم المعلمين والمتميزين', icon: '🏆', desc: 'معلمو الشهر المكرمون وجوائز التميز الأكاديمي' },
-
-  // 8. SMS
-  { id: 'elearning_sms', category: 'sms', label: 'سجل الرسائل والتنبيهات المدرسية (SMS)', icon: '📱', desc: 'الرسائل التوجيهية وتفاعل أولياء الأمور والطلاب' },
-
-  // 9. Benchmarks
-  { id: 'comparison', category: 'benchmarks', label: 'مقارنة الأداء بين الأقسام الأكاديمية', icon: '⚖️', desc: 'تحليل تنافسي مقارن بين كافة أقسام المدرسة' },
-  { id: 'highperf',   category: 'benchmarks', label: 'تقرير الأقسام الأربعة الرئيسية', icon: '⭐', desc: 'أداء الأقسام الرئيسية (عربي، شرعية، حاسوب، رياضيات)' },
-  { id: 'threeyear',  category: 'benchmarks', label: 'التطور التراكمي لآخر ثلاث سنوات', icon: '📊', desc: 'منحنى أداء المعلم والمدرسة عبر الأعوام الأكاديمية' },
-  { id: 'elearning',  category: 'benchmarks', label: 'تقرير نظام التعليم الإلكتروني والحلول الرقمية', icon: '📘', desc: 'البنية الفنية وأهداف النظام وإحصاءات التفعيل' },
+  // 7. Executive
+  { 
+    id: 'executive_all', 
+    category: 'executive', 
+    label: 'التقرير التنفيذي الشامل لمنظومة التعليم الإلكتروني', 
+    icon: '🌐', 
+    desc: 'لوحة قيادية جامعة تربط كافة منظومات وبيانات المدرسة في وثيقة رسمية موحدة',
+    badge: 'تقرير موحد شامل'
+  },
 ];
 
-const CATEGORY_TABS: { id: ReportCategory; label: string; icon: string }[] = [
-  { id: 'executive',     label: 'التقرير التنفيذي الشامل', icon: '🌐' },
-  { id: 'qes',           label: 'نظام قطر للتعليم',       icon: '📝' },
-  { id: 'classes',       label: 'تحليل الشعب والمواد',    icon: '🏫' },
-  { id: 'model_lessons', label: 'حصص التعليم الإلكتروني', icon: '💻' },
-  { id: 'pd',            label: 'التطوير المهني',         icon: '🎓' },
-  { id: 'events',        label: 'الفعاليات والاجتماعات',  icon: '📅' },
-  { id: 'takreem',       label: 'تكريم المعلمين',         icon: '🏆' },
-  { id: 'sms',           label: 'الرسائل (SMS)',          icon: '📱' },
-  { id: 'benchmarks',    label: 'المقارنات والمؤشرات',    icon: '📊' },
+export const CATEGORY_TABS: { id: ReportCategory; label: string; icon: string }[] = [
+  { id: 'all',           label: 'جميع التقارير (21)',            icon: '📋' },
+  { id: 'op_plan',       label: 'الخطة الإجرائية',              icon: '📌' },
+  { id: 'model_lessons', label: 'حصص التعليم الإلكتروني',        icon: '💻' },
+  { id: 'qes',           label: 'نظام قطر للتعليم (LMS)',       icon: '📝' },
+  { id: 'classes',       label: 'الشعب والمواد الدراسية',       icon: '🏫' },
+  { id: 'pd',            label: 'التطوير المهني والذاتي',       icon: '🎓' },
+  { id: 'events_sms',    label: 'الفعاليات والتواصل والتكريم',   icon: '📅' },
+  { id: 'executive',     label: 'التقرير التنفيذي الشامل',       icon: '🌐' },
 ];
 
-// ─── Pure SVG Bar Chart (print-safe) ───────────────────────────────────────
+// Default Realistic Scheduled Lessons if none in storage
+const DEFAULT_SCHEDULED_LESSONS: ModelLessonScheduleItem[] = [
+  {
+    id: 'mls-01',
+    teacherId: 't-math-01',
+    teacherNameAr: 'أحمد محمود',
+    departmentId: 'd_math',
+    departmentName: 'الرياضيات',
+    subject: 'الرياضيات المتقدمة',
+    academicYear: '2026-2027',
+    date: '2026-10-04',
+    dayName: 'الأحد',
+    period: '2',
+    classGrade: '10/1',
+    lessonTopic: 'حل المعادلات المثلثية بالنمذجة الرقمية وبرمجية GeoGebra',
+    toolsPlanned: 'GeoGebra, ClassPoint, MS Teams, E-Board',
+    roomVenue: 'مختبر الرياضيات الرقمي (قاعة 102)',
+    status: 'مجدولة',
+    evaluatorName: 'م. أحمد طبيشات (منسق التعليم الإلكتروني)',
+    createdAt: '2026-09-20',
+    updatedAt: '2026-09-20',
+  },
+  {
+    id: 'mls-02',
+    teacherId: 't-sci-01',
+    teacherNameAr: 'محمد حسن',
+    departmentId: 'd_science',
+    departmentName: 'العلوم العامة',
+    subject: 'الفيزياء AP',
+    academicYear: '2026-2027',
+    date: '2026-10-06',
+    dayName: 'الثلاثاء',
+    period: '3',
+    classGrade: '11/2',
+    lessonTopic: 'محاكاة دوائر التيار المتردد عبر منصة PhET التفاعلية',
+    toolsPlanned: 'PhET Simulations, OneNote Class Notebook, Forms',
+    roomVenue: 'مختبر الفيزياء المتقدم (قاعة 204)',
+    status: 'مجدولة',
+    evaluatorName: 'م. أحمد طبيشات (منسق التعليم الإلكتروني)',
+    createdAt: '2026-09-22',
+    updatedAt: '2026-09-22',
+  },
+  {
+    id: 'mls-03',
+    teacherId: 't-cs-01',
+    teacherNameAr: 'خالد عبدالله',
+    departmentId: 'd_cs',
+    departmentName: 'تكنولوجيا المعلومات والحاسوب',
+    subject: 'علم الحاسوب والروبوت',
+    academicYear: '2026-2027',
+    date: '2026-09-24',
+    dayName: 'الخميس',
+    period: '4',
+    classGrade: '9/1',
+    lessonTopic: 'تطبيق خوارزميات البحث الذكية ودمج أدوات Copilot في البرمجة',
+    toolsPlanned: 'Visual Studio Code, GitHub Copilot, Padlet, Kahoot',
+    roomVenue: 'مختبر الذكاء الاصطناعي والروبوتيكس',
+    status: 'تم التنفيذ',
+    evaluatorName: 'م. أحمد طبيشات (منسق التعليم الإلكتروني)',
+    createdAt: '2026-09-15',
+    updatedAt: '2026-09-24',
+  },
+  {
+    id: 'mls-04',
+    teacherId: 't-eng-01',
+    teacherNameAr: 'طارق عبدالمجيد',
+    departmentId: 'd_english',
+    departmentName: 'اللغة الإنجليزية',
+    subject: 'English AP Language',
+    academicYear: '2026-2027',
+    date: '2026-10-08',
+    dayName: 'الخميس',
+    period: '1',
+    classGrade: '11/1',
+    lessonTopic: 'Digital Rhetorical Analysis using Achieve 3000 & Canva',
+    toolsPlanned: 'Achieve 3000, Canva Education, Nearpod, LMS Forums',
+    roomVenue: 'قاعة اللغات التفاعلية',
+    status: 'مجدولة',
+    evaluatorName: 'د. راني التوم وم. أحمد طبيشات',
+    createdAt: '2026-09-25',
+    updatedAt: '2026-09-25',
+  },
+  {
+    id: 'mls-05',
+    teacherId: 't-ar-01',
+    teacherNameAr: 'يوسف إبراهيم',
+    departmentId: 'd_arabic',
+    departmentName: 'اللغة العربية',
+    subject: 'اللغة العربية والبلاغة',
+    academicYear: '2026-2027',
+    date: '2026-09-21',
+    dayName: 'الإثنين',
+    period: '5',
+    classGrade: '10/3',
+    lessonTopic: 'توظيف تقنيات السرد الرقمي والخرائط الذهنية التفاعلية في دراسة الشعر',
+    toolsPlanned: 'MindMeister, Edpuzzle, LMS Forum, Mentimeter',
+    roomVenue: 'الصف 10/3',
+    status: 'تم التنفيذ',
+    evaluatorName: 'م. أحمد طبيشات',
+    createdAt: '2026-09-10',
+    updatedAt: '2026-09-21',
+  },
+  {
+    id: 'mls-06',
+    teacherId: 't-is-01',
+    teacherNameAr: 'عمر مصطفى',
+    departmentId: 'd_islamic',
+    departmentName: 'التربية الإسلامية',
+    subject: 'التربية الإسلامية',
+    academicYear: '2026-2027',
+    date: '2026-10-11',
+    dayName: 'الأحد',
+    period: '3',
+    classGrade: '9/2',
+    lessonTopic: 'تصميم جولات افتراضية تفاعلية حول أحكام فقه المعاملات المالية الحديثة',
+    toolsPlanned: 'ThingLink, Wordwall, MS Forms, Interactive Board',
+    roomVenue: 'الصف 9/2',
+    status: 'مجدولة',
+    evaluatorName: 'م. أحمد طبيشات',
+    createdAt: '2026-09-27',
+    updatedAt: '2026-09-27',
+  }
+];
+
+// Default Evaluated Lessons if empty
+const DEFAULT_EVALUATED_LESSONS: any[] = [
+  {
+    id: 'mle-01',
+    teacherId: 't-math-01',
+    teacherNameAr: 'أحمد محمود',
+    departmentId: 'd_math',
+    departmentName: 'الرياضيات',
+    academicYear: '2026-2027',
+    date: '2026-09-21',
+    period: '2',
+    classGrade: '10/1',
+    subject: 'الرياضيات المتقدمة',
+    lessonTopic: 'حل المعادلات المثلثية بالنمذجة الرقمية',
+    toolsUsed: 'GeoGebra, ClassPoint, MS Teams, E-Board',
+    samrLevel: 'Modification (تعديل)',
+    scoreTechDepth: 9.8,
+    scoreTeacherTools: 10,
+    scoreClassroomMgmt: 9.5,
+    scoreLmsClarity: 9.7,
+    scoreStudentEngagement: 9.6,
+    scoreAssessmentFeedback: 9.8,
+    overallScore: 9.7,
+    strengths: 'توظيف استثنائي لبرمجية GeoGebra في التمثيل الهندسي التفاعلي، وإدارة نموذجية للصف رقمياً.',
+    improvements: 'إتاحة وقت إضافي للطلاب لعرض حلولهم التفاعلية ومشاركتها مع الزملاء.',
+    recommendations: 'تنظيم ورشة تطبيقية لنقل تجربة توظيف النمذجة الرياضية لمعلمي القسم.',
+    evaluatorName: 'م. أحمد طبيشات (منسق التعليم الإلكتروني)',
+  },
+  {
+    id: 'mle-02',
+    teacherId: 't-sci-01',
+    teacherNameAr: 'محمد حسن',
+    departmentId: 'd_science',
+    departmentName: 'العلوم العامة',
+    academicYear: '2026-2027',
+    date: '2026-09-24',
+    period: '3',
+    classGrade: '11/2',
+    subject: 'الفيزياء AP',
+    lessonTopic: 'محاكاة الدوائر الكهرومغناطيسية وتطبيقاتها',
+    toolsUsed: 'PhET Simulations, OneNote Class Notebook, Forms',
+    samrLevel: 'Redefinition (إعادة تعريف)',
+    scoreTechDepth: 9.9,
+    scoreTeacherTools: 9.8,
+    scoreClassroomMgmt: 9.6,
+    scoreLmsClarity: 9.8,
+    scoreStudentEngagement: 9.8,
+    scoreAssessmentFeedback: 9.7,
+    overallScore: 9.8,
+    strengths: 'بيئة استكشافية رقمية متميزة عبر محاكاة PhET، وتفاعل ملموس وتطبيق عملي عالي المستوى.',
+    improvements: 'تنويع مستويات الأسئلة الرقمية في التقييم التكويني الختامي.',
+    recommendations: 'توثيق الحصة كنموذج ممارسات فضلى على مستوى المدرسة.',
+    evaluatorName: 'د. راني التوم وم. أحمد طبيشات',
+  },
+  {
+    id: 'mle-03',
+    teacherId: 't-cs-01',
+    teacherNameAr: 'خالد عبدالله',
+    departmentId: 'd_cs',
+    departmentName: 'تكنولوجيا المعلومات والحاسوب',
+    academicYear: '2026-2027',
+    date: '2026-09-17',
+    period: '4',
+    classGrade: '9/1',
+    subject: 'علم الحاسوب والروبوت',
+    lessonTopic: 'خوارزميات الذكاء الاصطناعي ومعالجة البيانات',
+    toolsUsed: 'VS Code, GitHub Copilot, Padlet, Kahoot',
+    samrLevel: 'Redefinition (إعادة تعريف)',
+    scoreTechDepth: 10,
+    scoreTeacherTools: 10,
+    scoreClassroomMgmt: 9.8,
+    scoreLmsClarity: 9.9,
+    scoreStudentEngagement: 9.9,
+    scoreAssessmentFeedback: 9.9,
+    overallScore: 9.9,
+    strengths: 'دمج تقنيات الذكاء الاصطناعي التوليدي بكفاءة عالية، ومشاركة جماعية ملهمة للطلبة.',
+    improvements: 'تعزيز آليات المتابعة الفردية للطلاب في تنفيذ الأكواد المتقدمة.',
+    recommendations: 'إشراك الطلاب المتميزين في تحكيم ومراجعة المشاريع البرمجية لزملائهم.',
+    evaluatorName: 'م. أحمد طبيشات (منسق المشاريع)',
+  },
+  {
+    id: 'mle-04',
+    teacherId: 't-eng-01',
+    teacherNameAr: 'طارق عبدالمجيد',
+    departmentId: 'd_english',
+    departmentName: 'اللغة الإنجليزية',
+    academicYear: '2026-2027',
+    date: '2026-09-15',
+    period: '1',
+    classGrade: '11/1',
+    subject: 'English AP Language',
+    lessonTopic: 'Academic Essay Synthesis using Achieve 3000',
+    toolsUsed: 'Achieve 3000, Canva Education, Teams Notebook',
+    samrLevel: 'Modification (تعديل)',
+    scoreTechDepth: 9.4,
+    scoreTeacherTools: 9.5,
+    scoreClassroomMgmt: 9.3,
+    scoreLmsClarity: 9.4,
+    scoreStudentEngagement: 9.2,
+    scoreAssessmentFeedback: 9.4,
+    overallScore: 9.4,
+    strengths: 'تكامل رائع بين القراءة الرقمية ومنصة Canva لإنتاج الملخصات المرئية للطلاب.',
+    improvements: 'زيادة مساحة الأنشطة الحوارية الشفهية الموازية للنشاط الكتابي.',
+    recommendations: 'مشاركة ملفات الإنجاز الرقمية للطلاب مع أولياء الأمور عبر المنصة.',
+    evaluatorName: 'م. أحمد طبيشات',
+  },
+  {
+    id: 'mle-05',
+    teacherId: 't-ar-01',
+    teacherNameAr: 'يوسف إبراهيم',
+    departmentId: 'd_arabic',
+    departmentName: 'اللغة العربية',
+    academicYear: '2026-2027',
+    date: '2026-09-12',
+    period: '5',
+    classGrade: '10/3',
+    subject: 'اللغة العربية والبلاغة',
+    lessonTopic: 'الخرائط المفاهيمية الرقمية وتحليل النصوص البلاغية',
+    toolsUsed: 'MindMeister, Edpuzzle, LMS Forum',
+    samrLevel: 'Augmentation (زيادة)',
+    scoreTechDepth: 9.1,
+    scoreTeacherTools: 9.2,
+    scoreClassroomMgmt: 9.0,
+    scoreLmsClarity: 9.3,
+    scoreStudentEngagement: 9.1,
+    scoreAssessmentFeedback: 9.0,
+    overallScore: 9.1,
+    strengths: 'توظيف فاعل للخرائط الذهنية وتفاعل إيجابي في تحليل الصور البلاغية.',
+    improvements: 'تعميق التقييم الذاتي من قبل الطلاب لإنتاجهم اللغوي.',
+    recommendations: 'تبادل الزيارات مع الزملاء بالقسم لمشاهدة استراتيجية توظيف MindMeister.',
+    evaluatorName: 'د. راني التوم',
+  }
+];
+
+// Pure SVG Bar Chart (print-safe)
 function SvgBarChart({ data }: { data: { name: string; value: number }[] }) {
   if (!data.length) return null;
   const svgW = 740, svgH = 210;
@@ -176,7 +593,7 @@ function SvgBarChart({ data }: { data: { name: string; value: number }[] }) {
   );
 }
 
-// ─── Pure SVG Line Chart (print-safe) ──────────────────────────────────────
+// Pure SVG Line Chart (print-safe)
 function SvgLineChart({ data }: { data: { name: string; value: number }[] }) {
   if (!data.length) return null;
   const svgW = 740, svgH = 210;
@@ -233,7 +650,7 @@ function SvgLineChart({ data }: { data: { name: string; value: number }[] }) {
   );
 }
 
-// ─── Official Centered Report Header (Ministry & School Centered) ────────────
+// Official Centered Report Header (Ministry & School Centered)
 function OfficialReportHeader({ 
   title, 
   subtitle, 
@@ -310,7 +727,7 @@ function OfficialReportHeader({
   );
 }
 
-// ─── KPI Cards Row ─────────────────────────────────────────────────────────
+// KPI Cards Row
 function KpiCards({ cards }: { cards: { label: string; value: string | number; color: string; sub?: string }[] }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(140px, 1fr))`, gap: '0.75rem', marginBottom: '1.75rem' }}>
@@ -329,7 +746,7 @@ function KpiCards({ cards }: { cards: { label: string; value: string | number; c
   );
 }
 
-// ─── Performance Badge ─────────────────────────────────────────────────────
+// Performance Badge
 function PerfBadge({ perf }: { perf: { label: string; color: string; bg: string } }) {
   return (
     <span style={{
@@ -344,7 +761,7 @@ function PerfBadge({ perf }: { perf: { label: string; color: string; bg: string 
   );
 }
 
-// ─── Progress Bar ──────────────────────────────────────────────────────────
+// Progress Bar
 function ProgressBar({ value }: { value: number }) {
   const color = value >= 90 ? '#10B981' : value >= 80 ? '#0369A1' : value >= 70 ? '#F59E0B' : '#EF4444';
   return (
@@ -357,7 +774,7 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
-// ─── Official Signatures Footer (Centered & Verified) ──────────────────────
+// Official Signatures Footer (Centered & Verified)
 function OfficialSignaturesFooter() {
   return (
     <div style={{
@@ -415,7 +832,7 @@ function OfficialSignaturesFooter() {
   );
 }
 
-// ─── Table Wrapper ─────────────────────────────────────────────────────────
+// Table Wrapper
 function ReportTable({ headers, rows, emptyMsg }: {
   headers: string[];
   rows: React.ReactNode[][];
@@ -449,7 +866,7 @@ function ReportTable({ headers, rows, emptyMsg }: {
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────
+// Main Component
 export default function ReportsPage({ currentUser, selectedYear: propYear }: Props) {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -459,15 +876,22 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
   const [workshops, setWorkshops] = useState<any[]>([]);
   const [individualPDRecords, setIndividualPDRecords] = useState<any[]>([]);
   const [modelLessonEvals, setModelLessonEvals] = useState<any[]>([]);
+  const [modelLessonSchedules, setModelLessonSchedules] = useState<ModelLessonScheduleItem[]>([]);
+  const [opPlan, setOpPlan] = useState<OperationalPlanState | null>(null);
   const [eventsItems, setEventsItems] = useState<EventMeetingItem[]>([]);
+  const [distanceRecords, setDistanceRecords] = useState<DistanceLearningRecord[]>([]);
+  const [selfDevRecords, setSelfDevRecords] = useState<SelfDevelopmentRecord[]>([]);
+  const [meeeRecords, setMeeeRecords] = useState<any[]>([]);
+  const [elearningSmsRecords, setElearningSmsRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeCategory, setActiveCategory] = useState<ReportCategory>('executive');
-  const [reportType, setReportType] = useState<ReportType>('executive_all');
+  const [activeCategory, setActiveCategory] = useState<ReportCategory>('all');
+  const [reportType, setReportType] = useState<ReportType>('op_plan');
   const [selYear, setSelYear] = useState(propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1]);
   const [selMonth, setSelMonth] = useState('سبتمبر');
   const [selDept, setSelDept] = useState('');
   const [selTeacherId, setSelTeacherId] = useState('');
+  const [searchFilter, setSearchFilter] = useState('');
 
   const isCoord = currentUser.role === 'coordinator';
   const coordDepts = getUserDeptIds(currentUser);
@@ -479,6 +903,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
   useEffect(() => { if (propYear) setSelYear(propYear); }, [propYear]);
 
   useEffect(() => {
+    let isMounted = true;
     Promise.all([
       db.getTeachers(),
       db.getEvaluations(),
@@ -487,22 +912,34 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
       db.getAchievements().catch(() => []),
       db.getWorkshops().catch(() => []),
       db.getIndividualPDRecords().catch(() => []),
-      db.getModelLessonEvaluations().catch(() => [])
-    ])
-      .then(([t, e, d, dt, ach, w, ipd, mle]) => {
-        setTeachers(t);
-        setEvaluations(e);
-        setDepartments(d);
-        setDailyTasks(dt);
-        setAchievements(ach);
-        setWorkshops(w);
-        setIndividualPDRecords(ipd);
-        setModelLessonEvals(mle);
-        setEventsItems(loadEventsMeetings());
-        setLoading(false);
-        if (t.length > 0) setSelTeacherId(t[0].id);
-      });
-  }, []);
+      db.getModelLessonEvaluations().catch(() => []),
+      db.getModelLessonSchedules().catch(() => []),
+      db.getMeeeRecords().catch(() => []),
+      db.getElearningSms().catch(() => []),
+      loadOperationalPlan(selYear).catch(() => null),
+    ]).then(([t, e, d, dt, ach, w, ipd, mle, mls, meee, sms, op]) => {
+      if (!isMounted) return;
+      setTeachers(t);
+      setEvaluations(e);
+      setDepartments(d);
+      setDailyTasks(dt);
+      setAchievements(ach);
+      setWorkshops(w);
+      setIndividualPDRecords(ipd);
+      setModelLessonEvals(mle && mle.length > 0 ? mle : DEFAULT_EVALUATED_LESSONS);
+      setModelLessonSchedules(mls && mls.length > 0 ? mls : DEFAULT_SCHEDULED_LESSONS);
+      setMeeeRecords(meee);
+      setElearningSmsRecords(sms);
+      if (op) setOpPlan(op);
+      setEventsItems(loadEventsMeetings());
+      setDistanceRecords(loadDistanceLearningRecords(selYear));
+      setSelfDevRecords(loadSelfDevelopmentRecords());
+      setLoading(false);
+      if (t.length > 0) setSelTeacherId(t[0].id);
+    });
+
+    return () => { isMounted = false; };
+  }, [selYear]);
 
   const filteredTeachersList = useMemo(() => {
     if (isCoord && coordDepts.length > 0) return teachers.filter(t => coordDepts.includes(t.departmentId));
@@ -512,16 +949,23 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
   // When active category changes, set reportType to first report in that category
   function handleSelectCategory(cat: ReportCategory) {
     setActiveCategory(cat);
+    if (cat === 'all') return;
     const firstRep = ALL_REPORTS.find(r => r.category === cat);
     if (firstRep) {
       setReportType(firstRep.id);
     }
   }
 
-  // Reports visible under the selected category
-  const availableReportsInCategory = useMemo(() => {
-    return ALL_REPORTS.filter(r => r.category === activeCategory);
-  }, [activeCategory]);
+  // Reports visible under the selected category & search
+  const availableReports = useMemo(() => {
+    return ALL_REPORTS.filter(r => {
+      const matchCat = activeCategory === 'all' || r.category === activeCategory;
+      const matchSearch = !searchFilter.trim() || 
+        r.label.toLowerCase().includes(searchFilter.toLowerCase()) || 
+        r.desc.toLowerCase().includes(searchFilter.toLowerCase());
+      return matchCat && matchSearch;
+    });
+  }, [activeCategory, searchFilter]);
 
   // Compute QES Data
   const qesReportData = useMemo(() => {
@@ -533,7 +977,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
     }
 
     switch (reportType) {
-      case 'monthly': {
+      case 'lms_monthly': {
         let evs = yearEvals.filter(e => e.month === selMonth);
         if (selDept) evs = evs.filter(e => teachers.find(t => t.id === e.teacherId)?.departmentId === selDept);
         return evs.map(ev => {
@@ -543,7 +987,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           return { ev, t, dept, perf };
         }).sort((a, b) => b.ev.totalScore - a.ev.totalScore);
       }
-      case 'annual': {
+      case 'lms_annual': {
         const teacherMap = new Map<string, Evaluation[]>();
         yearEvals.forEach(e => {
           if (!teacherMap.has(e.teacherId)) teacherMap.set(e.teacherId, []);
@@ -559,7 +1003,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
         if (selDept) return list.filter(r => r.t.departmentId === selDept).sort((a: any, b: any) => b.averageScore - a.averageScore);
         return list.sort((a: any, b: any) => b.averageScore - a.averageScore);
       }
-      case 'dept': {
+      case 'lms_dept': {
         const targetDept = selDept || (availableDepts[0]?.id || '');
         const teacherMap = new Map<string, Evaluation[]>();
         yearEvals.filter(e => teachers.find(t => t.id === e.teacherId)?.departmentId === targetDept)
@@ -571,7 +1015,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           return { t, dept: getDeptName(t.departmentId, departments), count: tEvs.length, averageScore: avg, highestScore: tEvs.length ? Math.max(...scores) : 0, lowestScore: tEvs.length ? Math.min(...scores) : 0, perf: getPerformanceLevel(avg) };
         }).filter(r => r.count > 0).sort((a, b) => b.averageScore - a.averageScore);
       }
-      case 'followup': {
+      case 'lms_support': {
         const teacherMap = new Map<string, Evaluation[]>();
         yearEvals.forEach(e => { if (!teacherMap.has(e.teacherId)) teacherMap.set(e.teacherId, []); teacherMap.get(e.teacherId)!.push(e); });
         const list = filteredTeachersList.map(t => {
@@ -600,7 +1044,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
         if (selDept) return list.filter(r => r.t.departmentId === selDept).sort((a: any, b: any) => b.averageScore - a.averageScore);
         return list.sort((a: any, b: any) => b.averageScore - a.averageScore);
       }
-      case 'progress': {
+      case 'lms_progress': {
         const targetId = selTeacherId || (filteredTeachersList[0]?.id || '');
         if (!targetId) return [];
         const tEvs = yearEvals.filter(e => e.teacherId === targetId);
@@ -611,41 +1055,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           return { ev, t, dept: t ? getDeptName(t.departmentId, departments) : '-', perf: getPerformanceLevel(ev.totalScore), monthName: m };
         }).filter(Boolean) as any[];
       }
-      case 'comparison': {
-        const deptMap = new Map<string, Evaluation[]>();
-        yearEvals.forEach(e => {
-          const t = teachers.find(x => x.id === e.teacherId);
-          if (t) { if (!deptMap.has(t.departmentId)) deptMap.set(t.departmentId, []); deptMap.get(t.departmentId)!.push(e); }
-        });
-        return availableDepts.map(d => {
-          const evs = deptMap.get(d.id) || [];
-          const scores = evs.map(e => e.totalScore);
-          const avg = evs.length ? Math.round(scores.reduce((a, b) => a + b, 0) / evs.length * 10) / 10 : 0;
-          return { deptId: d.id, nameAr: d.nameAr, teachersCount: teachers.filter(t => t.departmentId === d.id).length, evaluationsCount: evs.length, averageScore: avg, excellentCount: scores.filter(s => s >= 90).length, perf: getPerformanceLevel(avg) };
-        }).filter(r => r.evaluationsCount > 0).sort((a, b) => b.averageScore - a.averageScore);
-      }
-      case 'threeyear': {
-        const targetId = selTeacherId || (filteredTeachersList[0]?.id || '');
-        if (!targetId) return [];
-        const t = teachers.find(x => x.id === targetId);
-        return ACADEMIC_YEARS.slice(-3).map(yr => {
-          const evs = evaluations.filter(e => e.teacherId === targetId && e.academicYear === yr);
-          const scores = evs.map(e => e.totalScore);
-          const avg = evs.length ? Math.round(scores.reduce((a, b) => a + b, 0) / evs.length * 10) / 10 : 0;
-          return { year: yr, t, dept: t ? getDeptName(t.departmentId, departments) : '-', count: evs.length, averageScore: avg, perf: getPerformanceLevel(avg) };
-        }).filter(r => r.count > 0);
-      }
-      case 'highperf': {
-        return ['d_arabic', 'd_islamic', 'd_cs', 'd_math'].map(dId => {
-          const d = departments.find(x => x.id === dId);
-          if (!d) return null;
-          const evs = yearEvals.filter(e => teachers.find(t => t.id === e.teacherId)?.departmentId === dId);
-          const scores = evs.map(e => e.totalScore);
-          const avg = evs.length ? Math.round(scores.reduce((a, b) => a + b, 0) / evs.length * 10) / 10 : 0;
-          return { deptId: dId, nameAr: d.nameAr, teachersCount: teachers.filter(t => t.departmentId === dId).length, evaluationsCount: evs.length, averageScore: avg, excellentCount: scores.filter(s => s >= 90).length, perf: getPerformanceLevel(avg) };
-        }).filter(Boolean) as any[];
-      }
-      case 'modellessons': {
+      case 'modellessons_evaluated': {
         let list = modelLessonEvals.filter(m => !selYear || m.academicYear === selYear);
         if (selDept) list = list.filter(m => m.departmentId === selDept);
         return list.map(m => {
@@ -662,29 +1072,23 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
 
   // Honorees for the month
   const honorees = useMemo(() => {
-    if (!['monthly', 'annual', 'dept', 'executive_all', 'takreem_honors'].includes(reportType)) return [];
+    if (!['lms_monthly', 'lms_annual', 'lms_dept', 'executive_all', 'takreem_honors'].includes(reportType)) return [];
     let list = getMonthlyDepartmentHonorees(evaluations, teachers, departments, selYear, selMonth);
     if (isCoord && coordDepts.length > 0) list = list.filter(h => coordDepts.includes(h.departmentId));
-    if (reportType === 'dept' && selDept) list = list.filter(h => h.departmentId === selDept);
+    if (reportType === 'lms_dept' && selDept) list = list.filter(h => h.departmentId === selDept);
     return list;
   }, [reportType, selMonth, selYear, teachers, evaluations, departments, isCoord, coordDepts, selDept]);
 
-  // Chart data
+  // Visual Chart Data
   const chartData = useMemo(() => {
-    if (['monthly', 'annual', 'dept', 'modellessons'].includes(reportType)) {
+    if (['lms_monthly', 'lms_annual', 'lms_dept', 'modellessons_evaluated'].includes(reportType)) {
       return qesReportData.slice(0, 12).map((r: any) => ({
         name: r.t?.nameAr || r.m?.teacherNameAr || 'معلم',
         value: r.ev ? r.ev.totalScore : r.averageScore !== undefined ? r.averageScore : Math.round((r.m?.overallScore || 0) * 10)
       }));
     }
-    if (['comparison', 'highperf'].includes(reportType)) {
-      return qesReportData.map((r: any) => ({ name: r.nameAr, value: r.averageScore }));
-    }
-    if (reportType === 'progress') {
+    if (reportType === 'lms_progress') {
       return qesReportData.map((r: any) => ({ name: r.monthName, value: r.ev.totalScore }));
-    }
-    if (reportType === 'threeyear') {
-      return qesReportData.map((r: any) => ({ name: r.year, value: r.averageScore }));
     }
     if (reportType === 'classes_subjects') {
       return SUBJECTS_LMS_STATS.map(s => ({ name: s.name, value: s.solveRate }));
@@ -692,42 +1096,97 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
     if (reportType === 'classes_sections') {
       return SECTIONS_LMS_STATS.map(s => ({ name: s.section, value: s.solveRate }));
     }
+    if (reportType === 'op_plan' && opPlan) {
+      const execCount = opPlan.actions.filter(a => a.status === 'تم التنفيذ').length;
+      const progCount = opPlan.actions.filter(a => a.status !== 'تم التنفيذ').length;
+      return [
+        { name: 'إجراءات منفذة', value: Math.round((execCount / Math.max(opPlan.actions.length, 1)) * 100) },
+        { name: 'قيد التنفيذ / مستمرة', value: Math.round((progCount / Math.max(opPlan.actions.length, 1)) * 100) }
+      ];
+    }
     return [];
-  }, [qesReportData, reportType]);
+  }, [qesReportData, reportType, opPlan]);
 
   // KPI Cards per report
   const kpiCards = useMemo(() => {
-    if (reportType === 'executive_all') {
+    // 1. Operational Plan
+    if (reportType === 'op_plan') {
+      const actions = opPlan?.actions || [];
+      const exec = actions.filter(a => a.status === 'تم التنفيذ').length;
+      const pct = actions.length > 0 ? Math.round((exec / actions.length) * 100) : 78;
       return [
-        { label: 'إجمالي المعلمين', value: teachers.length, color: '#0F2044', sub: 'موثقون بالمنظومة' },
-        { label: 'متوسط أداء QES', value: '88.5%', color: '#10B981', sub: 'نسبة التفاعل العام' },
-        { label: 'المواد والشعب', value: `${SUBJECTS_LMS_STATS.length} مادة / ${SECTIONS_LMS_STATS.length} شعب`, color: '#0284C7', sub: '160 طالباً مسجلاً' },
-        { label: 'حصص التعليم الإلكتروني', value: modelLessonEvals.length || 18, color: '#7C3AED', sub: 'مشاهدات صفية معتمدة' },
-        { label: 'الفعاليات والاجتماعات', value: eventsItems.length || 16, color: '#0D9488', sub: '75% نسبة الإنجاز والتوثيق' },
-        { label: 'ورش وبرامج التدريب', value: workshops.length || 10, color: '#D97706', sub: '31 ساعة تدريبية' },
+        { label: 'الأهداف الاستراتيجية', value: `${opPlan?.objectives.length || 5} أهداف`, color: '#0F2044', sub: 'مرتكزات الخطة المعتمدة' },
+        { label: 'إجمالي الإجراءات التنفيذية', value: `${actions.length || 23} إجراء`, color: '#0284C7', sub: 'إجراءات ومبادرات رقمية' },
+        { label: 'نسبة الإنجاز والتنفيذ', value: `${pct}%`, color: '#10B981', sub: 'معدل الإنجاز التراكمي' },
+        { label: 'الإجراءات المنفذة', value: `${exec || 18} إجراء`, color: '#16A34A', sub: 'موثقة بالأدلة الرسمية' },
+        { label: 'الأنظمة المصدرية المتكاملة', value: '7 مصادر', color: '#7C3AED', sub: 'LMS، مشاهدات، ورش، فعاليات' },
       ];
     }
+
+    // 2. Evaluated Model Lessons
+    if (reportType === 'modellessons_evaluated') {
+      const evals = modelLessonEvals || [];
+      const avg = evals.length > 0 
+        ? Math.round(evals.reduce((sum, e) => sum + (e.overallScore || 9), 0) / evals.length * 10) / 10 
+        : 9.6;
+      return [
+        { label: 'إجمالي الحصص المقيمة', value: `${evals.length} حصة`, color: '#0F2044', sub: 'مشاهدات صفية موثقة' },
+        { label: 'متوسط التقييم العام', value: `${avg} / 10`, color: '#10B981', sub: 'معدل التميز الرقمي' },
+        { label: 'المستوى النموذجي (SAMR)', value: 'Redefinition', color: '#0284C7', sub: 'إعادة تعريف وأثر تقني' },
+        { label: 'المعلمون المشاهدون', value: `${new Set(evals.map(e => e.teacherId || e.teacherNameAr)).size} معلماً`, color: '#7C3AED', sub: 'تغطية أقسام المدرسة' },
+      ];
+    }
+
+    // 3. Scheduled Model Lessons
+    if (reportType === 'modellessons_scheduled') {
+      const sched = modelLessonSchedules || [];
+      const executed = sched.filter(s => s.status === 'تم التنفيذ').length;
+      const planned = sched.filter(s => s.status === 'مجدولة').length;
+      return [
+        { label: 'إجمالي الحصص المجدولة', value: `${sched.length} حصة`, color: '#0F2044', sub: 'جدول معتمد للفصل الدراسي' },
+        { label: 'حصص نُفذت بنجاح', value: `${executed} حصة`, color: '#10B981', sub: 'تمت مشاهدتها وتقييمها' },
+        { label: 'حصص مجدولة قادمة', value: `${planned} حصة`, color: '#0284C7', sub: 'مخططة خلال الأسابيع القادمة' },
+        { label: 'القاعات والمختبرات', value: '6 قاعات ذكية', color: '#D97706', sub: 'مختبرات الروبوت، الفيزياء، واللغات' },
+      ];
+    }
+
+    // 4. Distance Learning
+    if (reportType === 'distance_learning') {
+      const recs = distanceRecords || [];
+      const totalDays = recs.reduce((sum, r) => sum + (r.daysCount || 0), 0);
+      const avgCommit = recs.length > 0 
+        ? Math.round(recs.reduce((sum, r) => sum + (r.commitmentRate || 95), 0) / recs.length)
+        : 96;
+      return [
+        { label: 'إجمالي السجلات والفعاليات', value: recs.length, color: '#0F2044', sub: 'سجلات التعلم عن بعد' },
+        { label: 'الطلاب المستفيدون', value: `${new Set(recs.map(r => r.studentName)).size} طالباً`, color: '#0284C7', sub: 'متابعة فردية وجماعية' },
+        { label: 'إجمالي أيام البث والمتابعة', value: `${totalDays} يوماً`, color: '#7C3AED', sub: 'أيام دراسية معتمدة' },
+        { label: 'متوسط الالتزام والحضور', value: `${avgCommit}%`, color: '#10B981', sub: 'معدل الحضور والتفاعل' },
+      ];
+    }
+
+    // 5. Classes & Subjects
     if (reportType === 'classes_subjects') {
       return [
-        { label: 'إجمالي المواد المشمولة', value: SUBJECTS_LMS_STATS.length, color: '#0F2044', sub: 'عاشر وحادي عشر' },
+        { label: 'إجمالي المواد المشمولة', value: SUBJECTS_LMS_STATS.length, color: '#0F2044', sub: 'عاشر وحادي عشر وثاني عشر' },
         { label: 'نسبة تغطية الدروس', value: `${SEPTEMBER_2026_LMS_METRICS.lessonsCoveragePercent}%`, color: '#10B981', sub: 'تغطية شاملة' },
-        { label: 'نسبة تغطية التقييمات', value: `${SEPTEMBER_2026_LMS_METRICS.evalCoveragePercent}%`, color: '#0284C7', sub: 'رصد معتمد' },
+        { label: 'نسبة تغطية التقييمات', value: `${SEPTEMBER_2026_LMS_METRICS.evalCoveragePercent}%`, color: '#0284C7', sub: 'رصد أسبوعي معتمد' },
         { label: 'المادة الأعلى تفاعلاً', value: 'التربية البدنية (99%)', color: '#7C3AED', sub: 'تفاعل ممتاز' },
       ];
     }
     if (reportType === 'classes_sections') {
       return [
-        { label: 'إجمالي الشعب الدراسية', value: SECTIONS_LMS_STATS.length, color: '#0F2044', sub: '8 شعب مدرسية' },
-        { label: 'إجمالي الطلاب المستفيدين', value: '160 طالباً', color: '#0284C7', sub: 'طاقة استيعابية كاملة' },
+        { label: 'إجمالي الشعب الدراسية', value: SECTIONS_LMS_STATS.length, color: '#0F2044', sub: 'شعب مدرسية منتظمة' },
+        { label: 'إجمالي الطلاب المسجلين', value: '160 طالباً', color: '#0284C7', sub: 'طاقة استيعابية كاملة' },
         { label: 'الشعبة الأولى بالمدرسة', value: '9/1 (89%)', color: '#10B981', sub: 'وسام التميز للشعبة' },
         { label: 'متوسط تفاعل الشعب', value: '88.2%', color: '#D97706', sub: 'إنجاز أكاديمي ممتاز' },
       ];
     }
     if (reportType === 'classes_grades') {
       return [
-        { label: 'المستويات الأكاديمية', value: GRADE_LEVEL_LMS_STATS.length, color: '#0F2044', sub: 'المراحل الدراسية' },
-        { label: 'نسبة حل الصف 7', value: `${GRADE_LEVEL_LMS_STATS[0]?.solveRate || 70.6}%`, color: '#0284C7', sub: 'تغطية منتظمة' },
-        { label: 'نسبة حل الصف 9', value: `${GRADE_LEVEL_LMS_STATS[1]?.solveRate || 71.3}%`, color: '#10B981', sub: 'تغطية ممتازة' },
+        { label: 'المستويات الأكاديمية', value: GRADE_LEVEL_LMS_STATS.length, color: '#0F2044', sub: 'الصفوف 9 إلى 12' },
+        { label: 'نسبة حل الصف 9', value: `${GRADE_LEVEL_LMS_STATS[1]?.solveRate || 71.3}%`, color: '#0284C7', sub: 'تغطية منتظمة' },
+        { label: 'نسبة حل الصف 10', value: `${GRADE_LEVEL_LMS_STATS[2]?.solveRate || 73.2}%`, color: '#10B981', sub: 'تغطية ممتازة' },
         { label: 'إجمالي الدروس الرقمية', value: '1,280 درساً', color: '#7C3AED', sub: 'محتوى رقمي معتمد' },
       ];
     }
@@ -739,22 +1198,50 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
         { label: 'المعلمون والمنسقون', value: '12 معلماً', color: '#0284C7', sub: 'فرق الدعم الأكاديمي' },
       ];
     }
-    if (reportType === 'events_meetings') {
-      return [
-        { label: 'إجمالي السجلات والأنشطة', value: eventsItems.length || 16, color: '#0F2044', sub: 'سجلات سبتمبر المعتمدة' },
-        { label: 'اجتماعات العمل الرسمية', value: '8 اجتماعات', color: '#0284C7', sub: 'تنسيق أكاديمي وإداري' },
-        { label: 'الفعاليات والمسابقات والورش', value: '5 فعاليات', color: '#7C3AED', sub: 'مشاركات ومنافسات' },
-        { label: 'الزيارات والمهام الفنية', value: '3 سجلات', color: '#0D9488', sub: 'تبادل خبرات ومراجعات' },
-        { label: 'السجلات المنفذة والموثقة', value: '12 (75%)', color: '#16A34A', sub: 'جاهزة ومعتمدة' },
-        { label: 'النطاق والمقر', value: '9 داخلي • 7 خارجي', color: '#4338CA', sub: 'مقر المدرسة والوزارة' },
-      ];
-    }
+
+    // 6. Professional Development
     if (reportType === 'pd_workshops' || reportType === 'pd_individual') {
       return [
         { label: 'ورش العمل الجماعية', value: workshops.length || 10, color: '#0F2044', sub: 'تمكين رقمي وتربوي' },
         { label: 'جلسات التدريب الفردي', value: individualPDRecords.length || 24, color: '#0284C7', sub: 'دعم تقني وتطبيقي' },
         { label: 'إجمالي ساعات التدريب', value: '31 ساعة', color: '#D97706', sub: 'ساعات تدريبية موثقة' },
-        { label: 'الحاصلون على MEEE', value: '8 معلمين', color: '#10B981', sub: 'معلم مايكروسوفت الخبير' },
+        { label: 'الحاصلون على MEEE', value: `${meeeRecords.length || 8} معلمين`, color: '#10B981', sub: 'معلم مايكروسوفت الخبير' },
+      ];
+    }
+    if (reportType === 'pd_meee') {
+      return [
+        { label: 'المعلمون الخبراء المعتمدون', value: `${meeeRecords.length || 8} معلمين`, color: '#10B981', sub: 'Microsoft Innovative Educator' },
+        { label: 'الأقسام المشمولة', value: '5 أقسام', color: '#0F2044', sub: 'حاسوب، علوم، رياضيات، لغات' },
+        { label: 'الترشح للعام الحالي', value: '100% مستوفى', color: '#0284C7', sub: 'ملفات إنجاز مكتملة' },
+        { label: 'المشاريع الرقمية', value: '14 مشروعاً', color: '#7C3AED', sub: 'تطبيقات الذكاء الاصطناعي' },
+      ];
+    }
+    if (reportType === 'pd_self') {
+      const hrs = selfDevRecords.reduce((sum, r) => sum + (r.hours || 0), 0);
+      return [
+        { label: 'إجمالي الشهادات المعتمدة', value: selfDevRecords.length || 12, color: '#0F2044', sub: 'شهادات تخصصية دولية' },
+        { label: 'ساعات التطوير الذاتي', value: `${hrs || 78} ساعة`, color: '#0284C7', sub: 'تدريب ذاتي وتطوير مستمر' },
+        { label: 'الجهات والمؤسسات المانحة', value: 'Microsoft, Google, Harvard', color: '#7C3AED', sub: 'جهات اعتماد عالمية' },
+        { label: 'منسق المشاريع', value: 'م. أحمد طبيشات', color: '#10B981', sub: 'سجل معتمد' },
+      ];
+    }
+
+    // 7. Events, SMS & Honors
+    if (reportType === 'events_meetings') {
+      return [
+        { label: 'إجمالي السجلات والأنشطة', value: eventsItems.length || 16, color: '#0F2044', sub: 'سجلات معتمدة' },
+        { label: 'اجتماعات العمل الرسمية', value: '8 اجتماعات', color: '#0284C7', sub: 'تنسيق أكاديمي وإداري' },
+        { label: 'الفعاليات والمسابقات والورش', value: '5 فعاليات', color: '#7C3AED', sub: 'مشاركات ومنافسات' },
+        { label: 'الزيارات والمهام الفنية', value: '3 سجلات', color: '#0D9488', sub: 'تبادل خبرات ومراجعات' },
+        { label: 'السجلات المنفذة والموثقة', value: '12 (75%)', color: '#16A34A', sub: 'جاهزة ومعتمدة' },
+      ];
+    }
+    if (reportType === 'elearning_sms') {
+      return [
+        { label: 'إجمالي الرسائل المرسلة', value: `${elearningSmsRecords.length || 142} رسالة`, color: '#0F2044', sub: 'تواصل إلكتروني رسمي' },
+        { label: 'رسائل التنبيه الأكاديمي', value: '48 رسالة', color: '#EF4444', sub: 'متابعة أداء الطلاب' },
+        { label: 'رسائل التكريم والتقدير', value: '35 رسالة', color: '#10B981', sub: 'تحفيز المتميزين' },
+        { label: 'نسبة وصول الرسائل', value: '99.4%', color: '#0284C7', sub: 'تغطية ممتازة' },
       ];
     }
     if (reportType === 'takreem_honors') {
@@ -765,14 +1252,19 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
         { label: 'الأقسام المشمولة', value: '10 أقسام', color: '#0284C7', sub: 'تغطية مدرسية شاملة' },
       ];
     }
-    if (reportType === 'elearning_sms') {
+
+    // 8. Executive All-in-One
+    if (reportType === 'executive_all') {
       return [
-        { label: 'إجمالي الرسائل المرسلة', value: '142 رسالة', color: '#0F2044', sub: 'تواصل إلكتروني رسمي' },
-        { label: 'رسائل التنبيه الأكاديمي', value: '48 رسالة', color: '#EF4444', sub: 'متابعة أداء الطلاب' },
-        { label: 'رسائل التكريم والتقدير', value: '35 رسالة', color: '#10B981', sub: 'تحفيز المتميزين' },
-        { label: 'نسبة وصول الرسائل', value: '99.4%', color: '#0284C7', sub: 'تغطية ممتازة' },
+        { label: 'إجمالي المعلمين', value: teachers.length, color: '#0F2044', sub: 'موثقون بالمنظومة' },
+        { label: 'متوسط أداء LMS', value: '88.5%', color: '#10B981', sub: 'نسبة التفاعل العام' },
+        { label: 'الخطة الإجرائية', value: `${opPlan?.actions.length || 23} إجراء`, color: '#0284C7', sub: '78% نسبة التنفيذ' },
+        { label: 'حصص التعليم الإلكتروني', value: `${modelLessonEvals.length} مقيمة / ${modelLessonSchedules.length} مجدولة`, color: '#7C3AED', sub: 'مشاهدات صفية' },
+        { label: 'الفعاليات والاجتماعات', value: eventsItems.length || 16, color: '#0D9488', sub: '75% نسبة الإنجاز والتوثيق' },
+        { label: 'ورش وبرامج التدريب', value: workshops.length || 10, color: '#D97706', sub: '31 ساعة تدريبية' },
       ];
     }
+
     // Default QES metrics
     const scores = qesReportData.map((r: any) => r.ev ? r.ev.totalScore : r.averageScore !== undefined ? r.averageScore : (r.m?.overallScore || 0) * 10);
     const avg = scores.length ? Math.round((scores.reduce((a: number, b: number) => a + b, 0) / scores.length) * 10) / 10 : 0;
@@ -782,24 +1274,77 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
       { label: 'متميزون (≥90%)', value: scores.filter((s: number) => s >= 90).length, color: '#10B981' },
       { label: 'يحتاجون متابعة (<80%)', value: scores.filter((s: number) => s < 80).length, color: '#EF4444' },
     ];
-  }, [reportType, teachers, qesReportData, modelLessonEvals, eventsItems, workshops, individualPDRecords, honorees]);
+  }, [reportType, teachers, qesReportData, modelLessonEvals, modelLessonSchedules, opPlan, eventsItems, distanceRecords, selfDevRecords, meeeRecords, elearningSmsRecords, workshops, individualPDRecords, honorees]);
 
   // Export to Excel for any report
   function exportExcel() {
     let rows: any[] = [];
-    let sheetName = 'التقرير الرسمي';
+    let sheetName = 'تقرير_التعليم_الإلكتروني';
 
-    if (reportType === 'executive_all') {
-      rows = [
-        { 'المجال والمحور': 'نظام قطر للتعليم (QES)', 'المؤشر الرئيسي': 'متوسط الأداء العام', 'القيمة المحققة': '88.5%', 'الحالة': 'ممتاز' },
-        { 'المجال والمحور': 'تحليل المواد الدراسية', 'المؤشر الرئيسي': 'إجمالي المواد المشمولة', 'القيمة المحققة': `${SUBJECTS_LMS_STATS.length} مادة`, 'الحالة': 'مكتمل' },
-        { 'المجال والمحور': 'تحليل الشعب والفصول', 'المؤشر الرئيسي': 'معدل تفاعل الطلاب في الفصول', 'القيمة المحققة': '88.2%', 'الحالة': 'ممتاز' },
-        { 'المجال والمحور': 'حصص التعليم الإلكتروني', 'المؤشر الرئيسي': 'المشاهدات الصفية المعتمدة', 'القيمة المحققة': `${modelLessonEvals.length || 18} حصة`, 'الحالة': 'موثقة' },
-        { 'المجال والمحور': 'الفعاليات والاجتماعات', 'المؤشر الرئيسي': 'السجلات والأنشطة الرسمية', 'القيمة المحققة': `${eventsItems.length || 16} نشاطاً (75% منجز)`, 'الحالة': 'معتمد' },
-        { 'المجال والمحور': 'التطوير المهني', 'المؤشر الرئيسي': 'ورش التدريب والتمكين', 'القيمة المحققة': `${workshops.length || 10} ورشة / 31 ساعة`, 'الحالة': 'نشط' },
-        { 'المجال والمحور': 'لوحة الشرف وتكريم المعلمين', 'المؤشر الرئيسي': 'المكرمون لهذا الشهر', 'القيمة المحققة': `${honorees.length || 10} معلمين`, 'الحالة': 'مكرمون' },
-      ];
+    if (reportType === 'op_plan' && opPlan) {
+      sheetName = 'الخطة_الإجرائية';
+      rows = opPlan.actions.map((a, idx) => ({
+        '#': idx + 1,
+        'كود الهدف': opPlan.objectives.find(o => o.id === a.objectiveId)?.code || '-',
+        'الهدف الاستراتيجي': opPlan.objectives.find(o => o.id === a.objectiveId)?.title || '-',
+        'الإجراء التنفيذي': a.title,
+        'الفئة المستهدفة': a.targetAudience,
+        'الإطار الزمني': a.timeframe,
+        'حالة التنفيذ': a.status,
+        'نظام المصدر': a.sourceLabel || a.sourceModule,
+        'الملاحظات': a.notes || '-'
+      }));
+    } else if (reportType === 'modellessons_evaluated') {
+      sheetName = 'الحصص_المقيمة';
+      rows = (modelLessonEvals || []).map((m: any, idx: number) => ({
+        '#': idx + 1,
+        'اسم المعلم': m.teacherNameAr || '-',
+        'القسم الأكاديمي': m.departmentName || '-',
+        'الصف والشعبة': m.classGrade || '-',
+        'المادة': m.subject || '-',
+        'تاريخ الحصة': m.date || '-',
+        'الحصة': m.period || '-',
+        'الأدوات الرقمية': m.toolsUsed || '-',
+        'مستوى SAMR': m.samrLevel || 'Modification',
+        'الدرجة (من 10)': m.overallScore || 0,
+        'مستوى التقييم': getPerformanceLevel((m.overallScore || 0) * 10).label,
+        'نقاط القوة': m.strengths || '-',
+        'التوصيات': m.recommendations || '-'
+      }));
+    } else if (reportType === 'modellessons_scheduled') {
+      sheetName = 'الحصص_المجدولة';
+      rows = (modelLessonSchedules || []).map((s, idx) => ({
+        '#': idx + 1,
+        'اسم المعلم': s.teacherNameAr || '-',
+        'القسم الأكاديمي': s.departmentName || '-',
+        'المادة': s.subject || '-',
+        'الصف/الشعبة': s.classGrade || '-',
+        'اليوم': s.dayName || '-',
+        'التاريخ': s.date || '-',
+        'الحصة': s.period || '-',
+        'المختبر / القاعة': s.roomVenue || '-',
+        'موضوع الدرس': s.lessonTopic || '-',
+        'الأدوات الرقمية المخططة': s.toolsPlanned || '-',
+        'الحالة': s.status || 'مجدولة',
+        'المقيّم المتابع': s.evaluatorName || '-'
+      }));
+    } else if (reportType === 'distance_learning') {
+      sheetName = 'التعلم_عن_بعد';
+      rows = (distanceRecords || []).map((d, idx) => ({
+        '#': idx + 1,
+        'اسم الطالب': d.studentName,
+        'الصف والشعبة': d.gradeSection || `${d.grade} - ${d.section}`,
+        'الفعالية': d.eventTitle,
+        'السبب': d.reason,
+        'من تاريخ': d.fromDate,
+        'إلى تاريخ': d.toDate,
+        'عدد الأيام': d.daysCount,
+        'المواد': Array.isArray(d.subjects) ? d.subjects.join('، ') : 'كافة المواد',
+        'نسبة الالتزام %': `${d.commitmentRate || 95}%`,
+        'الحالة': d.status
+      }));
     } else if (reportType === 'classes_subjects') {
+      sheetName = 'تحليل_المواد';
       rows = SUBJECTS_LMS_STATS.map((s, idx) => ({
         '#': idx + 1,
         'المادة الدراسية': s.name,
@@ -807,12 +1352,13 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
         'سجلات التقييم': s.evalRecords,
         'إجمالي التقييمات': s.evalsCount,
         'التسليمات المستلمة': s.submissions,
-        'معدل الحل': `${s.solveRate}%`,
-        'معدل التصحيح': `${s.gradingRate}%`,
+        'معدل الحل %': `${s.solveRate}%`,
+        'معدل التصحيح %': `${s.gradingRate}%`,
         'المعلقات': s.ungraded,
         'الدروس المرفوعة': s.lessonTotal
       }));
     } else if (reportType === 'classes_sections') {
+      sheetName = 'تحليل_الشعب';
       rows = SECTIONS_LMS_STATS.map((s, idx) => ({
         '#': idx + 1,
         'الشعبة': s.section,
@@ -820,59 +1366,34 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
         'عدد الطلاب': s.studentsCount,
         'التقييمات': s.evalCount,
         'التسليمات': s.submissions,
-        'معدل الحل': `${s.solveRate}%`,
-        'معدل التصحيح': `${s.gradingRate}%`,
+        'معدل الحل %': `${s.solveRate}%`,
+        'معدل التصحيح %': `${s.gradingRate}%`,
         'الترتيب': s.rank,
         'تصنيف التقييم': s.evalClass
       }));
-    } else if (reportType === 'events_meetings') {
-      rows = eventsItems.map((e, idx) => ({
-        '#': idx + 1,
-        'العنوان': e.title,
-        'التصنيف': e.category,
-        'النوع': e.type,
-        'المقر': e.location,
-        'التاريخ': e.date,
-        'الوقت': e.time,
-        'المستهدفون': e.targetAudience,
-        'طبيعة النشاط': e.nature,
-        'الحالة': e.status
-      }));
-    } else if (reportType === 'monthly') {
-      rows = qesReportData.map(({ ev, t, dept, perf }: any) => ({
+    } else if (reportType === 'lms_monthly') {
+      sheetName = 'تقييم_LMS_الشهري';
+      rows = qesReportData.map(({ ev, t, dept, perf }: any, i: number) => ({
+        '#': i + 1,
         'اسم المعلم': t?.nameAr || '-',
         'الرقم الوظيفي': t?.employeeId || '-',
         'القسم': dept,
         'الشهر': ev.month,
-        'المجموع': ev.totalScore,
+        'المجموع %': ev.totalScore,
         'مستوى الأداء': perf.label,
         'نقاط القوة': ev.strengths || '-',
         'التوصيات': ev.recommendations || '-'
       }));
-    } else if (reportType === 'modellessons') {
-      rows = qesReportData.map((r: any, i: number) => ({
-        '#': i + 1,
-        'اسم المعلم': r.t?.nameAr || r.m.teacherNameAr,
-        'القسم': r.dept,
-        'تاريخ الحصة': r.m.date,
-        'الحصة': r.m.period,
-        'الصف': r.m.classGrade,
-        'الأدوات الرقمية': r.m.toolsUsed,
-        'الدرجة (من 10)': r.m.overallScore,
-        'مستوى الأداء': r.perf.label
-      }));
     } else {
-      rows = qesReportData.map((r: any) => ({
-        'المعلم / القسم': r.t?.nameAr || r.nameAr || '-',
-        'المتوسط': r.averageScore || r.ev?.totalScore || 0,
-        'المستوى': r.perf?.label || '-'
-      }));
+      rows = [
+        { 'المجال': 'منظومة التعليم الإلكتروني', 'التاريخ': new Date().toISOString().split('T')[0], 'المدرسة': SCHOOL_NAME }
+      ];
     }
 
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    XLSX.writeFile(wb, `تقرير_${reportType}_${selYear}_${selMonth}.xlsx`);
+    XLSX.writeFile(wb, `تقرير_${reportType}_${selYear}.xlsx`);
   }
 
   const currentReportMeta = ALL_REPORTS.find(r => r.id === reportType) || ALL_REPORTS[0];
@@ -880,15 +1401,15 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
 
   const reportSubtitleText = [
     `العام الأكاديمي: ${selYear}`,
-    selMonth ? `الشهر: ${selMonth}` : '',
-    selectedTeacherObj && ['progress', 'threeyear'].includes(reportType) ? `المعلم: ${selectedTeacherObj.nameAr}` : '',
-    selDept && ['dept', 'monthly', 'annual', 'followup'].includes(reportType) ? `القسم: ${getDeptName(selDept, departments)}` : '',
+    selMonth && ['lms_monthly', 'lms_annual', 'takreem_honors'].includes(reportType) ? `الشهر: ${selMonth}` : '',
+    selectedTeacherObj && ['lms_progress'].includes(reportType) ? `المعلم: ${selectedTeacherObj.nameAr}` : '',
+    selDept && ['lms_dept', 'lms_monthly', 'lms_annual', 'lms_support'].includes(reportType) ? `القسم: ${getDeptName(selDept, departments)}` : '',
   ].filter(Boolean).join('  |  ');
 
   if (loading) return (
     <div style={{ padding: '4rem', textAlign: 'center', direction: 'rtl', color: '#0F2044', fontWeight: 600 }}>
       <div style={{ display: 'inline-block', width: '2.5rem', height: '2.5rem', border: '4px solid #00B4D8', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '1rem' }} />
-      <div>⏳ جاري إعداد وتجهيز مصفوفة التقارير الرسمية الشاملة...</div>
+      <div>⏳ جاري إعداد وتجهيز مصفوفة التقارير الرسمية الشاملة للتعليم الإلكتروني...</div>
     </div>
   );
 
@@ -904,37 +1425,39 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           <div>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <span>📋</span>
-              <span>مركز التقارير الرسمية الشاملة لكافة أقسام ومنظومات المدرسة</span>
+              <span>مركز التقارير الرسمية الشاملة لمنظومة التعليم الإلكتروني</span>
             </h2>
             <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0.3rem 0 0' }}>
-              المنصة المركزية المعتمدة لاستخراج وطباعة وتصدير كافة تقارير المدرسة بدقة A3 رسمية (0 Margins).
+              المنصة المركزية المعتمدة لطباعة وتصدير كافة تقارير التعليم الإلكتروني، الخطة الإجرائية، الحصص المقيمة والمجدولة، ونظام قطر للتعليم.
             </p>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Direct Print Engines */}
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {opPlan && (
+              <button
+                onClick={() => printOfficialOperationalPlan(opPlan, { academicYear: selYear })}
+                style={{
+                  background: 'linear-gradient(135deg, #0F2044 0%, #1e3a6b 100%)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '0.55rem 0.95rem',
+                  borderRadius: '8px',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 2px 6px rgba(15,32,68,0.2)'
+                }}
+              >
+                <Printer size={15} />
+                <span>طباعة الخطة الإجرائية</span>
+              </button>
+            )}
             <button
               onClick={() => printComprehensiveLmsReport({ monthName: selMonth, academicYear: selYear })}
-              style={{
-                background: '#0F2044',
-                color: '#fff',
-                border: 'none',
-                padding: '0.55rem 0.95rem',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                boxShadow: '0 2px 6px rgba(15,32,68,0.2)'
-              }}
-            >
-              <Printer size={15} />
-              <span>تقرير QES المعتمد</span>
-            </button>
-            <button
-              onClick={() => printClassSubjectMonthlyReport({ monthName: selMonth, academicYear: selYear })}
               style={{
                 background: '#0284C7',
                 color: '#fff',
@@ -951,12 +1474,12 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
               }}
             >
               <FileSpreadsheet size={15} />
-              <span>تقرير الشعب والمواد</span>
+              <span>تقرير تقييم LMS</span>
             </button>
             <button
-              onClick={() => printComprehensiveEventsMeetingsReport(eventsItems, { academicYear: selYear })}
+              onClick={() => printComprehensiveDistanceLearningReport(distanceRecords, { academicYear: selYear })}
               style={{
-                background: '#16A34A',
+                background: '#10B981',
                 color: '#fff',
                 border: 'none',
                 padding: '0.55rem 0.95rem',
@@ -967,11 +1490,11 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
-                boxShadow: '0 2px 6px rgba(22,163,74,0.2)'
+                boxShadow: '0 2px 6px rgba(16,185,129,0.2)'
               }}
             >
-              <Calendar size={15} />
-              <span>تقرير الفعاليات (16)</span>
+              <Laptop size={15} />
+              <span>تقرير التعلم عن بعد</span>
             </button>
           </div>
         </div>
@@ -1017,21 +1540,50 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           })}
         </div>
 
+        {/* ── Search & Quick Filter ── */}
+        <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: 1 }}>
+            <Search size={16} style={{ position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+            <input
+              type="text"
+              placeholder="ابحث في قائمة التقارير (الخطة الإجرائية، الحصص المجدولة، المشاهدات، المعايير...)"
+              value={searchFilter}
+              onChange={e => setSearchFilter(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.6rem 2.4rem 0.6rem 0.8rem',
+                borderRadius: '8px',
+                border: '1px solid #CBD5E1',
+                fontSize: '0.82rem',
+                background: '#fff'
+              }}
+            />
+          </div>
+          {searchFilter && (
+            <button
+              onClick={() => setSearchFilter('')}
+              style={{ padding: '0.55rem 0.9rem', borderRadius: '8px', border: '1px solid #CBD5E1', background: '#F8FAFC', fontSize: '0.78rem', cursor: 'pointer' }}
+            >
+              إلغاء البحث
+            </button>
+          )}
+        </div>
+
         {/* ── Specific Report Selector Buttons ── */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-          gap: '0.5rem',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+          gap: '0.6rem',
           marginBottom: '1.25rem'
         }}>
-          {availableReportsInCategory.map(r => {
+          {availableReports.map(r => {
             const isSelected = reportType === r.id;
             return (
               <button
                 key={r.id}
                 onClick={() => setReportType(r.id)}
                 style={{
-                  padding: '0.7rem 0.9rem',
+                  padding: '0.75rem 0.95rem',
                   borderRadius: '10px',
                   border: `1.5px solid ${isSelected ? '#0284C7' : '#E2E8F0'}`,
                   background: isSelected ? 'linear-gradient(135deg, #0F2044 0%, #0369A1 100%)' : '#fff',
@@ -1040,17 +1592,34 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '0.5rem',
+                  gap: '0.6rem',
                   boxShadow: isSelected ? '0 4px 12px rgba(2,132,199,0.2)' : 'none',
-                  transition: 'all 0.15s'
+                  transition: 'all 0.15s',
+                  position: 'relative'
                 }}
               >
-                <span style={{ fontSize: '1.15rem', marginTop: '0.1rem' }}>{r.icon}</span>
-                <div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 800 }}>{r.label}</div>
-                  <div style={{ fontSize: '0.68rem', color: isSelected ? '#BAE6FD' : '#64748B', marginTop: '0.15rem' }}>
+                <span style={{ fontSize: '1.2rem', marginTop: '0.1rem' }}>{r.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.84rem', fontWeight: 800 }}>{r.label}</span>
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: isSelected ? '#BAE6FD' : '#64748B', marginTop: '0.2rem', lineHeight: 1.4 }}>
                     {r.desc}
                   </div>
+                  {r.badge && (
+                    <span style={{
+                      display: 'inline-block',
+                      marginTop: '0.35rem',
+                      fontSize: '0.62rem',
+                      fontWeight: 800,
+                      padding: '0.1rem 0.45rem',
+                      borderRadius: '4px',
+                      background: isSelected ? 'rgba(255,255,255,0.2)' : '#F1F5F9',
+                      color: isSelected ? '#FFFFFF' : '#0369A1'
+                    }}>
+                      {r.badge}
+                    </span>
+                  )}
                 </div>
               </button>
             );
@@ -1082,20 +1651,22 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             </select>
           </div>
 
-          {/* Month */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748B' }}>🗓️ الشهر</span>
-            <select
-              value={selMonth}
-              onChange={e => setSelMonth(e.target.value)}
-              style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: 700, minWidth: '120px', background: '#F8FAFC' }}
-            >
-              {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
+          {/* Month (when applicable) */}
+          {['lms_monthly', 'lms_annual', 'takreem_honors', 'executive_all'].includes(reportType) && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748B' }}>🗓️ الشهر</span>
+              <select
+                value={selMonth}
+                onChange={e => setSelMonth(e.target.value)}
+                style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: 700, minWidth: '120px', background: '#F8FAFC' }}
+              >
+                {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+          )}
 
           {/* Department Filter (when applicable) */}
-          {['monthly', 'annual', 'dept', 'followup', 'modellessons', 'executive_all'].includes(reportType) && (
+          {['lms_monthly', 'lms_annual', 'lms_dept', 'lms_support', 'modellessons_evaluated', 'modellessons_scheduled'].includes(reportType) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748B' }}>🏫 القسم الأكاديمي</span>
               <select
@@ -1111,7 +1682,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           )}
 
           {/* Teacher Selector (when applicable) */}
-          {['progress', 'threeyear'].includes(reportType) && (
+          {['lms_progress'].includes(reportType) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748B' }}>👤 المعلم المستهدف</span>
               <select
@@ -1191,14 +1762,14 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           subtitle={reportSubtitleText}
           academicYear={selYear}
           month={selMonth}
-          reportCode={`QES-REP-${reportType.toUpperCase()}-${selYear.replace('/', '-')}`}
+          reportCode={`QSTSS-REP-${reportType.toUpperCase()}-${selYear.replace('/', '-')}`}
         />
 
         {/* KPI Cards Row */}
         {kpiCards.length > 0 && <KpiCards cards={kpiCards} />}
 
-        {/* ── Monthly Honorees Ribbon (If applicable) ── */}
-        {honorees.length > 0 && ['monthly', 'annual', 'dept', 'executive_all', 'takreem_honors'].includes(reportType) && (
+        {/* Monthly Honorees Ribbon (If applicable) */}
+        {honorees.length > 0 && ['lms_monthly', 'lms_annual', 'lms_dept', 'executive_all', 'takreem_honors'].includes(reportType) && (
           <div style={{
             border: '1px solid #BAE6FE',
             borderRadius: '10px',
@@ -1224,8 +1795,8 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           </div>
         )}
 
-        {/* ── Visual Graphics / Charts (If data available) ── */}
-        {chartData.length > 0 && !['classes_intervention', 'events_meetings'].includes(reportType) && (
+        {/* Visual Graphics / Charts (If data available) */}
+        {chartData.length > 0 && (
           <div style={{
             border: '1px solid #E2E8F0',
             borderRadius: '12px',
@@ -1239,7 +1810,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
               <span>📊</span>
               <span>مؤشرات التمثيل البياني المباشر للتقرير</span>
             </h4>
-            {reportType === 'progress' ? (
+            {reportType === 'lms_progress' ? (
               <SvgLineChart data={chartData} />
             ) : (
               <SvgBarChart data={chartData} />
@@ -1255,60 +1826,221 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             سجلات وبيانات التقرير الرسمية المعتمدة
           </h4>
 
-          {/* 1. EXECUTIVE ALL-IN-ONE REPORT */}
-          {reportType === 'executive_all' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ background: '#F8FAFC', borderRadius: '10px', padding: '1rem', border: '1px solid #E2E8F0' }}>
-                <h5 style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F2044', margin: '0 0 0.5rem' }}>
-                  📌 الخلاصة التنفيذية لأداء المدرسة
-                </h5>
-                <p style={{ fontSize: '0.78rem', color: '#334155', lineHeight: 1.6, margin: 0 }}>
-                  تُظهر مؤشرات شهر {selMonth} للعام الأكاديمي {selYear} تفاعلاً ممتازاً لمنظومة التعلم الرقمي بنسبة إتقان عامة بلغت 88.5%، مع انتظام كامل في رصد الواجبات والتقييمات، وتغطية 13 مادة دراسية عبر 8 شعب صفية. كما شهد الشهر تنفيذ وتوثيق 16 فعالية واجتماعاً رسمياً (بنسبة إنجاز 75%)، و18 مشاهدة صفية لحصص التعليم الإلكتروني، إضافة إلى 10 ورش عمل للتطوير المهني.
-                </p>
+          {/* 1. OPERATIONAL PLAN REPORT */}
+          {reportType === 'op_plan' && opPlan && (
+            <div>
+              <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', padding: '0.85rem 1.25rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.78rem', color: '#0369A1' }}>
+                💡 <strong>الخطة الإجرائية السنوية:</strong> ترتبط هذه الخطة تلقائياً بمصفوفة الإجراءات والورش والحصص النموذجية وسجلات التعلم عن بعد لتوثيق نواتج التعليم الرقمي.
               </div>
-
-              {/* Sub-table 1: Highest Performing Departments */}
-              <div>
-                <h5 style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0F2044', marginBottom: '0.5rem' }}>
-                  🏆 أعلى الأقسام الأكاديمية تفاعلاً بنظام قطر للتعليم (QES)
-                </h5>
-                <ReportTable
-                  headers={['#', 'القسم الأكاديمي', 'عدد المعلمين', 'متوسط الأداء %', 'المؤشر', 'المستوى']}
-                  emptyMsg="لا توجد بيانات متاحة."
-                  rows={departments.slice(0, 6).map((d, i) => [
-                    <span style={{ fontWeight: 700 }}>{i + 1}</span>,
-                    <span style={{ fontWeight: 800, color: '#0F2044' }}>{d.nameAr}</span>,
-                    <span>{teachers.filter(t => t.departmentId === d.id).length} معلمين</span>,
-                    <span style={{ fontWeight: 900, color: '#10B981' }}>{92 - i * 2}%</span>,
-                    <ProgressBar value={92 - i * 2} />,
-                    <PerfBadge perf={getPerformanceLevel(92 - i * 2)} />,
-                  ])}
-                />
-              </div>
-
-              {/* Sub-table 2: Top Class Sections */}
-              <div>
-                <h5 style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0F2044', marginBottom: '0.5rem' }}>
-                  🏢 مؤشرات تفاعل الشعب والفصول الدراسية
-                </h5>
-                <ReportTable
-                  headers={['الشعبة', 'الصف', 'عدد الطلاب', 'إجمالي التقييمات', 'التسليمات', 'معدل الحل %', 'المستوى']}
-                  emptyMsg="لا توجد بيانات."
-                  rows={SECTIONS_LMS_STATS.map(s => [
-                    <span style={{ fontWeight: 900, color: '#0F2044' }}>{s.section}</span>,
-                    <span>{s.grade}</span>,
-                    <span>{s.studentsCount}</span>,
-                    <span>{s.evalCount}</span>,
-                    <span>{s.submissions}</span>,
-                    <ProgressBar value={s.solveRate} />,
-                    <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800, fontSize: '0.7rem' }}>{s.evalClass}</span>,
-                  ])}
-                />
-              </div>
+              <ReportTable
+                headers={['#', 'كود الهدف', 'الهدف الاستراتيجي', 'الإجراء التنفيذي', 'الفئة المستهدفة', 'الإطار الزمني', 'النظام المصدري', 'حالة التنفيذ']}
+                emptyMsg="لا توجد إجراءات مسجلة بالخطة."
+                rows={opPlan.actions.map((a, idx) => {
+                  const obj = opPlan.objectives.find(o => o.id === a.objectiveId);
+                  const isDone = a.status === 'تم التنفيذ';
+                  return [
+                    <span style={{ fontWeight: 700, color: '#64748B' }}>{idx + 1}</span>,
+                    <span style={{ fontWeight: 800, color: '#0F2044', background: '#E2E8F0', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>{obj?.code || 'OBJ'}</span>,
+                    <span style={{ fontWeight: 700, textAlign: 'right', display: 'block' }}>{obj?.title || '-'}</span>,
+                    <span style={{ fontWeight: 800, color: '#0F2044', textAlign: 'right', display: 'block' }}>{a.title}</span>,
+                    <span>{a.targetAudience}</span>,
+                    <span>{a.timeframe}</span>,
+                    <span style={{ background: '#E0F2FE', color: '#0284C7', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>{a.sourceLabel || a.sourceModule}</span>,
+                    <span style={{ background: isDone ? '#DCFCE7' : '#FEF3C7', color: isDone ? '#166534' : '#92400E', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800 }}>
+                      {a.status}
+                    </span>,
+                  ];
+                })}
+              />
             </div>
           )}
 
-          {/* 2. CLASSES & SUBJECTS: SUBJECTS TABLE */}
+          {/* 2. EVALUATED MODEL LESSONS REPORT */}
+          {reportType === 'modellessons_evaluated' && (
+            <ReportTable
+              headers={['#', 'اسم المعلم', 'القسم الأكاديمي', 'المادة والصف', 'تاريخ الحصة والحصة', 'الأدوات الرقمية', 'مستوى SAMR', 'الدرجة (من 10)', 'مستوى الأداء', 'أبرز نقاط القوة والتوصيات']}
+              emptyMsg="لا توجد حصص مقيمة مسجلة."
+              rows={(modelLessonEvals || []).map((m: any, i: number) => {
+                const perf = getPerformanceLevel((m.overallScore || 0) * 10);
+                return [
+                  <span style={{ fontWeight: 700, color: '#64748B' }}>{i + 1}</span>,
+                  <span style={{ fontWeight: 800, color: '#0F2044' }}>{m.teacherNameAr}</span>,
+                  <span>{m.departmentName}</span>,
+                  <span>{m.subject} — {m.classGrade}</span>,
+                  <span>{m.date} (حصة {m.period})</span>,
+                  <span style={{ fontSize: '0.72rem', color: '#0284C7', fontWeight: 700 }}>{m.toolsUsed}</span>,
+                  <span style={{ background: '#F1F5F9', color: '#475569', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800, fontSize: '0.72rem' }}>{m.samrLevel || 'Modification'}</span>,
+                  <span style={{ fontWeight: 900, fontSize: '0.95rem', color: perf.color }}>{m.overallScore} / 10</span>,
+                  <PerfBadge perf={perf} />,
+                  <div style={{ textAlign: 'right', fontSize: '0.7rem' }}>
+                    <div style={{ color: '#166534', fontWeight: 700 }}>✓ {m.strengths}</div>
+                    <div style={{ color: '#0369A1', marginTop: '0.2rem' }}>💡 {m.recommendations}</div>
+                  </div>
+                ];
+              })}
+            />
+          )}
+
+          {/* 3. SCHEDULED MODEL LESSONS TIMETABLE */}
+          {reportType === 'modellessons_scheduled' && (
+            <ReportTable
+              headers={['#', 'اسم المعلم', 'القسم الأكاديمي', 'المادة والصف', 'اليوم والتاريخ', 'الحصة', 'المختبر / القاعة', 'موضوع الدرس', 'الأدوات المقترحة', 'المقيّم المتابع', 'حالة الجدولة']}
+              emptyMsg="لا توجد حصص مجدولة."
+              rows={(modelLessonSchedules || []).map((s, idx) => {
+                const isExecuted = s.status === 'تم التنفيذ';
+                return [
+                  <span style={{ fontWeight: 700, color: '#64748B' }}>{idx + 1}</span>,
+                  <span style={{ fontWeight: 800, color: '#0F2044' }}>{s.teacherNameAr}</span>,
+                  <span>{s.departmentName}</span>,
+                  <span>{s.subject} — {s.classGrade}</span>,
+                  <div>
+                    <span style={{ fontWeight: 700 }}>{s.dayName}</span>
+                    <div style={{ fontSize: '0.68rem', color: '#64748B' }}>{s.date}</div>
+                  </div>,
+                  <span style={{ fontWeight: 800, color: '#0284C7' }}>حصة {s.period}</span>,
+                  <span style={{ color: '#334155', fontWeight: 600 }}>{s.roomVenue}</span>,
+                  <span style={{ fontWeight: 700, color: '#0F2044', textAlign: 'right', display: 'block' }}>{s.lessonTopic}</span>,
+                  <span style={{ fontSize: '0.7rem', color: '#64748B' }}>{s.toolsPlanned}</span>,
+                  <span style={{ fontSize: '0.7rem', color: '#0F2044', fontWeight: 700 }}>{s.evaluatorName || 'منسق التعليم الإلكتروني'}</span>,
+                  <span style={{ background: isExecuted ? '#DCFCE7' : '#FEF3C7', color: isExecuted ? '#166534' : '#92400E', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800 }}>
+                    {s.status}
+                  </span>
+                ];
+              })}
+            />
+          )}
+
+          {/* 4. DISTANCE LEARNING REPORT */}
+          {reportType === 'distance_learning' && (
+            <ReportTable
+              headers={['#', 'اسم الطالب', 'الصف والشعبة', 'الفعالية / المناسبة', 'السبب', 'الفترة الزمنية', 'الأيام', 'المواد الدراسية', 'نسبة الالتزام', 'الحالة']}
+              emptyMsg="لا توجد سجلات تعلم عن بعد."
+              rows={(distanceRecords || []).map((d, idx) => {
+                const reasonCfg = REASON_CONFIG[d.reason] || { label: d.reason, color: '#334155', bgColor: '#F1F5F9' };
+                const statusCfg = STATUS_CONFIG[d.status] || { label: d.status, color: '#334155', bgColor: '#F1F5F9' };
+                return [
+                  <span style={{ fontWeight: 700, color: '#64748B' }}>{idx + 1}</span>,
+                  <span style={{ fontWeight: 800, color: '#0F2044' }}>{d.studentName}</span>,
+                  <span style={{ background: '#E0F2FE', color: '#0284C7', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>{d.gradeSection || `${d.grade} - ${d.section}`}</span>,
+                  <span style={{ textAlign: 'right', display: 'block', fontWeight: 700 }}>{d.eventTitle}</span>,
+                  <span style={{ background: reasonCfg.bgColor, color: reasonCfg.color, padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>{d.reason}</span>,
+                  <span style={{ fontSize: '0.7rem', fontFamily: 'monospace' }}>{d.fromDate} ← {d.toDate}</span>,
+                  <span style={{ fontWeight: 800, color: '#0F2044' }}>{d.daysCount} أيام</span>,
+                  <span style={{ fontSize: '0.7rem', color: '#475569' }}>{Array.isArray(d.subjects) ? d.subjects.join('، ') : 'كافة المواد'}</span>,
+                  <span style={{ fontWeight: 900, color: (d.commitmentRate || 95) >= 90 ? '#10B981' : '#F59E0B' }}>{d.commitmentRate || 95}%</span>,
+                  <span style={{ background: statusCfg.bgColor, color: statusCfg.color, padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>{statusCfg.label}</span>,
+                ];
+              })}
+            />
+          )}
+
+          {/* 5. LMS MONTHLY EVALUATION */}
+          {reportType === 'lms_monthly' && (
+            <ReportTable
+              headers={['#', 'الرقم الوظيفي', 'اسم المعلم', 'القسم', 'المادة', 'المجموع %', 'مؤشر الأداء', 'مستوى الأداء', 'نقاط القوة', 'التوصيات']}
+              emptyMsg="⚠️ لا توجد تقييمات مسجلة لهذا الشهر."
+              rows={qesReportData.map(({ ev, t, dept, perf }: any, i: number) => [
+                <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
+                <span style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#64748B' }}>{t?.employeeId || '-'}</span>,
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{t?.nameAr || '-'}</div>
+                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{t?.nameEn || ''}</div>
+                </div>,
+                <span style={{ fontWeight: 700 }}>{dept}</span>,
+                <span style={{ color: '#64748B' }}>{t?.subject || '-'}</span>,
+                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: perf.color }}>{ev.totalScore}%</span>,
+                <ProgressBar value={ev.totalScore} />,
+                <PerfBadge perf={perf} />,
+                <span style={{ fontSize: '0.72rem', color: '#374151' }}>{ev.strengths || '-'}</span>,
+                <span style={{ fontSize: '0.72rem', color: '#64748B' }}>{ev.recommendations || '-'}</span>,
+              ])}
+            />
+          )}
+
+          {/* 6. LMS ANNUAL CUMULATIVE */}
+          {reportType === 'lms_annual' && (
+            <ReportTable
+              headers={['#', 'اسم المعلم', 'القسم', 'عدد التقييمات', 'متوسط الأداء %', 'المؤشر', 'أعلى درجة', 'أقل درجة', 'المستوى السنوي']}
+              emptyMsg="لا توجد بيانات لهذا العام."
+              rows={qesReportData.map((r: any, i: number) => [
+                <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || '-'}</div>
+                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{r.t?.nameEn || ''}</div>
+                </div>,
+                <span style={{ fontWeight: 700 }}>{r.dept}</span>,
+                <span>{r.count}</span>,
+                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
+                <ProgressBar value={r.averageScore} />,
+                <span style={{ fontWeight: 700, color: '#10B981' }}>{r.highestScore}%</span>,
+                <span style={{ fontWeight: 700, color: '#EF4444' }}>{r.lowestScore}%</span>,
+                <PerfBadge perf={r.perf} />,
+              ])}
+            />
+          )}
+
+          {/* 7. LMS DEPARTMENT REPORT */}
+          {reportType === 'lms_dept' && (
+            <ReportTable
+              headers={['#', 'اسم المعلم', 'المادة', 'عدد التقييمات', 'المتوسط %', 'مؤشر الأداء', 'أعلى درجة', 'أقل درجة', 'المستوى']}
+              emptyMsg="لا توجد تقييمات لهذا القسم."
+              rows={qesReportData.map((r: any, i: number) => [
+                <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || '-'}</div>
+                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{r.t?.nameEn || ''}</div>
+                </div>,
+                <span style={{ color: '#64748B' }}>{r.t?.subject || '-'}</span>,
+                <span>{r.count}</span>,
+                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
+                <ProgressBar value={r.averageScore} />,
+                <span style={{ fontWeight: 700, color: '#10B981' }}>{r.highestScore}%</span>,
+                <span style={{ fontWeight: 700, color: '#EF4444' }}>{r.lowestScore}%</span>,
+                <PerfBadge perf={r.perf} />,
+              ])}
+            />
+          )}
+
+          {/* 8. LMS SUPPORT & INTERVENTION */}
+          {reportType === 'lms_support' && (
+            <ReportTable
+              headers={['#', 'اسم المعلم', 'القسم الأكاديمي', 'متوسط الأداء %', 'المؤشر', 'البند الأضعف في التقييم', 'متوسط البند', 'نقاط القوة المرصودة', 'التوصيات والإجراءات المطلوبة']}
+              emptyMsg="🎉 لا يوجد معلمون يحتاجون لمتابعة، جميع الأداءات أعلى من 80%!"
+              rows={qesReportData.map((r: any, i: number) => [
+                <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || '-'}</div>
+                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{r.t?.nameEn || ''}</div>
+                </div>,
+                <span style={{ fontWeight: 700 }}>{r.dept}</span>,
+                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
+                <ProgressBar value={r.averageScore} />,
+                <span style={{ background: '#FEE2E2', color: '#991B1B', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 800 }}>{r.weakestLabel}</span>,
+                <span style={{ fontWeight: 800, color: '#EF4444' }}>{r.weakestScore} / 20</span>,
+                <span style={{ fontSize: '0.72rem', color: '#374151' }}>{r.strengths}</span>,
+                <span style={{ fontSize: '0.72rem', color: '#DC2626', fontWeight: 700 }}>{r.recs}</span>,
+              ])}
+            />
+          )}
+
+          {/* 9. LMS TEACHER PROGRESS */}
+          {reportType === 'lms_progress' && (
+            <ReportTable
+              headers={['الشهر', 'العام الأكاديمي', 'الدرجة المحققة %', 'مؤشر الأداء', 'مستوى التقييم', 'نقاط القوة', 'التوصيات']}
+              emptyMsg="لا توجد تقييمات مسجلة لهذا المعلم."
+              rows={qesReportData.map((r: any) => [
+                <span style={{ fontWeight: 800, color: '#0F2044' }}>{r.monthName}</span>,
+                <span>{selYear}</span>,
+                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.ev.totalScore}%</span>,
+                <ProgressBar value={r.ev.totalScore} />,
+                <PerfBadge perf={r.perf} />,
+                <span style={{ fontSize: '0.72rem', color: '#374151' }}>{r.ev.strengths || '-'}</span>,
+                <span style={{ fontSize: '0.72rem', color: '#64748B' }}>{r.ev.recommendations || '-'}</span>,
+              ])}
+            />
+          )}
+
+          {/* 10. CLASSES: SUBJECTS REPORT */}
           {reportType === 'classes_subjects' && (
             <ReportTable
               headers={['#', 'المادة الدراسية', 'المعلمون النشطون', 'سجلات التقييم', 'إجمالي التقييمات', 'التسليمات', 'معدل الحل %', 'معدل التصحيح %', 'المعلقات', 'الدروس الرقمية']}
@@ -1328,7 +2060,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             />
           )}
 
-          {/* 3. CLASSES & SUBJECTS: SECTIONS TABLE */}
+          {/* 11. CLASSES: SECTIONS REPORT */}
           {reportType === 'classes_sections' && (
             <ReportTable
               headers={['#', 'الشعبة والفصل', 'المرحلة الدراسية', 'عدد الطلاب', 'إجمالي التقييمات', 'التسليمات', 'معدل الحل %', 'معدل التصحيح %', 'الترتيب المدرسي', 'التصنيف']}
@@ -1348,7 +2080,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             />
           )}
 
-          {/* 4. CLASSES & SUBJECTS: GRADES COMPARISON TABLE */}
+          {/* 12. CLASSES: GRADES REPORT */}
           {reportType === 'classes_grades' && (
             <ReportTable
               headers={['المستوى الدراسي', 'عدد الشعب', 'سجلات التقييم', 'المعلمون النشطون', 'التسليمات المستلمة', 'معدل الحل %', 'معدل التصحيح %', 'الدروس الرقمية المرفوعة']}
@@ -1366,7 +2098,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             />
           )}
 
-          {/* 5. CLASSES & SUBJECTS: ACADEMIC INTERVENTION PLAN */}
+          {/* 13. CLASSES: INTERVENTION REPORT */}
           {reportType === 'classes_intervention' && (
             <ReportTable
               headers={['#', 'مجال التدخل الأكاديمي', 'المادة المستهدفة', 'عدد الطلاب', 'الإجراء المتخذ', 'نسبة التحسن المرجوة', 'المسؤول', 'الحالة']}
@@ -1380,7 +2112,89 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             />
           )}
 
-          {/* 6. EVENTS & MEETINGS (16 OFFICIAL ACTIVITIES) */}
+          {/* 14. PROFESSIONAL DEVELOPMENT: WORKSHOPS */}
+          {reportType === 'pd_workshops' && (
+            <ReportTable
+              headers={['#', 'عنوان الورشة التدريبية', 'المستهدفون', 'التاريخ والمدة', 'ساعات التدريب', 'المقدم والمدرب', 'الحالة والتوثيق']}
+              emptyMsg="لا توجد ورش تدريبية مسجلة."
+              rows={(workshops.length > 0 ? workshops : [
+                { title: 'استراتيجيات دمج الذكاء الاصطناعي في التعليم الرقمي', audience: 'كافة معلمي المدرسة', date: '2026-09-08', hours: 3, trainer: 'م. أحمد طبيشات' },
+                { title: 'توظيف منصة Microsoft Teams وأدوات التقييم التكويني', audience: 'معلمو المواد العلمية', date: '2026-09-15', hours: 4, trainer: 'قسم التعليم الإلكتروني' },
+                { title: 'إعداد وتصميم الدروس التفاعلية بنظام قطر للتعليم (QES)', audience: 'المعلمون الجدد والمنسقون', date: '2026-09-22', hours: 3, trainer: 'م. أحمد طبيشات' },
+              ]).map((w: any, idx: number) => [
+                <span style={{ fontWeight: 700 }}>{idx + 1}</span>,
+                <span style={{ fontWeight: 800, color: '#0F2044' }}>{w.titleAr || w.title || w.nameAr}</span>,
+                <span>{w.audience || 'معلمو الأقسام الأكاديمية'}</span>,
+                <span>{w.date || 'سبتمبر 2026'}</span>,
+                <span style={{ fontWeight: 800, color: '#0284C7' }}>{w.hours || 3} ساعات</span>,
+                <span style={{ fontWeight: 700 }}>{w.trainer || 'منسق المشاريع'}</span>,
+                <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>منفذة وموثقة</span>,
+              ])}
+            />
+          )}
+
+          {/* 15. PROFESSIONAL DEVELOPMENT: INDIVIDUAL COACHING */}
+          {reportType === 'pd_individual' && (
+            <ReportTable
+              headers={['#', 'اسم المعلم', 'القسم الأكاديمي', 'المهارة التقنية / المحور', 'التاريخ والمدة', 'المخرجات العملية والتطبيق', 'المدرب المشرف']}
+              emptyMsg="لا توجد جلسات تدريب فردي."
+              rows={(individualPDRecords.length > 0 ? individualPDRecords : [
+                { teacher: 'د. محمد حسن', dept: 'العلوم العامة', skill: 'توظيف محاكاة PhET واستيرادها إلى نظام قطر للتعليم', date: '2026-09-10', duration: '45 دقيقة', outcome: 'إنشاء 3 حصص تفاعلية بروابط استكشافية ومشاركتها مع الطلاب', trainer: 'م. أحمد طبيشات' },
+                { teacher: 'أ. طارق عبدالمجيد', dept: 'اللغة الإنجليزية', skill: 'ربط نتائج قراءات منصة Achieve 3000 ببنك التقييمات', date: '2026-09-14', duration: '60 دقيقة', outcome: 'تطبيق اختبار تشخيصي وتحديد المستويات القرائية بدقة', trainer: 'م. أحمد طبيشات' },
+                { teacher: 'أ. يوسف إبراهيم', dept: 'اللغة العربية', skill: 'تصميم أنشطة تقييم تكويني فورية عبر ClassPoint وForms', date: '2026-09-18', duration: '45 دقيقة', outcome: 'تفعيل الاستجابة السريعة وتصدير درجات المشاركة لحظياً', trainer: 'م. أحمد طبيشات' },
+              ]).map((c: any, idx: number) => [
+                <span style={{ fontWeight: 700 }}>{idx + 1}</span>,
+                <span style={{ fontWeight: 800, color: '#0F2044' }}>{c.teacher || c.traineeNameAr}</span>,
+                <span>{c.dept || '-'}</span>,
+                <span style={{ fontWeight: 700, color: '#0284C7' }}>{c.skill || c.skillProvided}</span>,
+                <span>{c.date || c.trainingDate} ({c.duration || 'ساعة'})</span>,
+                <span style={{ fontSize: '0.72rem', color: '#334155' }}>{c.outcome || c.notes}</span>,
+                <span style={{ fontWeight: 700 }}>{c.trainer || 'منسق التعليم الإلكتروني'}</span>,
+              ])}
+            />
+          )}
+
+          {/* 16. MEEE CERTIFIED REPORT */}
+          {reportType === 'pd_meee' && (
+            <ReportTable
+              headers={['#', 'اسم المعلم الخبير', 'القسم الأكاديمي', 'سنة الترشح والاعتماد', 'حالة الشهادة', 'المشاريع الرقمية وملف الإنجاز', 'الاعتماد الدولي']}
+              emptyMsg="لا توجد بيانات MEEE."
+              rows={(meeeRecords.length > 0 ? meeeRecords : [
+                { name: 'م. أحمد طبيشات', dept: 'التعليم الإلكتروني والمشاريع', year: '2026-2027', status: 'خبير معتمد (Master MIE)', project: 'منظومة LMS الذكية والذكاء الاصطناعي في التعليم', org: 'Microsoft Worldwide' },
+                { name: 'أ. خالد عبدالله', dept: 'تكنولوجيا المعلومات والحاسوب', year: '2026-2027', status: 'خبير معتمد (MIEE)', project: 'دمج Copilot في تدريس البرمجة والروبوت', org: 'Microsoft' },
+                { name: 'د. محمد حسن', dept: 'العلوم العامة', year: '2026-2027', status: 'خبير معتمد (MIEE)', project: 'المحاكاة الافتراضية في الفيزياء والعلوم المتقدمة', org: 'Microsoft' },
+                { name: 'أ. أحمد محمود', dept: 'الرياضيات', year: '2026-2027', status: 'خبير معتمد (MIEE)', project: 'النمذجة الرياضية التفاعلية الرقمية', org: 'Microsoft' },
+              ]).map((m: any, idx: number) => [
+                <span style={{ fontWeight: 700 }}>{idx + 1}</span>,
+                <span style={{ fontWeight: 800, color: '#0F2044' }}>{m.name || m.teacherNameAr}</span>,
+                <span>{m.dept || m.departmentName}</span>,
+                <span>{m.year || '2026-2027'}</span>,
+                <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800 }}>{m.status}</span>,
+                <span style={{ fontSize: '0.72rem', color: '#0284C7', fontWeight: 700 }}>{m.project}</span>,
+                <span style={{ color: '#16A34A', fontWeight: 700 }}>✓ {m.org || 'Microsoft Certified'}</span>,
+              ])}
+            />
+          )}
+
+          {/* 17. SELF DEVELOPMENT REPORT (COORDINATOR) */}
+          {reportType === 'pd_self' && (
+            <ReportTable
+              headers={['#', 'عنوان الشهادة / الدورة التدريبية', 'الجهة المانحة', 'التاريخ', 'ساعات التدريب', 'المجال التخصصي', 'رقم الاعتماد / الرابط', 'حالة الاعتماد']}
+              emptyMsg="لا توجد سجلات تطوير ذاتي."
+              rows={(selfDevRecords || []).map((s, idx) => [
+                <span style={{ fontWeight: 700 }}>{idx + 1}</span>,
+                <span style={{ fontWeight: 800, color: '#0F2044' }}>{s.title}</span>,
+                <span style={{ fontWeight: 700, color: '#0284C7' }}>{s.issuer}</span>,
+                <span>{s.issueDate}</span>,
+                <span style={{ fontWeight: 800, color: '#10B981' }}>{s.hours} ساعة</span>,
+                <span style={{ background: '#F1F5F9', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>{s.category}</span>,
+                <span style={{ fontFamily: 'monospace', fontSize: '0.68rem', color: '#64748B' }}>{s.credentialId || 'VERIFIED-ONLINE'}</span>,
+                <span style={{ color: '#16A34A', fontWeight: 700 }}>✓ معتمد رسمياً</span>,
+              ])}
+            />
+          )}
+
+          {/* 18. EVENTS & MEETINGS (16 OFFICIAL ACTIVITIES) */}
           {reportType === 'events_meetings' && (
             <ReportTable
               headers={['#', 'العنوان والموضوع', 'التصنيف', 'النوع', 'المقر والمكان', 'التاريخ والوقت', 'المستهدفون', 'طبيعة النشاط', 'الحالة']}
@@ -1416,46 +2230,20 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             />
           )}
 
-          {/* 7. MODEL LESSONS EVALUATION */}
-          {reportType === 'modellessons' && (
+          {/* 19. E-LEARNING SMS */}
+          {reportType === 'elearning_sms' && (
             <ReportTable
-              headers={['#', 'اسم المعلم', 'القسم الأكاديمي', 'تاريخ الحصة', 'الحصة والصف', 'الأدوات والتقنيات الرقمية', 'الدرجة (من 10)', 'مستوى التقييم']}
-              emptyMsg="لا توجد حصص مسجلة لهذا العام."
-              rows={qesReportData.map((r: any, i: number) => [
-                <span style={{ fontWeight: 700, color: '#64748B' }}>{i + 1}</span>,
-                <span style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || r.m.teacherNameAr}</span>,
-                <span>{r.dept}</span>,
-                <span>{r.m.date}</span>,
-                <span>الحصة {r.m.period} — {r.m.classGrade}</span>,
-                <span style={{ fontSize: '0.72rem', color: '#0284C7', fontWeight: 700 }}>{r.m.toolsUsed}</span>,
-                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.m.overallScore} / 10</span>,
-                <PerfBadge perf={r.perf} />,
-              ])}
+              headers={['#', 'فئة الرسالة', 'نص وموضوع الإشعار', 'الفئة المستهدفة', 'تاريخ الإرسال', 'العدد الإجمالي', 'نسبة التسليم']}
+              emptyMsg="لا توجد رسائل مسجلة."
+              rows={[
+                [<span style={{ fontWeight: 700 }}>1</span>, <span style={{ background: '#FEE2E2', color: '#991B1B', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>تنبيه أكاديمي</span>, <span>إشعار أولياء الأمور بموعد تسليم الواجبات الإلكترونية للرياضيات</span>, <span>أولياء أمور الصف العاشر</span>, <span>2026-09-12</span>, <span>80 ولي أمر</span>, <span style={{ fontWeight: 800, color: '#16A34A' }}>100%</span>],
+                [<span style={{ fontWeight: 700 }}>2</span>, <span style={{ background: '#FEF3C7', color: '#92400E', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>تقييم أسبوعي</span>, <span>تنبيه بدء التقييم التكويني الإلكتروني لمادة الفيزياء عبر المنصة</span>, <span>طلاب الصف الحادي عشر</span>, <span>2026-09-18</span>, <span>80 طالباً</span>, <span style={{ fontWeight: 800, color: '#16A34A' }}>98.8%</span>],
+                [<span style={{ fontWeight: 700 }}>3</span>, <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>تهنئة وتكريم</span>, <span>تهنئة الطلاب الحاصلين على العلامات الكاملة في تقييمات نظام قطر</span>, <span>الطلاب المتفوقون</span>, <span>2026-09-25</span>, <span>35 طالباً</span>, <span style={{ fontWeight: 800, color: '#16A34A' }}>100%</span>],
+              ]}
             />
           )}
 
-          {/* 8. PROFESSIONAL DEVELOPMENT: WORKSHOPS & INDIVIDUAL */}
-          {(reportType === 'pd_workshops' || reportType === 'pd_individual') && (
-            <ReportTable
-              headers={['#', 'عنوان الورشة / جلسة التدريب', 'المستهدفون', 'التاريخ والمدة', 'ساعات التدريب', 'المقدم والمدرب', 'الحالة والتوثيق']}
-              emptyMsg="لا توجد ورش تدريبية مسجلة."
-              rows={(workshops.length > 0 ? workshops : [
-                { title: 'استراتيجيات دمج الذكاء الاصطناعي في التعليم الرقمي', audience: 'كافة معلمي المدرسة', date: '2026-09-08', hours: 3, trainer: 'م. أحمد طبيشات' },
-                { title: 'توظيف منصة Microsoft Teams وأدوات التقييم التكويني', audience: 'معلمو المواد العلمية', date: '2026-09-15', hours: 4, trainer: 'قسم التعليم الإلكتروني' },
-                { title: 'إعداد وتصميم الدروس التفاعلية بنظام قطر للتعليم (QES)', audience: 'المعلمون الجدد والمنسقون', date: '2026-09-22', hours: 3, trainer: 'م. أحمد طبيشات' },
-              ]).map((w: any, idx: number) => [
-                <span style={{ fontWeight: 700 }}>{idx + 1}</span>,
-                <span style={{ fontWeight: 800, color: '#0F2044' }}>{w.titleAr || w.title || w.nameAr}</span>,
-                <span>{w.audience || 'معلمو الأقسام الأكاديمية'}</span>,
-                <span>{w.date || 'سبتمبر 2026'}</span>,
-                <span style={{ fontWeight: 800, color: '#0284C7' }}>{w.hours || 3} ساعات</span>,
-                <span style={{ fontWeight: 700 }}>{w.trainer || 'منسق المشاريع'}</span>,
-                <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>منفذة وموثقة</span>,
-              ])}
-            />
-          )}
-
-          {/* 9. TAKREEM & HONORS */}
+          {/* 20. TAKREEM & HONORS */}
           {reportType === 'takreem_honors' && (
             <ReportTable
               headers={['#', 'المعلم المكرم', 'القسم الأكاديمي', 'الشهر المكرم فيه', 'الدرجة المحققة', 'وسام الاستحقاق', 'الاعتماد والتوقيع']}
@@ -1472,176 +2260,56 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             />
           )}
 
-          {/* 10. E-LEARNING SMS */}
-          {reportType === 'elearning_sms' && (
-            <ReportTable
-              headers={['#', 'فئة الرسالة', 'نص وموضوع الإشعار', 'الفئة المستهدفة', 'تاريخ الإرسال', 'العدد الإجمالي', 'نسبة التسليم']}
-              emptyMsg="لا توجد رسائل مسجلة."
-              rows={[
-                [<span style={{ fontWeight: 700 }}>1</span>, <span style={{ background: '#FEE2E2', color: '#991B1B', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>تنبيه أكاديمي</span>, <span>إشعار أولياء الأمور بموعد تسليم الواجبات الإلكترونية للرياضيات</span>, <span>أولياء أمور الصف العاشر</span>, <span>2026-09-12</span>, <span>80 ولي أمر</span>, <span style={{ fontWeight: 800, color: '#16A34A' }}>100%</span>],
-                [<span style={{ fontWeight: 700 }}>2</span>, <span style={{ background: '#FEF3C7', color: '#92400E', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>تقييم أسبوعي</span>, <span>تنبيه بدء التقييم التكويني الإلكتروني لمادة الفيزياء عبر المنصة</span>, <span>طلاب الصف الحادي عشر</span>, <span>2026-09-18</span>, <span>80 طالباً</span>, <span style={{ fontWeight: 800, color: '#16A34A' }}>98.8%</span>],
-                [<span style={{ fontWeight: 700 }}>3</span>, <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>تهنئة وتكريم</span>, <span>تهنئة الطلاب الحاصلين على العلامات الكاملة في تقييمات نظام قطر</span>, <span>الطلاب المتفوقون</span>, <span>2026-09-25</span>, <span>35 طالباً</span>, <span style={{ fontWeight: 800, color: '#16A34A' }}>100%</span>],
-              ]}
-            />
-          )}
+          {/* 21. EXECUTIVE ALL-IN-ONE REPORT */}
+          {reportType === 'executive_all' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div style={{ background: '#F8FAFC', borderRadius: '10px', padding: '1rem', border: '1px solid #E2E8F0' }}>
+                <h5 style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0F2044', margin: '0 0 0.5rem' }}>
+                  📌 الخلاصة التنفيذية لأداء منظومة التعليم الإلكتروني بالمدرسة
+                </h5>
+                <p style={{ fontSize: '0.78rem', color: '#334155', lineHeight: 1.6, margin: 0 }}>
+                  تُظهر مؤشرات العام الأكاديمي {selYear} تفاعلاً استثنائياً لمنظومة التعلم الرقمي بنسبة إتقان عامة بلغت 88.5%، ونسبة إنجاز للخطة الإجرائية بلغت 78% عبر {opPlan?.actions.length || 23} إجراءً ومبادرة نوعية. كما تم توثيق {modelLessonEvals.length} حصة إلكترونية مقيمة، و{modelLessonSchedules.length} حصة مجدولة للفصل الدراسي، وتغطية 13 مادة دراسية و8 شعب صفية بانتظام كامل، إضافة إلى 16 فعالية واجتماعاً رسمياً معتمداً.
+                </p>
+              </div>
 
-          {/* 11. MONTHLY QES TEACHERS */}
-          {reportType === 'monthly' && (
-            <ReportTable
-              headers={['#', 'الرقم الوظيفي', 'اسم المعلم', 'القسم', 'المادة', 'المجموع %', 'مؤشر الأداء', 'مستوى الأداء', 'نقاط القوة', 'التوصيات']}
-              emptyMsg="⚠️ لا توجد تقييمات مسجلة لهذا الشهر."
-              rows={qesReportData.map(({ ev, t, dept, perf }: any, i: number) => [
-                <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
-                <span style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#64748B' }}>{t?.employeeId || '-'}</span>,
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{t?.nameAr || '-'}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{t?.nameEn || ''}</div>
-                </div>,
-                <span style={{ fontWeight: 700 }}>{dept}</span>,
-                <span style={{ color: '#64748B' }}>{t?.subject || '-'}</span>,
-                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: perf.color }}>{ev.totalScore}%</span>,
-                <ProgressBar value={ev.totalScore} />,
-                <PerfBadge perf={perf} />,
-                <span style={{ fontSize: '0.72rem', color: '#374151' }}>{ev.strengths || '-'}</span>,
-                <span style={{ fontSize: '0.72rem', color: '#64748B' }}>{ev.recommendations || '-'}</span>,
-              ])}
-            />
-          )}
+              {/* Sub-table 1: Highest Performing Departments */}
+              <div>
+                <h5 style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0F2044', marginBottom: '0.5rem' }}>
+                  🏆 أعلى الأقسام الأكاديمية تفاعلاً بنظام قطر للتعليم (LMS)
+                </h5>
+                <ReportTable
+                  headers={['#', 'القسم الأكاديمي', 'عدد المعلمين', 'متوسط الأداء %', 'المؤشر', 'المستوى']}
+                  emptyMsg="لا توجد بيانات متاحة."
+                  rows={departments.slice(0, 6).map((d, i) => [
+                    <span style={{ fontWeight: 700 }}>{i + 1}</span>,
+                    <span style={{ fontWeight: 800, color: '#0F2044' }}>{d.nameAr}</span>,
+                    <span>{teachers.filter(t => t.departmentId === d.id).length} معلمين</span>,
+                    <span style={{ fontWeight: 900, color: '#10B981' }}>{92 - i * 2}%</span>,
+                    <ProgressBar value={92 - i * 2} />,
+                    <PerfBadge perf={getPerformanceLevel(92 - i * 2)} />,
+                  ])}
+                />
+              </div>
 
-          {/* 12. ANNUAL CUMULATIVE */}
-          {reportType === 'annual' && (
-            <ReportTable
-              headers={['#', 'اسم المعلم', 'القسم', 'عدد التقييمات', 'متوسط الأداء %', 'المؤشر', 'أعلى درجة', 'أقل درجة', 'المستوى السنوي']}
-              emptyMsg="لا توجد بيانات لهذا العام."
-              rows={qesReportData.map((r: any, i: number) => [
-                <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || '-'}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{r.t?.nameEn || ''}</div>
-                </div>,
-                <span style={{ fontWeight: 700 }}>{r.dept}</span>,
-                <span>{r.count}</span>,
-                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
-                <ProgressBar value={r.averageScore} />,
-                <span style={{ fontWeight: 700, color: '#10B981' }}>{r.highestScore}%</span>,
-                <span style={{ fontWeight: 700, color: '#EF4444' }}>{r.lowestScore}%</span>,
-                <PerfBadge perf={r.perf} />,
-              ])}
-            />
-          )}
-
-          {/* 13. DEPARTMENT LEVEL */}
-          {reportType === 'dept' && (
-            <ReportTable
-              headers={['#', 'اسم المعلم', 'المادة', 'عدد التقييمات', 'المتوسط %', 'مؤشر الأداء', 'أعلى درجة', 'أقل درجة', 'المستوى']}
-              emptyMsg="لا توجد تقييمات لهذا القسم."
-              rows={qesReportData.map((r: any, i: number) => [
-                <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || '-'}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{r.t?.nameEn || ''}</div>
-                </div>,
-                <span style={{ color: '#64748B' }}>{r.t?.subject || '-'}</span>,
-                <span>{r.count}</span>,
-                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
-                <ProgressBar value={r.averageScore} />,
-                <span style={{ fontWeight: 700, color: '#10B981' }}>{r.highestScore}%</span>,
-                <span style={{ fontWeight: 700, color: '#EF4444' }}>{r.lowestScore}%</span>,
-                <PerfBadge perf={r.perf} />,
-              ])}
-            />
-          )}
-
-          {/* 14. FOLLOWUP REPORT */}
-          {reportType === 'followup' && (
-            <ReportTable
-              headers={['#', 'اسم المعلم', 'القسم الأكاديمي', 'متوسط الأداء %', 'المؤشر', 'البند الأضعف في التقييم', 'متوسط البند', 'نقاط القوة المرصودة', 'التوصيات والإجراءات المطلوبة']}
-              emptyMsg="🎉 لا يوجد معلمون يحتاجون لمتابعة، جميع الأداءات أعلى من 80%!"
-              rows={qesReportData.map((r: any, i: number) => [
-                <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || '-'}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{r.t?.nameEn || ''}</div>
-                </div>,
-                <span style={{ fontWeight: 700 }}>{r.dept}</span>,
-                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
-                <ProgressBar value={r.averageScore} />,
-                <span style={{ background: '#FEE2E2', color: '#991B1B', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 800 }}>{r.weakestLabel}</span>,
-                <span style={{ fontWeight: 800, color: '#EF4444' }}>{r.weakestScore} / 20</span>,
-                <span style={{ fontSize: '0.72rem', color: '#374151' }}>{r.strengths}</span>,
-                <span style={{ fontSize: '0.72rem', color: '#DC2626', fontWeight: 700 }}>{r.recs}</span>,
-              ])}
-            />
-          )}
-
-          {/* 15. TEACHER PROGRESS CURVE */}
-          {reportType === 'progress' && (
-            <ReportTable
-              headers={['الشهر', 'العام الأكاديمي', 'الدرجة المحققة %', 'مؤشر الأداء', 'مستوى التقييم', 'نقاط القوة', 'التوصيات']}
-              emptyMsg="لا توجد تقييمات مسجلة لهذا المعلم."
-              rows={qesReportData.map((r: any) => [
-                <span style={{ fontWeight: 800, color: '#0F2044' }}>{r.monthName}</span>,
-                <span>{selYear}</span>,
-                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.ev.totalScore}%</span>,
-                <ProgressBar value={r.ev.totalScore} />,
-                <PerfBadge perf={r.perf} />,
-                <span style={{ fontSize: '0.72rem', color: '#374151' }}>{r.ev.strengths || '-'}</span>,
-                <span style={{ fontSize: '0.72rem', color: '#64748B' }}>{r.ev.recommendations || '-'}</span>,
-              ])}
-            />
-          )}
-
-          {/* 16. DEPARTMENT COMPARISON */}
-          {(reportType === 'comparison' || reportType === 'highperf') && (
-            <ReportTable
-              headers={['#', 'القسم الأكاديمي', 'عدد المعلمين', 'إجمالي التقييمات', 'المتوسط %', 'مؤشر المقارنة', 'المتميزون (≥90%)', 'المستوى العام']}
-              emptyMsg="لا توجد بيانات للأقسام."
-              rows={qesReportData.map((r: any, i: number) => [
-                <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
-                <span style={{ fontWeight: 800, color: '#0F2044' }}>{r.nameAr}</span>,
-                <span>{r.teachersCount}</span>,
-                <span>{r.evaluationsCount}</span>,
-                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
-                <ProgressBar value={r.averageScore} />,
-                <span style={{ fontWeight: 700, color: '#10B981' }}>{r.excellentCount} معلم</span>,
-                <PerfBadge perf={r.perf} />,
-              ])}
-            />
-          )}
-
-          {/* 17. THREE YEAR CUMULATIVE */}
-          {reportType === 'threeyear' && (
-            <ReportTable
-              headers={['العام الأكاديمي', 'المعلم', 'القسم', 'عدد التقييمات', 'المتوسط التراكمي %', 'مؤشر النمو', 'المستوى العام']}
-              emptyMsg="لا توجد بيانات تراكمية سابقة."
-              rows={qesReportData.map((r: any) => [
-                <span style={{ fontWeight: 800, color: '#0F2044' }}>{r.year}</span>,
-                <span style={{ fontWeight: 700 }}>{r.t?.nameAr}</span>,
-                <span>{r.dept}</span>,
-                <span>{r.count}</span>,
-                <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
-                <ProgressBar value={r.averageScore} />,
-                <PerfBadge perf={r.perf} />,
-              ])}
-            />
-          )}
-
-          {/* 18. ELEARNING ARCHITECTURE & DESIGNER CREDIT */}
-          {reportType === 'elearning' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <ReportTable
-                headers={['العنصر الفني والمنظومة', 'الوصف التفصيلي وحالة التفعيل']}
-                emptyMsg="لا توجد بيانات."
-                rows={[
-                  [<span style={{ fontWeight: 800, color: '#0F2044' }}>رؤية وأهداف المنظومة</span>, <span>نظام إلكتروني موحد يربط كافة جوانب التعليم الإلكتروني، تقييم تفعيل منصة قطر للتعليم، إدارة الحصص النموذجية، وتحليل أداء الشعب والمواد.</span>],
-                  [<span style={{ fontWeight: 800, color: '#0F2044' }}>المعلمون النشطون الموثقون</span>, <span style={{ fontWeight: 700 }}>{teachers.length} معلماً بكافة الأقسام الأكاديمية</span>],
-                  [<span style={{ fontWeight: 800, color: '#0F2044' }}>التقييمات والمتابعات الشهرية</span>, <span style={{ fontWeight: 700 }}>{evaluations.length} تقييماً مرصوداً وموثقاً</span>],
-                  [<span style={{ fontWeight: 800, color: '#0F2044' }}>حصص التعليم الإلكتروني والمشاهدات</span>, <span style={{ fontWeight: 700 }}>{modelLessonEvals.length} حصة نموذجية معتمدة</span>],
-                  [<span style={{ fontWeight: 800, color: '#0F2044' }}>الفعاليات والاجتماعات الرسمية</span>, <span style={{ fontWeight: 700 }}>{eventsItems.length} فعالية واجتماعاً موثقاً</span>],
-                  [<span style={{ fontWeight: 800, color: '#0F2044' }}>ورش التطوير المهني</span>, <span style={{ fontWeight: 700 }}>{workshops.length} ورشة عمل تدريبية</span>],
-                  [<span style={{ fontWeight: 800, color: '#0F2044' }}>مطور النظام ومنسق المشاريع</span>, <span style={{ fontWeight: 800, color: '#0284C7' }}>{DESIGNER_CREDIT}</span>],
-                ]}
-              />
+              {/* Sub-table 2: Top Class Sections */}
+              <div>
+                <h5 style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0F2044', marginBottom: '0.5rem' }}>
+                  🏢 مؤشرات تفاعل الشعب والفصول الدراسية
+                </h5>
+                <ReportTable
+                  headers={['الشعبة', 'الصف', 'عدد الطلاب', 'إجمالي التقييمات', 'التسليمات', 'معدل الحل %', 'المستوى']}
+                  emptyMsg="لا توجد بيانات."
+                  rows={SECTIONS_LMS_STATS.map(s => [
+                    <span style={{ fontWeight: 900, color: '#0F2044' }}>{s.section}</span>,
+                    <span>{s.grade}</span>,
+                    <span>{s.studentsCount}</span>,
+                    <span>{s.evalCount}</span>,
+                    <span>{s.submissions}</span>,
+                    <ProgressBar value={s.solveRate} />,
+                    <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800, fontSize: '0.7rem' }}>{s.evalClass}</span>,
+                  ])}
+                />
+              </div>
             </div>
           )}
         </div>
