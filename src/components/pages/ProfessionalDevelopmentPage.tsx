@@ -139,6 +139,17 @@ export async function translateArabicToEnglish(text: string): Promise<string> {
   return translated.replace(/\b\w/g, char => char.toUpperCase());
 }
 
+export function getMonthFromDate(dateStr?: string): string {
+  if (!dateStr) return 'أغسطس';
+  const monthMap: Record<string, string> = {
+    '01': 'يناير', '02': 'فبراير', '03': 'مارس', '04': 'أبريل',
+    '05': 'مايو', '06': 'يونيو', '07': 'يوليو', '08': 'أغسطس',
+    '09': 'سبتمبر', '10': 'أكتوبر', '11': 'نوفمبر', '12': 'ديسمبر'
+  };
+  const parts = dateStr.split('-');
+  return parts.length >= 2 && monthMap[parts[1]] ? monthMap[parts[1]] : 'أغسطس';
+}
+
 type TabType = 'overview' | 'all' | 'individual' | 'meee' | 'self_development' | 'attendance' | 'evidence' | 'reports' | 'plan';
 
 interface MeeeRecord {
@@ -203,27 +214,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
         db.getDepartments()
       ]);
       
-      // Cleanup: Remove all auto-generated signatures from attendance sheets
-      let changed = false;
-      const cleanWorkshops = w.map(workshop => {
-        if (workshop.attendees?.some((a: any) => a.signatureImage)) {
-          changed = true;
-          return {
-            ...workshop,
-            attendees: workshop.attendees.map((a: any) => {
-              const { signatureImage, ...rest } = a;
-              return rest;
-            })
-          };
-        }
-        return workshop;
-      });
-
-      if (changed) {
-        db.saveWorkshops(cleanWorkshops);
-      }
-
-      setWorkshops(cleanWorkshops);
+      setWorkshops(w);
       setIndividualRecords(r);
       setMeeeRecords(m);
       setTeachers(t);
@@ -454,7 +445,31 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
 
   const handleSaveWorkshop = (w: Workshop) => {
     const exists = workshops.find(item => item.id === w.id);
-    const newWorkshops = exists ? workshops.map(item => item.id === w.id ? w : item) : [w, ...workshops];
+    const mergedWorkshop: Workshop = exists ? {
+      ...exists,
+      ...w,
+      attendees: (w.attendees && w.attendees.length > 0) ? w.attendees : (exists.attendees || []),
+      attendanceCount: (w.attendanceCount && w.attendanceCount > 0) ? w.attendanceCount : (w.attendees?.length || exists.attendanceCount || exists.attendees?.length || 0),
+      evidenceUrl: w.evidenceUrl || exists.evidenceUrl,
+      evidenceFileUrl: w.evidenceFileUrl || exists.evidenceFileUrl,
+      reportFileName: w.reportFileName || exists.reportFileName,
+      attendanceFileName: w.attendanceFileName || exists.attendanceFileName,
+      sourceFile: w.sourceFile || exists.sourceFile,
+      sourceFileName: w.sourceFileName || exists.sourceFileName,
+      notes: (w.notes && w.notes.trim()) ? w.notes : (exists.notes || ''),
+      procedure: (w.procedure && w.procedure.trim()) ? w.procedure : (exists.procedure || ''),
+      followUpNotes: (w.followUpNotes && w.followUpNotes.trim()) ? w.followUpNotes : (exists.followUpNotes || ''),
+      objectives: (w.objectives && w.objectives.trim()) ? w.objectives : (exists.objectives || ''),
+      keyPoints: (w.keyPoints && w.keyPoints.trim()) ? w.keyPoints : (exists.keyPoints || ''),
+      recommendations: (w.recommendations && w.recommendations.trim()) ? w.recommendations : (exists.recommendations || ''),
+      createdAt: exists.createdAt || w.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    } : {
+      ...w,
+      createdAt: w.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    const newWorkshops = exists ? workshops.map(item => item.id === w.id ? mergedWorkshop : item) : [mergedWorkshop, ...workshops];
     saveWorkshops(newWorkshops);
     setIsFormOpen(false);
     setEditingWorkshop(null);
@@ -469,7 +484,18 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
 
   const handleSaveIndividual = (r: IndividualPDRecord) => {
     const exists = individualRecords.find(item => item.id === r.id);
-    const newRecords = exists ? individualRecords.map(item => item.id === r.id ? r : item) : [r, ...individualRecords];
+    const mergedRecord: IndividualPDRecord = exists ? {
+      ...exists,
+      ...r,
+      notes: (r.notes && r.notes.trim()) ? r.notes : (exists.notes || ''),
+      createdAt: exists.createdAt || r.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    } : {
+      ...r,
+      createdAt: r.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    const newRecords = exists ? individualRecords.map(item => item.id === r.id ? mergedRecord : item) : [mergedRecord, ...individualRecords];
     saveIndividualRecords(newRecords);
     setIsIndFormOpen(false);
     setEditingIndividual(null);
@@ -526,14 +552,15 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
   if (reportingWorkshop) {
     return (
       <SingleWorkshopReport
+        key={reportingWorkshop.id}
         workshop={reportingWorkshop}
         teachers={teachers}
         departments={departments}
         onClose={() => setReportingWorkshop(null)}
         onUpdateWorkshop={(updated) => {
-          const next = workshops.map(w => w.id === updated.id ? updated : w);
+          const next = workshops.map(w => w.id === updated.id ? { ...w, ...updated } : w);
           saveWorkshops(next);
-          setReportingWorkshop(updated);
+          setReportingWorkshop(prev => prev ? { ...prev, ...updated } : null);
         }}
         canEdit={canEdit}
       />
@@ -717,7 +744,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
             onOpenComprehensive={() => setShowComprehensiveReport(true)}
             canEdit={canEdit}
             onUpdateWorkshop={(updated: Workshop) => {
-              const next = workshops.map(w => w.id === updated.id ? updated : w);
+              const next = workshops.map(w => w.id === updated.id ? { ...w, ...updated } : w);
               saveWorkshops(next);
             }}
           />
@@ -921,17 +948,19 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
       
       {isIndFormOpen && (
         <IndividualPDForm 
+          key={editingIndividual?.id || 'new-ind'}
           record={editingIndividual} 
           onSave={handleSaveIndividual} 
-          onClose={() => setIsIndFormOpen(false)} 
+          onClose={() => { setIsIndFormOpen(false); setEditingIndividual(null); }} 
         />
       )}
 
       {isFormOpen && (
         <WorkshopForm 
+          key={editingWorkshop?.id || 'new-workshop'}
           workshop={editingWorkshop} 
           onSave={handleSaveWorkshop} 
-          onClose={() => setIsFormOpen(false)} 
+          onClose={() => { setIsFormOpen(false); setEditingWorkshop(null); }} 
         />
       )}
 
@@ -1182,34 +1211,100 @@ function FileLink({ label, file, icon }: any) {
   );
 }
 
+function normalizeWorkshopForForm(w?: Workshop | null): Partial<Workshop> {
+  if (!w) {
+    return {
+      id: `PD-2526-W${generateId().slice(0, 4)}`,
+      titleAr: '',
+      titleEn: '',
+      academicYear: '2026-2027',
+      month: 'أغسطس',
+      trainingMode: 'جلسة تطويرية Hands on Session',
+      category: 'تطوير ذاتي',
+      targetAudience: 'المعلمين',
+      targetClasses: 'جميع الصفوف',
+      facilitatorName: '',
+      organizerName: SCHOOL_NAME,
+      venue: 'مدرسة قطر للعلوم والتكنولوجيا',
+      location: 'مدرسة قطر للعلوم والتكنولوجيا',
+      objectives: '',
+      keyPoints: '',
+      recommendations: '',
+      status: 'تم التنفيذ',
+      hours: '2',
+      date: '',
+      attendanceCount: 0,
+      attendees: [],
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  const titleAr = w.titleAr || w.nameAr || '';
+  const titleEn = w.titleEn || w.nameEn || '';
+  const facilitatorName = w.facilitatorName || w.trainerName || w.trainer || '';
+  const organizerName = w.organizerName || w.organizedBy || w.entity || SCHOOL_NAME;
+  const venue = w.venue || w.location || 'مدرسة قطر للعلوم والتكنولوجيا';
+  const targetAudience = w.targetAudience || w.targetGroup || 'المعلمين';
+  const category = w.category || 'تطوير ذاتي';
+  const hours = String(w.hours || w.durationHours || '2');
+  const objectives = w.objectives || w.goal || w.description || '';
+  const keyPoints = w.keyPoints || '';
+  const recommendations = w.recommendations || '';
+  const date = w.date || '';
+  const month = w.month || getMonthFromDate(date);
+  const status = w.status || 'تم التنفيذ';
+  const academicYear = w.academicYear || '2026-2027';
+  const trainingMode = w.trainingMode || 'جلسة تطويرية Hands on Session';
+  const targetClasses = w.targetClasses || 'جميع الصفوف';
+  const attendees = w.attendees || [];
+  const attendanceCount = (w.attendanceCount && w.attendanceCount > 0) ? w.attendanceCount : attendees.length;
+
+  return {
+    ...w,
+    titleAr,
+    titleEn,
+    nameAr: titleAr,
+    nameEn: titleEn,
+    facilitatorName,
+    trainerName: facilitatorName,
+    trainer: facilitatorName,
+    organizerName,
+    organizedBy: organizerName,
+    venue,
+    location: venue,
+    targetAudience,
+    targetGroup: targetAudience,
+    targetClasses,
+    category,
+    hours,
+    objectives,
+    keyPoints,
+    recommendations,
+    date,
+    month,
+    status,
+    academicYear,
+    trainingMode,
+    attendees,
+    attendanceCount,
+    evidenceUrl: w.evidenceUrl || w.reportUrl,
+    evidenceFileUrl: w.evidenceFileUrl,
+    reportFileName: w.reportFileName || w.sourceFile,
+    attendanceFileName: w.attendanceFileName || w.attendanceUrl,
+    sourceFile: w.sourceFile,
+    sourceFileName: w.sourceFileName,
+    notes: w.notes,
+    procedure: w.procedure,
+    followUpNotes: w.followUpNotes,
+  };
+}
+
 function WorkshopForm({ workshop, onSave, onClose }: any) {
-  const [fd, setFd] = useState<Partial<Workshop>>(workshop ? {
-    ...workshop,
-    venue: workshop.venue || workshop.location || 'مدرسة قطر للعلوم والتكنولوجيا',
-    location: workshop.venue || workshop.location || 'مدرسة قطر للعلوم والتكنولوجيا',
-    targetAudience: workshop.targetAudience || workshop.targetGroup || 'المعلمين',
-    category: workshop.category || 'تطوير ذاتي',
-  } : { 
-    id: `PD-2526-W${generateId().slice(0, 4)}`, 
-    titleAr: '', 
-    titleEn: '',
-    academicYear: '2026-2027', 
-    month: 'أغسطس', 
-    trainingMode: 'جلسة تطويرية Hands on Session', 
-    category: 'تطوير ذاتي', 
-    targetAudience: 'المعلمين', 
-    facilitatorName: '', 
-    organizerName: SCHOOL_NAME, 
-    venue: 'مدرسة قطر للعلوم والتكنولوجيا', 
-    location: 'مدرسة قطر للعلوم والتكنولوجيا',
-    objectives: '', 
-    keyPoints: '', 
-    recommendations: '', 
-    status: 'تم التنفيذ', 
-    hours: '2', 
-    attendanceCount: 0, 
-    updatedAt: new Date().toISOString() 
-  });
+  const [fd, setFd] = useState<Partial<Workshop>>(() => normalizeWorkshopForForm(workshop));
+
+  useEffect(() => {
+    setFd(normalizeWorkshopForForm(workshop));
+  }, [workshop]);
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateFeedback, setTranslateFeedback] = useState<string | null>(null);
@@ -1228,7 +1323,7 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
     try {
       const translated = await translateArabicToEnglish(cleanText);
       if (translated) {
-        setFd(prev => ({ ...prev, titleEn: translated }));
+        setFd(prev => ({ ...prev, titleEn: translated, nameEn: translated }));
         setTranslateFeedback('تمت الترجمة تلقائياً ✓');
         setTimeout(() => setTranslateFeedback(null), 3500);
       } else {
@@ -1243,7 +1338,7 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
   };
 
   const handleTitleArChange = (val: string) => {
-    setFd(prev => ({ ...prev, titleAr: val }));
+    setFd(prev => ({ ...prev, titleAr: val, nameAr: val }));
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -1252,6 +1347,15 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
         handleTranslate(val, false);
       }, 700);
     }
+  };
+
+  const handleDateChange = (val: string) => {
+    const detectedMonth = getMonthFromDate(val);
+    setFd(prev => ({
+      ...prev,
+      date: val,
+      month: detectedMonth || prev.month || 'أغسطس'
+    }));
   };
 
   return (
@@ -1272,7 +1376,43 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
         <form onSubmit={e => { 
           e.preventDefault(); 
           const finalVenue = fd.venue || fd.location || 'مدرسة قطر للعلوم والتكنولوجيا';
-          onSave({ ...fd, venue: finalVenue, location: finalVenue } as Workshop); 
+          const savedData: Workshop = {
+            ...(workshop || {}),
+            ...fd,
+            venue: finalVenue,
+            location: finalVenue,
+            titleAr: fd.titleAr || fd.nameAr || '',
+            nameAr: fd.titleAr || fd.nameAr || '',
+            titleEn: fd.titleEn || fd.nameEn || '',
+            nameEn: fd.titleEn || fd.nameEn || '',
+            facilitatorName: fd.facilitatorName || fd.trainer || '',
+            trainer: fd.facilitatorName || fd.trainer || '',
+            trainerName: fd.facilitatorName || fd.trainer || '',
+            organizerName: fd.organizerName || fd.entity || SCHOOL_NAME,
+            organizedBy: fd.organizerName || fd.entity || SCHOOL_NAME,
+            targetAudience: fd.targetAudience || 'المعلمين',
+            targetGroup: fd.targetAudience || 'المعلمين',
+            hours: String(fd.hours || '2'),
+            status: fd.status || 'تم التنفيذ',
+            month: fd.month || getMonthFromDate(fd.date),
+            // Strictly preserve attendees, signatures, evidence, and notes
+            attendees: (fd.attendees && fd.attendees.length > 0) ? fd.attendees : (workshop?.attendees || []),
+            attendanceCount: (fd.attendees && fd.attendees.length > 0) ? Math.max(Number(fd.attendanceCount || 0), fd.attendees.length) : (workshop?.attendanceCount || Number(fd.attendanceCount) || 0),
+            evidenceUrl: fd.evidenceUrl || workshop?.evidenceUrl,
+            evidenceFileUrl: fd.evidenceFileUrl || workshop?.evidenceFileUrl,
+            reportFileName: fd.reportFileName || workshop?.reportFileName,
+            attendanceFileName: fd.attendanceFileName || workshop?.attendanceFileName,
+            sourceFile: fd.sourceFile || workshop?.sourceFile,
+            sourceFileName: fd.sourceFileName || workshop?.sourceFileName,
+            notes: (fd.notes && fd.notes.trim()) ? fd.notes : (workshop?.notes || ''),
+            procedure: (fd.procedure && fd.procedure.trim()) ? fd.procedure : (workshop?.procedure || ''),
+            followUpNotes: (fd.followUpNotes && fd.followUpNotes.trim()) ? fd.followUpNotes : (workshop?.followUpNotes || ''),
+            objectives: (fd.objectives && fd.objectives.trim()) ? fd.objectives : (workshop?.objectives || ''),
+            keyPoints: (fd.keyPoints && fd.keyPoints.trim()) ? fd.keyPoints : (workshop?.keyPoints || ''),
+            recommendations: (fd.recommendations && fd.recommendations.trim()) ? fd.recommendations : (workshop?.recommendations || ''),
+            updatedAt: new Date().toISOString()
+          } as Workshop;
+          onSave(savedData); 
         }} style={{ padding: '2.5rem 3rem', overflowY: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
             
@@ -1283,7 +1423,7 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
                 <span style={{ fontSize: '0.72rem', color: '#64748B' }}>يترجم للإنجليزية تلقائياً أثناء الكتابة</span>
               </div>
               <input 
-                value={fd.titleAr || fd.nameAr || ''} 
+                value={fd.titleAr ?? fd.nameAr ?? ''} 
                 onChange={e => handleTitleArChange(e.target.value)} 
                 onBlur={e => handleTranslate(e.target.value, false)}
                 className="form-input" 
@@ -1295,7 +1435,7 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
             {/* Academic Year */}
             <div>
               <FormLabel>العام الدراسي</FormLabel>
-              <select value={fd.academicYear} onChange={e => setFd({...fd, academicYear: e.target.value})} className="form-input" style={{ background: '#fff' }}>
+              <select value={fd.academicYear || '2026-2027'} onChange={e => setFd({...fd, academicYear: e.target.value})} className="form-input" style={{ background: '#fff' }}>
                 {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
@@ -1335,8 +1475,8 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
                 </div>
               </div>
               <input 
-                value={fd.titleEn || fd.nameEn || ''} 
-                onChange={e => setFd({...fd, titleEn: e.target.value})} 
+                value={fd.titleEn ?? fd.nameEn ?? ''} 
+                onChange={e => setFd({...fd, titleEn: e.target.value, nameEn: e.target.value})} 
                 className="form-input" 
                 dir="ltr"
                 placeholder="Workshop Title in English (auto-translated)"
@@ -1366,19 +1506,19 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
 
             <div>
               <FormLabel>المدرب / مقدم الورشة</FormLabel>
-              <input value={fd.facilitatorName || fd.trainer || ''} onChange={e => setFd({...fd, facilitatorName: e.target.value})} className="form-input" placeholder="اسم مقدم الورشة" />
+              <input value={fd.facilitatorName ?? fd.trainer ?? ''} onChange={e => setFd({...fd, facilitatorName: e.target.value, trainer: e.target.value, trainerName: e.target.value})} className="form-input" placeholder="اسم مقدم الورشة" />
             </div>
 
             <div>
               <FormLabel>الجهة المنظمة</FormLabel>
-              <input value={fd.organizerName || fd.entity || SCHOOL_NAME} onChange={e => setFd({...fd, organizerName: e.target.value})} className="form-input" />
+              <input value={fd.organizerName ?? fd.entity ?? SCHOOL_NAME} onChange={e => setFd({...fd, organizerName: e.target.value, organizedBy: e.target.value, entity: e.target.value})} className="form-input" />
             </div>
 
             <div>
               <FormLabel>مكان انعقاد الورشة (القاعة / المنصة)</FormLabel>
               <input 
                 list="workshop-venue-list"
-                value={fd.venue || fd.location || ''} 
+                value={fd.venue ?? fd.location ?? ''} 
                 onChange={e => setFd({...fd, venue: e.target.value, location: e.target.value})} 
                 className="form-input" 
                 placeholder="مثال: مختبر الروبوت / مسرح المدرسة / Teams"
@@ -1403,7 +1543,7 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
               <FormLabel>الفئة المستهدفة (Drop-down Menu)</FormLabel>
               <select 
                 value={fd.targetAudience || 'المعلمين'} 
-                onChange={e => setFd({...fd, targetAudience: e.target.value})} 
+                onChange={e => setFd({...fd, targetAudience: e.target.value, targetGroup: e.target.value})} 
                 className="form-input"
                 style={{ background: '#fff' }}
               >
@@ -1444,7 +1584,7 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
             
             <div>
               <FormLabel>تاريخ التنفيذ</FormLabel>
-              <input type="date" value={fd.date || ''} onChange={e => setFd({...fd, date: e.target.value})} className="form-input" />
+              <input type="date" value={fd.date || ''} onChange={e => handleDateChange(e.target.value)} className="form-input" />
             </div>
 
             <div>
@@ -1454,7 +1594,7 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
 
             <div>
               <FormLabel>الحالة</FormLabel>
-              <select value={fd.status} onChange={e => setFd({...fd, status: e.target.value as any})} className="form-input" style={{ background: '#fff' }}>
+              <select value={fd.status || 'تم التنفيذ'} onChange={e => setFd({...fd, status: e.target.value as any})} className="form-input" style={{ background: '#fff' }}>
                 <option value="موثق">موثق</option>
                 <option value="تم التنفيذ">تم التنفيذ</option>
                 <option value="قيد التنفيذ">قيد التنفيذ</option>
@@ -1466,7 +1606,7 @@ function WorkshopForm({ workshop, onSave, onClose }: any) {
               <RichBulletTextarea
                 label="الأهداف ومخرجات التعلم"
                 value={fd.objectives || ''}
-                onChange={val => setFd({ ...fd, objectives: val })}
+                onChange={val => setFd({ ...fd, objectives: val, goal: val, description: val })}
                 colorTheme="teal"
                 rows={3}
                 placeholder="اكتب الأهداف التعليمية أو استخدم أزرار الرموز بالأعلى (•، ✓، 🔹، ⭐، 📌)..."
@@ -1574,6 +1714,12 @@ function IndividualPDForm({ record, onSave, onClose }: any) {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
+
+  useEffect(() => {
+    if (record) {
+      setFd({ ...record });
+    }
+  }, [record]);
 
   const handleSkillChange = (val: string) => {
     setFd({

@@ -634,10 +634,85 @@ export function SingleWorkshopReport({ workshop, teachers = [], departments = []
 
   const [isEditingContent, setIsEditingContent] = useState(false);
   const [contentForm, setContentForm] = useState({
-    objectives: workshop.objectives || '',
+    objectives: workshop.objectives || workshop.goal || workshop.description || '',
     keyPoints: workshop.keyPoints || '',
     recommendations: workshop.recommendations || ''
   });
+
+  const [currentAttendees, setCurrentAttendees] = useState<PDAttendee[]>(() => {
+    if (workshop.attendees && workshop.attendees.length > 0) {
+      return workshop.attendees;
+    }
+    if (workshop.notes && workshop.notes.includes('Attendance:')) {
+      const namesPart = workshop.notes.replace('Attendance:', '').trim();
+      const names = namesPart.split('،').map(n => n.trim()).filter(Boolean);
+      return names.map((name, idx) => {
+        const found = teachers.find(t => t.nameAr === name);
+        const dept = found ? getDeptName(found.departmentId, departments) : 'الهيئة التدريسية';
+        return {
+          id: `att-${idx}`,
+          name,
+          department: dept,
+          jobTitle: found?.jobTitle || 'معلم',
+          signatureStatus: 'تم التوقيع' as const,
+          signatureDate: workshop.date || workshop.createdAt
+        };
+      });
+    }
+    if (teachers.length > 0) {
+      const sample = teachers.slice(0, 10).map((t, idx) => ({
+        id: `att-${idx}`,
+        teacherId: t.id,
+        name: t.nameAr,
+        department: getDeptName(t.departmentId, departments),
+        jobTitle: t.jobTitle || 'معلم',
+        signatureStatus: (idx % 4 === 0 ? 'بانتظار التوقيع' : 'تم التوقيع') as any,
+        signatureDate: workshop.date
+      }));
+      return sample;
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    setVenueInput(workshop.venue || workshop.location || 'مدرسة قطر للعلوم والتكنولوجيا');
+    setContentForm({
+      objectives: workshop.objectives || workshop.goal || workshop.description || '',
+      keyPoints: workshop.keyPoints || '',
+      recommendations: workshop.recommendations || ''
+    });
+    if (workshop.attendees && workshop.attendees.length > 0) {
+      setCurrentAttendees(workshop.attendees);
+    } else if (workshop.notes && workshop.notes.includes('Attendance:')) {
+      const namesPart = workshop.notes.replace('Attendance:', '').trim();
+      const names = namesPart.split('،').map(n => n.trim()).filter(Boolean);
+      setCurrentAttendees(names.map((name, idx) => {
+        const found = teachers.find(t => t.nameAr === name);
+        const dept = found ? getDeptName(found.departmentId, departments) : 'الهيئة التدريسية';
+        return {
+          id: `att-${idx}`,
+          name,
+          department: dept,
+          jobTitle: found?.jobTitle || 'معلم',
+          signatureStatus: 'تم التوقيع' as const,
+          signatureDate: workshop.date || workshop.createdAt
+        };
+      }));
+    } else if (teachers.length > 0) {
+      const sample = teachers.slice(0, 10).map((t, idx) => ({
+        id: `att-${idx}`,
+        teacherId: t.id,
+        name: t.nameAr,
+        department: getDeptName(t.departmentId, departments),
+        jobTitle: t.jobTitle || 'معلم',
+        signatureStatus: (idx % 4 === 0 ? 'بانتظار التوقيع' : 'تم التوقيع') as any,
+        signatureDate: workshop.date
+      }));
+      setCurrentAttendees(sample);
+    } else {
+      setCurrentAttendees([]);
+    }
+  }, [workshop.id, workshop.updatedAt, workshop.objectives, workshop.keyPoints, workshop.recommendations, workshop.venue, workshop.location]);
 
   const handleUpdateVenue = (val: string) => {
     setVenueInput(val);
@@ -645,7 +720,8 @@ export function SingleWorkshopReport({ workshop, teachers = [], departments = []
       onUpdateWorkshop({
         ...workshop,
         venue: val,
-        location: val
+        location: val,
+        updatedAt: new Date().toISOString()
       });
     }
   };
@@ -656,7 +732,8 @@ export function SingleWorkshopReport({ workshop, teachers = [], departments = []
         ...workshop,
         objectives: contentForm.objectives,
         keyPoints: contentForm.keyPoints,
-        recommendations: contentForm.recommendations
+        recommendations: contentForm.recommendations,
+        updatedAt: new Date().toISOString()
       });
     }
     setIsEditingContent(false);
@@ -680,50 +757,14 @@ export function SingleWorkshopReport({ workshop, teachers = [], departments = []
     }
   };
 
-  const [currentAttendees, setCurrentAttendees] = useState<PDAttendee[]>(() => {
-    if (workshop.attendees && workshop.attendees.length > 0) {
-      return workshop.attendees;
-    }
-    // Default fallback: If notes contain names or create sample attendance from teachers
-    if (workshop.notes && workshop.notes.includes('Attendance:')) {
-      const namesPart = workshop.notes.replace('Attendance:', '').trim();
-      const names = namesPart.split('،').map(n => n.trim()).filter(Boolean);
-      return names.map((name, idx) => {
-        const found = teachers.find(t => t.nameAr === name);
-        const dept = found ? getDeptName(found.departmentId, departments) : 'الهيئة التدريسية';
-        return {
-          id: `att-${idx}`,
-          name,
-          department: dept,
-          jobTitle: found?.jobTitle || 'معلم',
-          signatureStatus: 'تم التوقيع' as const,
-          signatureDate: workshop.date || workshop.createdAt
-        };
-      });
-    }
-    // If targeted at teachers, provide sample list from registered teachers
-    if (teachers.length > 0) {
-      const sample = teachers.slice(0, 10).map((t, idx) => ({
-        id: `att-${idx}`,
-        teacherId: t.id,
-        name: t.nameAr,
-        department: getDeptName(t.departmentId, departments),
-        jobTitle: t.jobTitle || 'معلم',
-        signatureStatus: (idx % 4 === 0 ? 'بانتظار التوقيع' : 'تم التوقيع') as any,
-        signatureDate: workshop.date
-      }));
-      return sample;
-    }
-    return [];
-  });
-
   const handleSaveAttendees = (newAttendees: PDAttendee[]) => {
     setCurrentAttendees(newAttendees);
     if (onUpdateWorkshop) {
       onUpdateWorkshop({
         ...workshop,
         attendees: newAttendees,
-        attendanceCount: newAttendees.length
+        attendanceCount: newAttendees.length,
+        updatedAt: new Date().toISOString()
       });
     }
     setIsManageAttendeesOpen(false);
@@ -2744,6 +2785,7 @@ export function PDReportsCenterTab({
 
           {activeWorkshop ? (
             <SingleWorkshopReport
+              key={activeWorkshop.id}
               workshop={activeWorkshop}
               teachers={teachers}
               departments={departments}
