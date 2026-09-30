@@ -8,7 +8,7 @@ interface Props { onLogin: (user: User) => void; }
 const QUICK_LOGINS = [
   { label: '👤 مدير النظام',           email: 'a.tubaishat1704@education.qa' },
   { label: '🏫 النائب الأكاديمي',      email: 'r.altoum1512@education.qa'    },
-  { label: '👁️ أخصائي التعليم الإلكتروني', email: 'elearning@school.qa'       },
+  { label: '👁️ أخصائي التعليم الإلكتروني', email: 'h.metawea@edu.gov.qa'       },
   { label: '📐 يامن فرح - رياضيات',   email: 'y.farah2507@education.qa'     },
   { label: '📖 أسعد ناعس - عربي',     email: 'n.asaad0108@education.qa'     },
   { label: '☪️ ماهر علوان - إسلامية', email: 'm.elwan2704@education.qa'     },

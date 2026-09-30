@@ -765,7 +765,7 @@ export const initialUsers: User[] = [
   // ─ Evaluator (Viewer Only) ─────────────────────────────────────────────────
   { id:'u11', name:'منسق إلكتروني', nameEn:'Evaluator',            email:'evaluator@school.qa',          password:'EvalCoord@2026',   role:'viewer',  status:'active' },
   // ─ E-Learning Specialist (Viewer Only) ─────────────────────────────────────
-  { id:'u13', name:'أخصائي التعليم الإلكتروني', nameEn:'E-Learning Specialist', email:'elearning@school.qa', password:'ELearn@View2026', role:'viewer', status:'active' },
+  { id:'u13', name:'أخصائي التعليم الإلكتروني', nameEn:'E-Learning Specialist', email:'h.metawea@edu.gov.qa', username:'h.metawea', password:'ELearn@View2026', role:'viewer', status:'active' },
   // ─ Official Coordinators (Viewer Only) ──────────────────────────────────────
   { id:'uc1', name:'يامن فرح',          nameEn:'YAMEN FARAH FARAH',    email:'y.farah2507@education.qa', username:'y.farah2507',    password:'Yamen@QSTSS26', role:'viewer', employeeId:'27976002886', departmentId:'d_math',    departmentIds:['d_math'],    status:'active' },
   { id:'uc2', name:'يوسف دحمان',        nameEn:'YOUSSEF DAHMAN',       email:'y.dahman0209@education.qa', username:'y.dahman0209',   password:'Youssef@QSTSS26', role:'viewer', employeeId:'28852800073', departmentId:'d_english', departmentIds:['d_english'], status:'active' },
@@ -774,6 +774,7 @@ export const initialUsers: User[] = [
   { id:'uc5', name:'أ. أسعد ناعس',       nameEn:'ASAAD MAHMOUD NAIS',   email:'n.asaad0108@education.qa', username:'n.asaad0108',   password:'Asaad@QSTSS26', role:'viewer', employeeId:'27376001799', departmentId:'d_arabic',  departmentIds:['d_arabic'],  status:'active' },
   { id:'uc6', name:'عيسى سويدان',        nameEn:'ESSA IBRAHEM MOUSA SWEIDAN', email:'e.sweidan0601@education.qa', username:'e.sweidan0601', password:'Essa@QSTSS26', role:'viewer', employeeId:'28440000737', departmentId:'d_cs',      departmentIds:['d_cs'],      status:'active' },
   { id:'uc7', name:'أحمد عقله فارس',    nameEn:'AHMAD OQLAH FARIS',    email:'a.faris1404@education.qa', username:'a.faris1404', password:'Ahmad@QSTSS26', role:'viewer', departmentId:'d_stem',    departmentIds:['d_stem'],    status:'active' },
+  { id:'uc8', name:'روي مخول',          nameEn:'ROY GEORGES MAKHOUL',   email:'r.makhoul0812@education.qa', username:'r.makhoul0812', password:'Roy@QSTSS26',   role:'viewer', employeeId:'27642201189', departmentId:'d_cs',      departmentIds:['d_cs'],      status:'active' },
 ];
 
 // ── Helper: get coordinator’s department IDs as array ──────────────────────────
@@ -2399,8 +2400,17 @@ export const SEED_MEEE_2627_RECORDS = [
 export const db = {
   getUsers: async (): Promise<User[]> => {
     const stored = await seedIfEmpty<User>(COLLECTIONS.users, initialUsers);
-    const existingUserIds = new Set(stored.map(u => u.id));
-    const existingEmails = new Set(stored.map(u => u.email?.toLowerCase().trim()).filter(Boolean));
+    let changed = false;
+    const updated = stored.map(u => {
+      if ((u.id === 'u13' || u.email === 'elearning@school.qa') && u.email !== 'h.metawea@edu.gov.qa') {
+        changed = true;
+        return { ...u, email: 'h.metawea@edu.gov.qa', username: 'h.metawea' };
+      }
+      return u;
+    });
+
+    const existingUserIds = new Set(updated.map(u => u.id));
+    const existingEmails = new Set(updated.map(u => u.email?.toLowerCase().trim()).filter(Boolean));
 
     // Only append missing users from initialUsers if they are completely absent from stored database
     const missingUsers = initialUsers.filter(u => 
@@ -2408,16 +2418,16 @@ export const db = {
       !existingEmails.has(u.email?.toLowerCase().trim())
     );
 
-    if (missingUsers.length > 0) {
-      const merged = [...stored, ...missingUsers];
+    if (missingUsers.length > 0 || changed) {
+      const merged = missingUsers.length > 0 ? [...updated, ...missingUsers] : updated;
       try {
         await saveCollection(COLLECTIONS.users, merged);
       } catch (e) {
-        console.error("Failed to save missing users to Firestore:", e);
+        console.error("Failed to save missing/updated users to Firestore:", e);
       }
       return merged.map(u => normalizeUserRole(u));
     }
-    return stored.map(u => normalizeUserRole(u));
+    return updated.map(u => normalizeUserRole(u));
   },
   saveUsers: async (u: User[]): Promise<void> => {
     await saveCollection(COLLECTIONS.users, u);
