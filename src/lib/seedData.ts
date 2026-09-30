@@ -168,5 +168,9 @@ export const SEED_ACHIEVEMENTS = [
   { serialNumber: 4, academicYear: '2025-2026', organizer: 'ITEX / مسابقة البحث العلمي', level: 'عالمي', participationType: 'إشراف وتدريب', result: 'المركز الثاني + التأهل العالمي', achievementName: 'مسابقة البحث العلمي والتأهل إلى ITEX العالمية' },
   { serialNumber: 9, academicYear: '2025-2026', organizer: 'SmartNet', level: 'عالمي', participationType: 'نشر بحث علمي', result: 'بحث علمي منشور', achievementName: 'نشر بحث علمي في مجلة SmartNet' },
   { serialNumber: 37, academicYear: '2025-2026', organizer: 'Google Scholar', level: 'عالمي', participationType: 'إشراف وتدريب', result: 'بحث علمي منشور', achievementName: 'نشر بحث علمي في موقع Google Scholar' },
-  { serialNumber: 39, academicYear: '2025-2026', organizer: 'وزارة التعليم والتعليم العالي', level: 'محلي', participationType: 'إشراف وتدريب', result: 'التأهل للمعرض', achievementName: 'التأهل لمسابقة البحث العلمي والابتكار لسنة 2025-2026' }
+  { serialNumber: 39, academicYear: '2025-2026', organizer: 'وزارة التعليم والتعليم العالي', level: 'محلي', participationType: 'إشراف وتدريب', result: 'التأهل للمعرض', achievementName: 'التأهل لمسابقة البحث العلمي والابتكار لسنة 2025-2026' },
+
+  // 2026/2027
+  { serialNumber: 40, academicYear: '2026-2027', organizer: 'مايكروسفت', level: 'عالمي', participationType: 'تمثيل رسمي', result: 'شهادة تقدير', achievementName: 'حصول المدرسة على إعتماد شركة مايكروسفت كمدرسة نموذجية ٢٠٢٦-٢٠٢٧م' },
+  { serialNumber: 41, academicYear: '2026-2027', organizer: 'مركز اليونسكو الإقليمي للجودة والتميز في التعليم', level: 'عالمي', participationType: 'تمثيل رسمي', result: 'تمثيل دولة قطر', achievementName: 'الانضمام إلى شبكة الشباب العالمية للجودة والتميز في التعليم، التابعة لمركز اليونسكو الإقليمي للجودة والتميز في التعليم' }
 ];

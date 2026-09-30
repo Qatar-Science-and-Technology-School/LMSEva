@@ -33,7 +33,7 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
   
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterYear, setFilterYear] = useState(propYear || '');
+  const [filterYear, setFilterYear] = useState('');
   const [filterLevel, setFilterLevel] = useState('');
   const [filterType, setFilterType] = useState('');
   const [filterResult, setFilterResult] = useState('');
@@ -52,10 +52,6 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
     db.getAchievements().then(data => setAchievements(data));
   }, []);
 
-  useEffect(() => {
-    if (propYear) setFilterYear(propYear);
-  }, [propYear]);
-
   const saveAchievements = async (newData: Achievement[]) => {
     if (!isAdmin) return;
     setAchievements(newData);
@@ -67,7 +63,7 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
     return achievements.filter(a => {
       const matchesSearch = (a.achievementName || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                            (a.organizer || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesYear = !filterYear || a.academicYear === filterYear;
+      const matchesYear = !filterYear || filterYear === 'all' || a.academicYear === filterYear;
       const matchesLevel = !filterLevel || a.level === filterLevel;
       const matchesType = !filterType || a.participationType === filterType;
       const matchesResult = !filterResult || (a.result || '').includes(filterResult);
@@ -75,7 +71,7 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
       return matchesSearch && matchesYear && matchesLevel && matchesType && matchesResult;
     }).sort((a, b) => {
       if (b.academicYear !== a.academicYear) return b.academicYear.localeCompare(a.academicYear);
-      return (b.serialNumber || 0) - (a.serialNumber || 0);
+      return (a.serialNumber || 0) - (b.serialNumber || 0);
     });
   }, [achievements, searchTerm, filterYear, filterLevel, filterType, filterResult]);
 
@@ -173,7 +169,7 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "الإنجازات");
-    XLSX.writeFile(wb, "Achievements_Full_Report_2021_2026.xlsx");
+    XLSX.writeFile(wb, "Achievements_Full_Report_2021_2027.xlsx");
   };
 
   return (
@@ -182,10 +178,10 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0F2044', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <Trophy size={32} color="#D97706" /> إنجازات قسم التعليم الإلكتروني (2021-2026)
+            <Trophy size={32} color="#D97706" /> إنجازات قسم التعليم الإلكتروني (2021-2027)
           </h1>
           <p style={{ color: '#64748B', marginTop: '0.5rem', fontWeight: 500 }}>
-            الأرشيف الرقمي الشامل لإنجازات ومسابقات قسم التعليم الإلكتروني
+            الأرشيف الرقمي الشامل لإنجازات ومسابقات قسم التعليم الإلكتروني ({stats.total} إنجاز موثق عبر جميع السنوات)
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -251,20 +247,64 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
         ))}
       </div>
 
-      {/* Yearly Summaries Grid */}
-      <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        {ACADEMIC_YEARS.map(year => (
-          <div key={year} style={{ background: '#fff', padding: '1rem', borderRadius: '12px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>إنجازات {year}</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F2044', marginTop: '0.25rem' }}>{stats.byYear[year] || 0}</div>
-          </div>
-        ))}
+      {/* Yearly Summaries Grid - 2026-2027 in Front */}
+      <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        {/* All Years Card */}
+        <button
+          type="button"
+          onClick={() => setFilterYear('')}
+          style={{
+            background: !filterYear || filterYear === 'all' ? '#0F2044' : '#fff',
+            color: !filterYear || filterYear === 'all' ? '#fff' : '#0F2044',
+            padding: '1rem', borderRadius: '12px',
+            border: !filterYear || filterYear === 'all' ? '2px solid #0F2044' : '1px solid #E2E8F0',
+            textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s',
+            boxShadow: !filterYear || filterYear === 'all' ? '0 4px 12px rgba(15,32,68,0.15)' : 'none'
+          }}
+        >
+          <div style={{ fontSize: '0.8rem', color: !filterYear || filterYear === 'all' ? '#94A3B8' : '#64748B', fontWeight: 700 }}>🌟 كافة السنوات</div>
+          <div style={{ fontSize: '1.35rem', fontWeight: 800, marginTop: '0.25rem' }}>{stats.total} إنجاز</div>
+        </button>
+
+        {/* Reversed Years with 2026-2027 at the front */}
+        {[...ACADEMIC_YEARS].reverse().map(year => {
+          const isSelected = filterYear === year;
+          const isCurrentYear = year === '2026-2027';
+          return (
+            <button
+              key={year}
+              type="button"
+              onClick={() => setFilterYear(filterYear === year ? '' : year)}
+              style={{
+                background: isSelected ? '#1E3A8A' : isCurrentYear ? '#FEF3C7' : '#fff',
+                color: isSelected ? '#fff' : isCurrentYear ? '#92400E' : '#0F2044',
+                padding: '1rem', borderRadius: '12px',
+                border: isSelected ? '2px solid #1E3A8A' : isCurrentYear ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
+                textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s',
+                boxShadow: isSelected ? '0 4px 12px rgba(30,58,138,0.15)' : 'none',
+                position: 'relative'
+              }}
+            >
+              {isCurrentYear && (
+                <span style={{
+                  position: 'absolute', top: '-8px', right: '10px',
+                  background: '#D97706', color: '#fff', fontSize: '0.65rem',
+                  padding: '1px 6px', borderRadius: '10px', fontWeight: 800
+                }}>
+                  المقدمة ⭐
+                </span>
+              )}
+              <div style={{ fontSize: '0.8rem', color: isSelected ? '#93C5FD' : isCurrentYear ? '#B45309' : '#64748B', fontWeight: 700 }}>إنجازات {year}</div>
+              <div style={{ fontSize: '1.35rem', fontWeight: 800, color: isSelected ? '#fff' : isCurrentYear ? '#B45309' : '#0F2044', marginTop: '0.25rem' }}>{stats.byYear[year] || 0}</div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Analytics Charts */}
       <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
         <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '20px', border: '1px solid #E2E8F0', height: '350px' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#0F2044' }}>تطور الإنجازات (2021-2026)</h3>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#0F2044' }}>تطور الإنجازات (2021-2027)</h3>
           <ResponsiveContainer width="100%" height="85%">
             <AreaChart data={yearChartData}>
               <defs>
@@ -305,16 +345,141 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
         </div>
       </div>
 
+      {/* Interactive Filter Toolbar */}
+      <div className="no-print" style={{ 
+        background: '#fff', padding: '1.25rem', borderRadius: '16px', 
+        border: '1px solid #E2E8F0', marginBottom: '2rem',
+        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800, color: '#0F2044', fontSize: '1.05rem' }}>
+            <Filter size={20} color="#0F2044" />
+            <span>تصفية واستعراض الإنجازات والمسابقات</span>
+            <span style={{ fontSize: '0.8rem', background: '#F1F5F9', color: '#475569', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: 700 }}>
+              عرض {filteredAchievements.length} من أصل {stats.total} إنجاز
+            </span>
+          </div>
+          {(searchTerm || filterYear || filterLevel || filterType || filterResult) && (
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFilterYear('');
+                setFilterLevel('');
+                setFilterType('');
+                setFilterResult('');
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                background: '#FEE2E2', color: '#991B1B', border: 'none',
+                padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem',
+                fontWeight: 700, cursor: 'pointer'
+              }}
+            >
+              <X size={14} /> إعادة ضبط التصفية (عرض كافة الإنجازات {stats.total})
+            </button>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+          {/* Search Box */}
+          <div style={{ position: 'relative' }}>
+            <Search size={16} color="#94A3B8" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              type="text"
+              placeholder="ابحث بالاسم، الجهة، النتيجة..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%', padding: '0.65rem 2.2rem 0.65rem 0.75rem',
+                borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.85rem'
+              }}
+            />
+          </div>
+
+          {/* Academic Year Filter */}
+          <div>
+            <select
+              value={filterYear}
+              onChange={(e) => setFilterYear(e.target.value)}
+              style={{
+                width: '100%', padding: '0.65rem 0.75rem',
+                borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.85rem',
+                background: '#fff', cursor: 'pointer', fontWeight: 600
+              }}
+            >
+              <option value="">🌟 كافة السنوات (إجمالي {stats.total} إنجاز)</option>
+              {[...ACADEMIC_YEARS].reverse().map(y => (
+                <option key={y} value={y}>
+                  العام الأكاديمي {y} ({stats.byYear[y] || 0} إنجاز) {y === '2026-2027' ? '⭐ (المقدمة)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Level Filter */}
+          <div>
+            <select
+              value={filterLevel}
+              onChange={(e) => setFilterLevel(e.target.value)}
+              style={{
+                width: '100%', padding: '0.65rem 0.75rem',
+                borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.85rem',
+                background: '#fff', cursor: 'pointer', fontWeight: 600
+              }}
+            >
+              <option value="">🌐 كافة المستويات (عالمي / إقليمي / محلي)</option>
+              <option value="عالمي">عالمي ({stats.global})</option>
+              <option value="إقليمي">إقليمي ({stats.regional})</option>
+              <option value="محلي">محلي ({stats.local})</option>
+            </select>
+          </div>
+
+          {/* Participation Type Filter */}
+          <div>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              style={{
+                width: '100%', padding: '0.65rem 0.75rem',
+                borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.85rem',
+                background: '#fff', cursor: 'pointer', fontWeight: 600
+              }}
+            >
+              <option value="">🎯 كافة أنواع المشاركة</option>
+              <option value="إشراف وتدريب">إشراف وتدريب</option>
+              <option value="نشر بحث علمي">نشر بحث علمي</option>
+              <option value="تمثيل رسمي">تمثيل رسمي</option>
+              <option value="مشاركة فردية">مشاركة فردية</option>
+              <option value="مشاركة جماعية">مشاركة جماعية</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Year Sections */}
       {ACADEMIC_YEARS.slice().reverse().map(year => {
         const yearData = filteredAchievements.filter(a => a.academicYear === year);
         if (yearData.length === 0 && filterYear && filterYear !== year) return null;
         if (yearData.length === 0) return null;
 
+        const isCurrentYear = year === '2026-2027';
+
         return (
           <div key={year} style={{ marginBottom: '3rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '2px solid #E2E8F0', paddingBottom: '0.5rem' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>إنجازات {year} ({yearData.length})</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '2px solid #E2E8F0', paddingBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>
+                  إنجازات {year} ({yearData.length})
+                </h2>
+                {isCurrentYear && (
+                  <span style={{ 
+                    background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A',
+                    fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.6rem', borderRadius: '20px'
+                  }}>
+                    العام الأكاديمي الحالي 🌟 في المقدمة
+                  </span>
+                )}
+              </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', background: '#0F204410', color: '#0F2044', borderRadius: '6px', fontWeight: 700 }}>
                   عالمي: {yearData.filter(a => a.level === 'عالمي').length}
@@ -547,7 +712,7 @@ export default function AchievementsPage({ currentUser, onNavigate, selectedYear
       <div className="print-only">
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{SCHOOL_NAME}</h1>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginTop: '0.5rem' }}>تقرير إنجازات قسم التعليم الإلكتروني (2021-2026)</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginTop: '0.5rem' }}>تقرير إنجازات قسم التعليم الإلكتروني (2021-2027)</h2>
           <p style={{ marginTop: '0.5rem' }}>إجمالي الإنجازات الموثقة: {stats.total}</p>
         </div>
         

@@ -239,6 +239,8 @@ export const ACHIEVEMENT_NAMES = [
   'نشر بحث علمي في موقع Google Scholar',
   'التأهل لمسابقة البحث العلمي والابتكار',
   'مسابقة التميز العلمي',
+  'حصول المدرسة على إعتماد شركة مايكروسفت كمدرسة نموذجية ٢٠٢٦-٢٠٢٧م',
+  'الانضمام إلى شبكة الشباب العالمية للجودة والتميز في التعليم، التابعة لمركز اليونسكو الإقليمي للجودة والتميز في التعليم',
 ];
 
 export const ACHIEVEMENT_RESULTS = [
@@ -611,6 +613,7 @@ export function classifyAchievement(name: string, organizer: string, result: str
   if (r.includes('المركز الثالث')) return 'مركز ثالث';
   if (r.includes('الميدالية الذهبية')) return 'ميدالية ذهبية';
   if (r.includes('تأهل') || r.includes('تمثيل')) return 'تأهل وتمثيل';
+  if (n.includes('اعتماد') || n.includes('إعتماد') || r.includes('شهادة تقدير')) return 'اعتماد وجودة';
   
   return 'إنجاز متنوع';
 }
@@ -2569,6 +2572,11 @@ export const db = {
       updatedAt: new Date().toISOString()
     })) as Achievement[];
 
+    const normalize = (items: Achievement[]) => items.map(a => ({
+      ...a,
+      smartCategory: a.smartCategory || classifyAchievement(a.achievementName, a.organizer, a.result)
+    }));
+
     if (newFromSeed.length > 0) {
       const merged = [...stored, ...newFromSeed];
       try {
@@ -2576,9 +2584,9 @@ export const db = {
       } catch (e) {
         console.error("Failed to save merged achievements to Firestore:", e);
       }
-      return merged;
+      return normalize(merged);
     }
-    return stored;
+    return normalize(stored);
   },
   saveAchievements: async (a: Achievement[]): Promise<void> => {
     await saveCollection(COLLECTIONS.achievements, a);
