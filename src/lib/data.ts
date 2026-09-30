@@ -2399,48 +2399,29 @@ export const SEED_MEEE_2627_RECORDS = [
 export const db = {
   getUsers: async (): Promise<User[]> => {
     const stored = await seedIfEmpty<User>(COLLECTIONS.users, initialUsers);
-    const initialMap = new Map(initialUsers.map(u => [u.id, u]));
-    let hasChanges = false;
-
-    const updated = stored.map(user => {
-      const match = initialMap.get(user.id);
-      if (match) {
-        if (
-          user.name !== match.name ||
-          user.nameEn !== match.nameEn ||
-          user.email !== match.email ||
-          user.username !== match.username ||
-          user.employeeId !== match.employeeId ||
-          user.departmentId !== match.departmentId ||
-          JSON.stringify(user.departmentIds) !== JSON.stringify(match.departmentIds) ||
-          user.status !== match.status
-        ) {
-          hasChanges = true;
-          return { ...user, ...match };
-        }
-      }
-      return user;
-    });
-
     const existingUserIds = new Set(stored.map(u => u.id));
-    const missingUsers = initialUsers.filter(u => !existingUserIds.has(u.id));
-    if (missingUsers.length > 0) {
-      hasChanges = true;
-      updated.push(...missingUsers);
-    }
+    const existingEmails = new Set(stored.map(u => u.email?.toLowerCase().trim()).filter(Boolean));
 
-    if (hasChanges) {
+    // Only append missing users from initialUsers if they are completely absent from stored database
+    const missingUsers = initialUsers.filter(u => 
+      !existingUserIds.has(u.id) && 
+      !existingEmails.has(u.email?.toLowerCase().trim())
+    );
+
+    if (missingUsers.length > 0) {
+      const merged = [...stored, ...missingUsers];
       try {
-        await saveCollection(COLLECTIONS.users, updated);
+        await saveCollection(COLLECTIONS.users, merged);
       } catch (e) {
-        console.error("Failed to save updated users to Firestore:", e);
+        console.error("Failed to save missing users to Firestore:", e);
       }
-      return updated.map(u => normalizeUserRole(u));
+      return merged.map(u => normalizeUserRole(u));
     }
     return stored.map(u => normalizeUserRole(u));
   },
   saveUsers: async (u: User[]): Promise<void> => {
     await saveCollection(COLLECTIONS.users, u);
+    invalidateCache(COLLECTIONS.users);
   },
   getDepartments: async (): Promise<Department[]> => {
     const existing = await seedIfEmpty<Department>(COLLECTIONS.departments, initialDepartments);
@@ -2717,12 +2698,20 @@ export const db = {
     }
   },
   login: async (emailOrUser: string, password: string): Promise<User | null> => {
-    const users = await seedIfEmpty<User>(COLLECTIONS.users, initialUsers);
-    const found = users.find(u =>
-      (u.email?.toLowerCase().trim() === emailOrUser.toLowerCase().trim() ||
-       u.username?.toLowerCase().trim() === emailOrUser.toLowerCase().trim()) &&
-      u.password === password && (u.status === 'active' || u.status === 'pending')
-    );
+    // Invalidate users cache to guarantee checking the freshest credentials from Firestore
+    invalidateCache(COLLECTIONS.users);
+    const users = await db.getUsers();
+    const cleanInput = (emailOrUser || '').toLowerCase().trim();
+    const cleanPassword = (password || '').trim();
+
+    const found = users.find(u => {
+      const matchEmail = (u.email || '').toLowerCase().trim() === cleanInput;
+      const matchUsername = (u.username || '').toLowerCase().trim() === cleanInput;
+      const matchPassword = (u.password || '').trim() === cleanPassword;
+      const isActive = u.status === 'active' || u.status === 'pending';
+      return (matchEmail || matchUsername) && matchPassword && isActive;
+    });
+
     if (!found) return null;
     return normalizeUserRole(found);
   },

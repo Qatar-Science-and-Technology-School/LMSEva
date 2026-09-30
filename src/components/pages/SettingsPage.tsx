@@ -44,18 +44,34 @@ export default function SettingsPage({ currentUser }: Props) {
       return;
     }
     
+    const cleanPassword = (userForm.password || '').trim();
+    const cleanEmail = (userForm.email || '').trim().toLowerCase();
+    const cleanUsername = (userForm.username || '').trim().toLowerCase();
+
     let newList = [...users];
     let savedUserObj: User | null = null;
     if (editingUserId) {
       newList = newList.map(u => {
         if (u.id === editingUserId) {
-          savedUserObj = { ...u, ...userForm } as User;
+          savedUserObj = { 
+            ...u, 
+            ...userForm,
+            password: cleanPassword,
+            email: cleanEmail,
+            username: cleanUsername
+          } as User;
           return savedUserObj;
         }
         return u;
       });
     } else {
-      savedUserObj = { ...userForm, id: generateId() } as User;
+      savedUserObj = { 
+        ...userForm, 
+        id: generateId(),
+        password: cleanPassword,
+        email: cleanEmail,
+        username: cleanUsername
+      } as User;
       newList.push(savedUserObj);
     }
     

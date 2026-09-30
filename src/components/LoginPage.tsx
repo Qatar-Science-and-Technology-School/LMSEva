@@ -1,21 +1,21 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { db, SCHOOL_NAME } from '@/lib/data';
 import type { User } from '@/lib/data';
 
 interface Props { onLogin: (user: User) => void; }
 
 const QUICK_LOGINS = [
-  { label: '👤 مدير النظام',           email: 'a.tubaishat1704@education.qa', password: 'Admin@QSTSS2026' },
-  { label: '🏫 النائب الأكاديمي',      email: 'r.altoum1512@education.qa',    password: 'Leader@QSTSS26'  },
-  { label: '👁️ أخصائي التعليم الإلكتروني', email: 'elearning@school.qa',       password: 'ELearn@View2026' },
-  { label: '📐 يامن فرح - رياضيات',   email: 'y.farah2507@education.qa',     password: 'Yamen@QSTSS26'   },
-  { label: '📖 أسعد ناعس - عربي',     email: 'n.asaad0108@education.qa',     password: 'Asaad@QSTSS26'   },
-  { label: '☪️ ماهر علوان - إسلامية', email: 'm.elwan2704@education.qa',     password: 'Maher@QSTSS26'   },
-  { label: '💻 روي مخول - حاسوب',    email: 'r.makhoul0812@education.qa',   password: 'Roy@QSTSS26'     },
-  { label: '🔬 المختبرات التخصصية',   email: 'm.salameh1301@education.qa',   password: 'Salameh@QSTSS26' },
-  { label: '🤖 أحمد فارس - STEM',    email: 'a.faris1404@education.qa',     password: 'Ahmad@QSTSS26'   },
-  { label: '🇬🇧 يوسف دحمان - إنجليزي', email: 'y.dahman0209@education.qa',    password: 'Youssef@QSTSS26' },
+  { label: '👤 مدير النظام',           email: 'a.tubaishat1704@education.qa' },
+  { label: '🏫 النائب الأكاديمي',      email: 'r.altoum1512@education.qa'    },
+  { label: '👁️ أخصائي التعليم الإلكتروني', email: 'elearning@school.qa'       },
+  { label: '📐 يامن فرح - رياضيات',   email: 'y.farah2507@education.qa'     },
+  { label: '📖 أسعد ناعس - عربي',     email: 'n.asaad0108@education.qa'     },
+  { label: '☪️ ماهر علوان - إسلامية', email: 'm.elwan2704@education.qa'     },
+  { label: '💻 روي مخول - حاسوب',    email: 'r.makhoul0812@education.qa'   },
+  { label: '🔬 المختبرات التخصصية',   email: 'm.salameh1301@education.qa'   },
+  { label: '🤖 أحمد فارس - STEM',    email: 'a.faris1404@education.qa'     },
+  { label: '🇬🇧 يوسف دحمان - إنجليزي', email: 'y.dahman0209@education.qa'    },
 ];
 
 export default function LoginPage({ onLogin }: Props) {
@@ -23,12 +23,13 @@ export default function LoginPage({ onLogin }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
+  const passwordInputRef        = useRef<HTMLInputElement>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      const user = await db.login(email, password);
+      const user = await db.login(email.trim(), password);
       if (user) { onLogin(user); }
       else { setError('البريد الإلكتروني أو كلمة المرور غير صحيحة'); }
     } catch (err) {
@@ -37,7 +38,14 @@ export default function LoginPage({ onLogin }: Props) {
     setLoading(false);
   };
 
-  const quickFill = (e: string, p: string) => { setEmail(e); setPassword(p); };
+  const quickFill = (selectedEmail: string) => { 
+    setEmail(selectedEmail); 
+    setPassword(''); 
+    setError('');
+    setTimeout(() => {
+      passwordInputRef.current?.focus();
+    }, 50);
+  };
 
   return (
     <div className="login-page" style={{ flexDirection: 'column', gap: '1.5rem' }}>
@@ -72,8 +80,15 @@ export default function LoginPage({ onLogin }: Props) {
           </div>
           <div style={{ marginBottom:'1.25rem' }}>
             <label className="form-label">كلمة المرور</label>
-            <input type="password" className="form-input" value={password}
-              onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+            <input 
+              ref={passwordInputRef}
+              type="password" 
+              className="form-input" 
+              value={password}
+              onChange={e => setPassword(e.target.value)} 
+              placeholder="••••••••" 
+              required 
+            />
           </div>
 
           {error && (
@@ -89,11 +104,11 @@ export default function LoginPage({ onLogin }: Props) {
         {/* Quick login */}
         <div style={{ marginTop:'1.5rem', borderTop:'1px solid #E2E8F0', paddingTop:'1.25rem' }}>
           <p style={{ fontSize:'0.72rem', color:'#94A3B8', textAlign:'center', marginBottom:'0.75rem', fontWeight:600 }}>
-            دخول سريع للتجربة
+            دخول سريع للتجربة (اختر الحساب ثم أدخل كلمة المرور الخاصة بك)
           </p>
           <div style={{ display:'flex', gap:'0.5rem', flexWrap:'wrap' }}>
             {QUICK_LOGINS.map(q => (
-              <button key={q.email} onClick={() => quickFill(q.email, q.password)}
+              <button key={q.email} type="button" onClick={() => quickFill(q.email)}
                 className="btn btn-ghost"
                 style={{ flex:1, fontSize:'0.7rem', justifyContent:'center', minWidth:'100px' }}>
                 {q.label}
