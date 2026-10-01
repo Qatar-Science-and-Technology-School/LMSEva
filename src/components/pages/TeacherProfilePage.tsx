@@ -169,7 +169,7 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
     <div style={{ padding:'1.5rem', direction:'rtl', maxWidth:'1100px', margin:'0 auto' }}>
       <PrintHeader 
         title="ملف المعلم المهني الشامل (360° Portfolio)" 
-        subtitle={`${teacher.nameAr} | ${deptName} | ${teacher.employeeId}`} 
+        subtitle={`${teacher.nameAr} | ${deptName} | ${teacher.subject}`} 
       />
       
       {/* Header */}
@@ -177,7 +177,7 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
         <button onClick={onBack} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'1.2rem', padding:'0.2rem' }}>→</button>
         <div>
           <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:'#0F2044', margin:0 }}>{teacher.nameAr}</h2>
-          <p style={{ fontSize:'0.75rem', color:'#64748B', margin:'0.1rem 0 0' }}>{teacher.nameEn} · {deptName} · الرقم الوظيفي: {teacher.employeeId}</p>
+          <p style={{ fontSize:'0.75rem', color:'#64748B', margin:'0.1rem 0 0' }}>{teacher.nameEn} · {deptName} · {teacher.subject}</p>
         </div>
         <div style={{ marginRight:'auto', display:'flex', gap:'0.5rem', alignItems:'center' }}>
           <button onClick={() => window.print()} className="btn btn-primary" style={{ fontSize:'0.8rem' }}>🖨️ طباعة الملف</button>

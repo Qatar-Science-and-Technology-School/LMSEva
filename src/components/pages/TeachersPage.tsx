@@ -50,7 +50,7 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
       const q = search.toLowerCase();
       list = list.filter(t =>
         t.nameAr.includes(search) || t.nameEn.toLowerCase().includes(q) ||
-        t.employeeId.includes(q) || t.email.toLowerCase().includes(q) ||
+        t.email.toLowerCase().includes(q) ||
         t.subject.toLowerCase().includes(q)
       );
     }
@@ -139,8 +139,8 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
   }
 
   function exportExcel() {
-    const rows = visibleTeachers.map(t => ({
-      'الرقم الوظيفي': t.employeeId,
+    const rows = visibleTeachers.map((t, idx) => ({
+      '#': idx + 1,
       'الاسم بالعربي': t.nameAr,
       'الاسم بالإنجليزي': t.nameEn,
       'القسم': getDeptName(t.departmentId, departments),
@@ -166,7 +166,7 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
     <div style={{ padding:'1.5rem', direction:'rtl' }}>
       {/* Toolbar */}
       <div style={{ display:'flex', gap:'0.75rem', marginBottom:'1.25rem', flexWrap:'wrap' }}>
-        <input className="form-input" placeholder="🔍 بحث بالاسم، رقم، بريد، مادة..."
+        <input className="form-input" placeholder="🔍 بحث باسم المعلم، البريد، القسم، المادة..."
           value={search} onChange={e => setSearch(e.target.value)} style={{ flex:1, minWidth:'200px' }} />
         <select className="form-input" style={{ width:'auto', minWidth:'150px' }}
           value={deptF} onChange={e => setDeptF(e.target.value)} disabled={isCoord && coordDepts.length === 1}>
@@ -188,8 +188,8 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'0.8rem' }}>
             <thead>
               <tr style={{ background:'#0F2044', color:'#fff' }}>
-                {['الرقم الوظيفي','اسم المعلم','القسم','المادة','البريد الإلكتروني','الحالة','آخر درجة','الإجراءات'].map(h => (
-                  <th key={h} style={{ padding:'0.7rem 0.75rem', textAlign:'right', fontWeight:600, whiteSpace:'nowrap' }}>{h}</th>
+                {['#','اسم المعلم','القسم','المادة','البريد الإلكتروني','الحالة','آخر درجة','الإجراءات'].map(h => (
+                  <th key={h} style={{ padding:'0.7rem 0.75rem', textAlign: h === '#' ? 'center' : 'right', fontWeight:600, whiteSpace:'nowrap', width: h === '#' ? '45px' : undefined }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -199,7 +199,7 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
                 const perf = lastScore !== null ? getPerformanceLevel(lastScore) : null;
                 return (
                   <tr key={t.id} style={{ background: i%2===0?'#fff':'#F8FAFC', borderBottom:'1px solid #E2E8F0' }}>
-                    <td style={{ padding:'0.6rem 0.75rem', fontFamily:'monospace', fontSize:'0.72rem', color:'#64748B' }}>{t.employeeId}</td>
+                    <td style={{ padding:'0.6rem 0.75rem', fontWeight:700, color:'#64748B', textAlign:'center', width:'45px' }}>{i + 1}</td>
                     <td style={{ padding:'0.6rem 0.75rem', fontWeight:700, color:'#0F2044' }}>{t.nameAr}</td>
                     <td style={{ padding:'0.6rem 0.75rem', color:'#374151' }}>{getDeptName(t.departmentId, departments)}</td>
                     <td style={{ padding:'0.6rem 0.75rem', color:'#64748B' }}>{t.subject}</td>
@@ -264,7 +264,6 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
             </h2>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
               {[
-                ['الرقم الوظيفي','employeeId','text'],
                 ['الاسم بالعربي','nameAr','text'],
                 ['الاسم بالإنجليزي','nameEn','text'],
                 ['البريد الإلكتروني','email','email'],
