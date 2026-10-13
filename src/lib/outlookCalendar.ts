@@ -84,7 +84,7 @@ export function buildLessonEventDetails(item: ModelLessonScheduleItem) {
     item.toolsPlanned ? `💻 الأدوات والمنصات الرقمية: ${item.toolsPlanned}` : '',
     item.notes ? `📝 ملاحظات: ${item.notes}` : '',
     `--------------------------------------------------`,
-    `رابط المنظومة: https://qstsselearning.web.app`
+    `رابط المنظومة: https://qstsselearning.qstssboys.qa`
   ]
     .filter(Boolean)
     .join('\n');
