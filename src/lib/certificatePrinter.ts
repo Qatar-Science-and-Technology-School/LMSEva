@@ -47,8 +47,32 @@ export function printTeacherCertificate(options: CertificatePrintOptions) {
     ? `<span class="highlight-dept">${departmentName}</span>` 
     : `بقسم <span class="highlight-dept">${departmentName}</span> ${subject ? `(${subject})` : ''}`;
 
-  const reasonText = recognitionReason || 
-    `تقديرًا لجهوده الاستثنائية وتفوقه في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية، وتحقيق أعلى مؤشرات الأداء والإنجاز الأكاديمي لشهر ${month} للعام الأكاديمي ${academicYear}.`;
+  // Sanitize and ensure no rank, marks, or numbers appear in the badgeTitle
+  let cleanBadge = (badgeTitle || (isSection ? 'الشعبة المتميزة في التعليم الإلكتروني' : 'وسام التميز في التعليم الإلكتروني'))
+    .replace(/المركز\s*\d+/g, '')
+    .replace(/المركز\s*(الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر)/g, '')
+    .replace(/وبطل المدرسة الأول/g, '')
+    .replace(/#\d+/g, '')
+    .replace(/[0-9]/g, '')
+    .replace(/🥇|🥈|🥉/g, '')
+    .replace(/\s*-\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleanBadge || cleanBadge === 'المعلم المتميز' || cleanBadge === 'المعلم المتميز -' || cleanBadge === 'الشعبة المتميزة -' || cleanBadge === 'الشعبة المتميزة') {
+    cleanBadge = isSection ? 'الشعبة المتميزة في التعليم الإلكتروني' : 'وسام التميز في التعليم الإلكتروني';
+  }
+
+  // Official general certificate text without ranks, marks, or numbers
+  const defaultTeacherReason = 'تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.';
+  const defaultSectionReason = 'تقديرًا للمشاركة الفاعلة والتفاعل المتميز لطلاب ومعلمي الشعبة في تفعيل نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية.';
+
+  let reasonText = isSection ? defaultSectionReason : defaultTeacherReason;
+  if (recognitionReason && !isSection) {
+    const hasNumbersOrRank = /[0-9]|%|المركز|مؤشر|تسليم|درساً|درسا|نسبة/i.test(recognitionReason);
+    if (!hasNumbersOrRank && recognitionReason.trim().length > 10) {
+      reasonText = recognitionReason.trim();
+    }
+  }
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -410,7 +434,7 @@ export function printTeacherCertificate(options: CertificatePrintOptions) {
               <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
               <div class="header-center-crest">
                 <div class="crest-stars">★ ★ ★ ★ ★</div>
-                <div class="crest-label">${badgeTitle}</div>
+                <div class="crest-label">${cleanBadge}</div>
               </div>
               <img src="/school-logo.png" alt="شعار المدرسة" />
             </div>
@@ -509,8 +533,32 @@ export function printBatchCertificates(certificates: CertificatePrintOptions[]) 
       ? `<span class="highlight-dept">${departmentName}</span>` 
       : `بقسم <span class="highlight-dept">${departmentName}</span> ${subject ? `(${subject})` : ''}`;
 
-    const reasonText = recognitionReason || 
-      `تقديرًا لجهوده الاستثنائية وتفوقه في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية، وتحقيق أعلى مؤشرات الأداء والإنجاز الأكاديمي لشهر ${month} للعام الأكاديمي ${academicYear}.`;
+    // Sanitize and ensure no rank, marks, or numbers appear in the badgeTitle
+    let cleanBadge = (badgeTitle || (isSection ? 'الشعبة المتميزة في التعليم الإلكتروني' : 'وسام التميز في التعليم الإلكتروني'))
+      .replace(/المركز\s*\d+/g, '')
+      .replace(/المركز\s*(الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر)/g, '')
+      .replace(/وبطل المدرسة الأول/g, '')
+      .replace(/#\d+/g, '')
+      .replace(/[0-9]/g, '')
+      .replace(/🥇|🥈|🥉/g, '')
+      .replace(/\s*-\s*$/, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!cleanBadge || cleanBadge === 'المعلم المتميز' || cleanBadge === 'المعلم المتميز -' || cleanBadge === 'الشعبة المتميزة -' || cleanBadge === 'الشعبة المتميزة') {
+      cleanBadge = isSection ? 'الشعبة المتميزة في التعليم الإلكتروني' : 'وسام التميز في التعليم الإلكتروني';
+    }
+
+    // Official general certificate text without ranks, marks, or numbers
+    const defaultTeacherReason = 'تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.';
+    const defaultSectionReason = 'تقديرًا للمشاركة الفاعلة والتفاعل المتميز لطلاب ومعلمي الشعبة في تفعيل نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية.';
+
+    let reasonText = isSection ? defaultSectionReason : defaultTeacherReason;
+    if (recognitionReason && !isSection) {
+      const hasNumbersOrRank = /[0-9]|%|المركز|مؤشر|تسليم|درساً|درسا|نسبة/i.test(recognitionReason);
+      if (!hasNumbersOrRank && recognitionReason.trim().length > 10) {
+        reasonText = recognitionReason.trim();
+      }
+    }
 
     return `
       <div class="cert-page ${index === certificates.length - 1 ? 'last-page' : ''}">
@@ -554,7 +602,7 @@ export function printBatchCertificates(certificates: CertificatePrintOptions[]) 
               <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
               <div class="header-center-crest">
                 <div class="crest-stars">★ ★ ★ ★ ★</div>
-                <div class="crest-label">${badgeTitle}</div>
+                <div class="crest-label">${cleanBadge}</div>
               </div>
               <img src="/school-logo.png" alt="شعار المدرسة" />
             </div>

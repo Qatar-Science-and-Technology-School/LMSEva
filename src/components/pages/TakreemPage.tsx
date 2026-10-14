@@ -39,99 +39,33 @@ export const DEPARTMENT_CHAMPIONS_10 = [
     evalScore: 96.70,
     lessonsScore: 100.00,
     sectionsCount: 3,
-    title: 'فارس قسم اللغة العربية وبطل المدرسة الأول',
-    achievement: 'المركز الأول على مستوى المدرسة بمؤشر تقييمات 96.7%، وتفعيل كامل للدروس 100% (78 درساً منها 45 ظاهرة)، وتصحيح 100% لـ 171 تسليماً، ونسبة حل 89.1%، والتزام 4 تقييمات لكل شعبة.',
+    title: 'فارس قسم اللغة العربية',
+    achievement: 'تميز استثنائي في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية، ونسبة تفاعل ومشاركة مرتفعة وتوظيف متقن للأدوات التكنولوجية داخل الحصص الدراسية.',
   },
   {
     rank: 2,
     department: 'التربية الإسلامية',
-    teacherName: 'علاء حسني محمد موسى',
-    score: 91.65,
-    evalScore: 83.30,
+    teacherName: 'الحسن علي محمد علي',
+    score: 94.50,
+    evalScore: 89.00,
     lessonsScore: 100.00,
-    sectionsCount: 2,
+    sectionsCount: 4,
     title: 'فارس قسم التربية الإسلامية',
-    achievement: 'تصدر القسم بنسبة حل مرتفعة 88% وتصحيح كامل 100% للتسليمات، وتفعيل كامل للدروس 100% (34 درساً منها 18 ظاهرة) بجميع أقسامها.',
+    achievement: 'تميز في تفعيل نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، والالتزام الكامل بالدروس والتقييمات وإثراء بيئة التعلم.',
   },
   {
     rank: 3,
-    department: 'العلوم والتكنولوجيا (STEM)',
-    teacherName: 'امجد سهيل عزيز',
-    score: 89.45,
-    evalScore: 78.90,
+    department: 'الرياضيات',
+    teacherName: 'محمد عماد ازكول',
+    score: 92.80,
+    evalScore: 85.60,
     lessonsScore: 100.00,
     sectionsCount: 4,
-    title: 'فارس قسم العلوم والتكنولوجيا (STEM)',
-    achievement: 'المركز الأول في قسم STEM، التزام بـ 4.75 تقييم لكل شعبة (19 تقييماً مسنداً)، وتصحيح 110 تسليمات، وتفعيل كامل للدروس 100% (16 درساً مستوفية لجميع الشعب الأربع).',
+    title: 'فارس قسم الرياضيات',
+    achievement: 'تفعيل متميز ومتكامل لنظام قطر للتعليم والأنشطة التفاعلية وتوظيف الأدوات التكنولوجية المتقدمة في تدريس الرياضيات.',
   },
   {
     rank: 4,
-    department: 'المختبرات التخصصية',
-    teacherName: 'على سالم على سالمين الصيعري',
-    score: 84.65,
-    evalScore: 88.90,
-    lessonsScore: 80.40,
-    sectionsCount: 7,
-    title: 'فارس المختبرات التخصصية ومختبر التصنيع',
-    achievement: 'تصدر معلمي المختبرات بالمدرسة بمؤشر تقييمات 88.9%، وإسناد 32 تقييماً مسنداً بمعدل 4.6 تقييم لكل شعبة، وتصحيح 291 تسليماً (87.4%)، ورفع 29 درساً مستوفية.',
-  },
-  {
-    rank: 5,
-    department: 'الدراسات الاجتماعية',
-    teacherName: 'فيصل محمد مسلم الحضري',
-    score: 66.25,
-    evalScore: 85.00,
-    lessonsScore: 47.50,
-    sectionsCount: 6,
-    title: 'فارس قسم الدراسات الاجتماعية',
-    achievement: 'تحقيق المركز الخامس على مستوى المدرسة في التقييمات بمؤشر 85%، والالتزام بـ 4 تقييمات لكل شعبة بإجمالي 24 تقييماً، وتصحيح 224 تسليماً بنسبة 81.8% ونسبة حل 71.4%.',
-  },
-  {
-    rank: 6,
-    department: 'الرياضيات',
-    teacherName: 'محمد عماد ازكول',
-    score: 85.95,
-    evalScore: 71.90,
-    lessonsScore: 100.00,
-    sectionsCount: 1,
-    title: 'فارس قسم الرياضيات',
-    achievement: 'تصدر القسم بنسبة حل متميزة بلغت 93.8%، وتصحيح 100% للتسليمات، وتفعيل كامل للدروس 100% لجميع الشعب (19 درساً مستوفية دون أي نواقص).',
-  },
-  {
-    rank: 7,
-    department: 'الفيزياء',
-    teacherName: 'ضرار حسن صادق ملاح',
-    score: 100.00,
-    evalScore: 100.00,
-    lessonsScore: 100.00,
-    sectionsCount: 2,
-    title: 'فارس قسم الفيزياء (مقررات AP)',
-    achievement: 'تحقيق مؤشر تفعيل الدروس كاملاً 100% لجميع الشعب المسندة لمقرر الفيزياء 1 AP (12 درساً ظاهراً مستوفياً بجميع الأقسام الرقمية).',
-  },
-  {
-    rank: 8,
-    department: 'تكنولوجيا التصميم',
-    teacherName: 'احمد اسامه صقر المعاني',
-    score: 89.70,
-    evalScore: 89.70,
-    lessonsScore: 89.70,
-    sectionsCount: 7,
-    title: 'فارس قسم تكنولوجيا التصميم',
-    achievement: 'المركز الأول في القسم بمؤشر تفعيل دروس 89.7%، وإتاحة 75 درساً ظاهراً للطلبة عبر 7 سجلات لشعب الصفين التاسع والعاشر.',
-  },
-  {
-    rank: 9,
-    department: 'علم الحاسوب',
-    teacherName: 'امداد علي',
-    score: 60.95,
-    evalScore: 74.40,
-    lessonsScore: 47.50,
-    sectionsCount: 2,
-    title: 'فارس قسم علم الحاسوب',
-    achievement: 'تصدر القسم في التقييمات بمؤشر 74.4%، والالتزام بمعدل 5 تقييمات أسبوعية لكل شعبة (10 تقييمات)، وتصحيح 59 تسليماً ونسبة حل 70%.',
-  },
-  {
-    rank: 10,
     department: 'اللغة الإنجليزية',
     teacherName: 'محمد ورسامي عمر',
     score: 90.00,
@@ -139,7 +73,73 @@ export const DEPARTMENT_CHAMPIONS_10 = [
     lessonsScore: 90.00,
     sectionsCount: 7,
     title: 'فارس قسم اللغة الإنجليزية',
-    achievement: 'تصدر القسم بمؤشر تفعيل دروس 90%، وإتاحة 26 درساً ظاهراً للطلبة بنسبة 100% استيفاء عبر 7 سجلات لشعب الصفين السابع والعاشر.',
+    achievement: 'تميز وإبداع في توظيف نظام قطر للتعليم والأدوات الرقمية الحديثة، ونشر الدروس والأنشطة التفاعلية وتحفيز مشاركة الطلبة.',
+  },
+  {
+    rank: 5,
+    department: 'علوم الحاسوب',
+    teacherName: 'محمد سامي ابراهيم عبدالقادر الكفرى',
+    score: 88.50,
+    evalScore: 85.00,
+    lessonsScore: 92.00,
+    sectionsCount: 4,
+    title: 'فارس قسم علوم الحاسوب',
+    achievement: 'ريادة في استخدام الأدوات التكنولوجية الحديثة ونظام قطر للتعليم، والتميز في تنمية المهارات البرمجية والحلول الرقمية داخل الحصص.',
+  },
+  {
+    rank: 6,
+    department: 'العلوم والفيزياء',
+    teacherName: 'اوزدن اوزغور',
+    score: 87.20,
+    evalScore: 84.40,
+    lessonsScore: 90.00,
+    sectionsCount: 4,
+    title: 'فارس قسم العلوم والفيزياء',
+    achievement: 'توظيف متقدم للتقنيات والمنصات الرقمية والمحاكاة التفاعلية، وتفعيل نوعي لنظام قطر للتعليم في التجارب والأنشطة العلمية.',
+  },
+  {
+    rank: 7,
+    department: 'مختبر التصنيع الرقمي',
+    teacherName: 'على سالم على سالمين الصيعري',
+    score: 84.70,
+    evalScore: 88.90,
+    lessonsScore: 80.40,
+    sectionsCount: 7,
+    title: 'فارس مختبر التصنيع الرقمي (Fab Lab)',
+    achievement: 'تصدر معلمي المختبرات بمؤشرات تفعيل نوعية ومتميزة، وتوظيف تقنيات التصنيع الرقمي والأدوات التكنولوجية الحديثة داخل الحصص التطبيقية.',
+  },
+  {
+    rank: 8,
+    department: 'الدراسات الاجتماعية',
+    teacherName: 'فيصل محمد مسلم الحضري',
+    score: 82.50,
+    evalScore: 85.00,
+    lessonsScore: 80.00,
+    sectionsCount: 6,
+    title: 'فارس قسم الدراسات الاجتماعية',
+    achievement: 'تميز في تفعيل نظام قطر للتعليم وتوظيف الخرائط والوسائط الرقمية والأدوات التكنولوجية في إثراء حصص الدراسات الاجتماعية.',
+  },
+  {
+    rank: 9,
+    department: 'مختبر الطاقة',
+    teacherName: 'انس عبدالكريم موسى جرادات',
+    score: 81.00,
+    evalScore: 82.00,
+    lessonsScore: 80.00,
+    sectionsCount: 4,
+    title: 'فارس مختبر الطاقة والبيئة',
+    achievement: 'تميز في تفعيل المختبرات التخصصية ونظام قطر للتعليم، وتوظيف الأدوات التكنولوجية الحديثة في المشاريع والتطبيقات العلمية.',
+  },
+  {
+    rank: 10,
+    department: 'مختبر الروبوت',
+    teacherName: 'اياد محمود علي سلامه',
+    score: 80.50,
+    evalScore: 81.00,
+    lessonsScore: 80.00,
+    sectionsCount: 4,
+    title: 'فارس مختبر الروبوت والذكاء الاصطناعي',
+    achievement: 'إبداع في توظيف أدوات الروبوت والذكاء الاصطناعي والمنصات التعليمية، ومتابعة متميزة لمشاريع الطلبة التكنولوجية داخل الحصص.',
   },
 ];
 
@@ -190,8 +190,14 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
 
   // Load saved custom names from Firestore (with localStorage fallback/instant cache)
   useEffect(() => {
-    // 1. Instant local read
+    // 1. Instant local read with version invalidation
     try {
+      const vKey = 'takreem_custom_v2026_10';
+      if (!localStorage.getItem(vKey)) {
+        localStorage.removeItem('takreem_custom_top10_names');
+        localStorage.removeItem('takreem_custom_dept_champions');
+        localStorage.setItem(vKey, '1');
+      }
       const savedTop10 = localStorage.getItem('takreem_custom_top10_names');
       if (savedTop10) setCustomTop10Names(JSON.parse(savedTop10));
       const savedDept = localStorage.getItem('takreem_custom_dept_champions');
@@ -415,21 +421,19 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       const certList = TOP_10_INDEX_TEACHERS.map(t => ({
         teacherNameAr: customTop10Names[t.rank] || t.name,
         departmentName: t.department,
-        totalScore: t.generalIndex,
-        recognitionReason: `تكريم وتقدير لحصول المعلم على المركز ${t.rank} على مستوى المدرسة في مؤشرات تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية لشهر ${selMonth} ${selYear}.`,
-        badgeTitle: `المركز ${t.rank} على مستوى المدرسة`,
+        recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
+        badgeTitle: 'شهادة تميز في التعليم الإلكتروني',
         month: selMonth,
         academicYear: selYear,
         recipientType: 'teacher' as const,
       }));
       printBatchCertificates(certList);
     } else if (monthlyTop10.length > 0) {
-      const certList = monthlyTop10.map((t: any, i: number) => ({
+      const certList = monthlyTop10.map((t: any) => ({
         teacherNameAr: t.teacherNameAr,
         departmentName: t.departmentName,
-        totalScore: t.totalScore,
-        recognitionReason: `تكريم وتقدير لحصول المعلم على المركز ${i + 1} على مستوى المدرسة في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
-        badgeTitle: `المركز ${i + 1} على مستوى المدرسة`,
+        recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
+        badgeTitle: 'شهادة تميز في التعليم الإلكتروني',
         month: selMonth,
         academicYear: selYear,
         recipientType: 'teacher' as const,
@@ -446,9 +450,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       const certList = DEPARTMENT_CHAMPIONS_10.map(d => ({
         teacherNameAr: customDeptChampions[d.rank] || d.teacherName,
         departmentName: d.department,
-        totalScore: d.score,
-        recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.department} وحصوله على لقب (${d.title}) في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
-        badgeTitle: d.title,
+        recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية لقسم ${d.department}، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
+        badgeTitle: 'وسام التميز في التعليم الإلكتروني',
         month: selMonth,
         academicYear: selYear,
         recipientType: 'teacher' as const,
@@ -458,9 +461,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       const certList = currentHonorees.map((d: any) => ({
         teacherNameAr: d.teacherNameAr,
         departmentName: d.departmentName,
-        totalScore: d.totalScore,
-        recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.departmentName} في تفعيل نظام قطر للتعليم لشهر ${selMonth} ${selYear}.`,
-        badgeTitle: `فارس قسم ${d.departmentName}`,
+        recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية لقسم ${d.departmentName}، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
+        badgeTitle: 'وسام التميز في التعليم الإلكتروني',
         month: selMonth,
         academicYear: selYear,
         recipientType: 'teacher' as const,
@@ -1062,9 +1064,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                       onClick={() => handlePrintCertificate({
                         teacherNameAr: teacherName,
                         departmentName: t.department,
-                        totalScore: t.generalIndex,
-                        recognitionReason: `تكريم وتقدير لحصول المعلم على ${medal} على مستوى مدرسة قطر للعلوم والتكنولوجيا في تفعيل نظام قطر للتعليم والمنصات التعليمية الرقمية لشهر سبتمبر 2026.`,
-                        badgeTitle: medal,
+                        recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
+                        badgeTitle: 'شهادة تميز في التعليم الإلكتروني',
                       })}
                       style={{
                         background: '#3D52A0',
@@ -1134,9 +1135,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                           onClick={() => handlePrintCertificate({
                             teacherNameAr: customTop10Names[t.rank] || t.name,
                             departmentName: t.department,
-                            totalScore: t.generalIndex,
-                            recognitionReason: `تكريم وتقدير لتفوق المعلم وحصوله على المركز ${t.rank} على مستوى المدرسة في تفعيل نظام قطر للتعليم والمنصات الرقمية.`,
-                            badgeTitle: `المعلم المتميز - المركز ${t.rank}`,
+                            recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
+                            badgeTitle: 'شهادة تميز في التعليم الإلكتروني',
                           })}
                           style={{
                             background: '#3D52A0',
@@ -1419,9 +1419,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                       onClick={() => handlePrintCertificate({
                         teacherNameAr: deptTeacherName,
                         departmentName: d.department,
-                        totalScore: d.score,
-                        recognitionReason: `تكريم وتقدير لتصدر المعلم لقسم ${d.department} وحصوله على لقب (${d.title}) في تفعيل نظام قطر للتعليم لشهر سبتمبر 2026. ${d.achievement}`,
-                        badgeTitle: d.title,
+                        recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية لقسم ${d.department}، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
+                        badgeTitle: 'وسام التميز في التعليم الإلكتروني',
                       })}
                       style={{
                         background: '#3D52A0',
@@ -1633,8 +1632,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                       onClick={() => handlePrintCertificate({
                         teacherNameAr: h.teacherNameAr,
                         departmentName: h.departmentName,
-                        totalScore: h.totalScore,
-                        recognitionReason: h.recognitionReason,
+                        recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
+                        badgeTitle: 'شهادة تميز في التعليم الإلكتروني',
                         month: h.month,
                         academicYear: h.academicYear,
                       })}
@@ -1680,8 +1679,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                             onClick={() => handlePrintCertificate({
                               teacherNameAr: h.teacherNameAr,
                               departmentName: h.departmentName,
-                              totalScore: h.totalScore,
-                              recognitionReason: h.recognitionReason,
+                              recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
+                              badgeTitle: 'شهادة تميز في التعليم الإلكتروني',
                               month: h.month,
                               academicYear: h.academicYear,
                             })}

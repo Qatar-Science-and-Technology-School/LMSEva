@@ -140,8 +140,8 @@ export default function PlatformReportTab({
       departmentName: teacher.department,
       academicYear: currentMonthObj.year,
       month: currentMonthObj.month,
-      totalScore: teacher.generalIndex || (teacher as any).evalIndex || undefined,
-      recognitionReason: (teacher as any).notes || `تكريم وتقدير لتميز المعلم وتصدره مؤشرات متابعة نشاط نظام قطر للتعليم لشهر ${currentMonthObj.month} ${currentMonthObj.year}.`,
+      badgeTitle: 'شهادة تميز في التعليم الإلكتروني',
+      recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
     });
   };
 
