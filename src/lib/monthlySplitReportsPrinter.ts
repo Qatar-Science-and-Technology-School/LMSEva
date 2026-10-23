@@ -302,25 +302,28 @@ export function printMonthlyLessonsReport(options: MonthlyPrintOptions) {
       <body>
         <!-- Header -->
         <div class="official-header">
-          <div class="header-side">
+          <div class="header-side" style="text-align: right; align-items: flex-start;">
             <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
-            <div style="font-size: 9px; font-weight: 700; color: #64748B;">وزارة التربية والتعليم والتعليم العالي</div>
-            <div style="font-size: 8.5px; color: #94A3B8;">إدارة شؤون المدارس والتعليم الإلكتروني</div>
+            <div style="font-size: 10px; font-weight: 900; color: #0F2044;">دولة قطر</div>
+            <div style="font-size: 9.5px; font-weight: 800; color: #0F2044;">وزارة التربية والتعليم والتعليم العالي</div>
+            <div style="font-size: 8.5px; color: #64748B;">قطاع الشؤون التعليمية — إدارة شؤون المدارس</div>
           </div>
           <div class="header-center">
-            <h1>مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</h1>
-            <h2>تقرير متابعة الدروس المجمعة الإلكترونية — شهر ${d.monthLabel}</h2>
+            <h1 style="font-size: 16px; font-weight: 900; color: #0F2044; margin-bottom: 2px;">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</h1>
+            <div style="font-size: 9.5px; color: #64748B; font-weight: 700; margin-bottom: 4px;">Qatar Science & Technology Secondary School for Boys</div>
+            <h2 style="font-size: 13.5px; font-weight: 800; color: #0284C7; margin-bottom: 5px;">تقرير متابعة الدروس المجمعة الإلكترونية — شهر ${d.monthLabel}</h2>
             <div>
               <span class="meta-tag">العام الأكاديمي: ${academicYear}</span>
               <span class="meta-tag">تاريخ التقرير: ${d.reportDate}</span>
-              <span class="meta-tag" style="background: #DCFCE7; color: #166534;">✓ معتمد رسمياً</span>
+              <span class="meta-tag" style="background: #DCFCE7; color: #166534;">✓ معتمد وموثق رسمياً</span>
               <span class="meta-tag">نظام قطر للتعليم (LMS)</span>
             </div>
           </div>
-          <div class="header-side">
+          <div class="header-side" style="text-align: left; align-items: flex-end;">
             <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
-            <div style="font-size: 9px; font-weight: 800; color: #0F2044;">قسم المشاريع الإلكترونية</div>
-            <div style="font-size: 8.5px; color: #64748B;">Qatar Science & Technology School</div>
+            <div style="font-size: 9.5px; font-weight: 800; color: #0F2044;">قسم المشاريع والحلول الرقمية</div>
+            <div style="font-size: 8.5px; color: #64748B;">E-Learning & Digital Projects Dept.</div>
+            <div style="font-size: 8px; color: #94A3B8; font-family: monospace;">DOC: QSTSS-LMS-${academicYear.replace('/', '-')}-LESSONS</div>
           </div>
         </div>
 
@@ -439,7 +442,7 @@ export function printMonthlyLessonsReport(options: MonthlyPrintOptions) {
         <!-- Signatures -->
         <div class="signatures-bar">
           <div class="sig-block">
-            <div class="sig-role">إعداد: منسق المشاريع الإلكترونية</div>
+            <div class="sig-role">إعداد: منسق المشاريع والتعليم الإلكتروني</div>
             <div class="sig-name">م. أحمد عادل طبيشات</div>
             <img class="sig-img" src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" />
           </div>
@@ -450,7 +453,7 @@ export function printMonthlyLessonsReport(options: MonthlyPrintOptions) {
           </div>
           <div class="sig-block">
             <div class="sig-role">التصديق: مدير المدرسة</div>
-            <div class="sig-name">أ. محمد فوزي خضر</div>
+            <div class="sig-name">محمد علي مندني العمادي</div>
             <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة" />
           </div>
         </div>
@@ -498,25 +501,28 @@ export function printMonthlyAssessmentsReport(options: MonthlyPrintOptions) {
       <body>
         <!-- Header -->
         <div class="official-header">
-          <div class="header-side">
+          <div class="header-side" style="text-align: right; align-items: flex-start;">
             <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
-            <div style="font-size: 9px; font-weight: 700; color: #64748B;">وزارة التربية والتعليم والتعليم العالي</div>
-            <div style="font-size: 8.5px; color: #94A3B8;">إدارة شؤون المدارس والتعليم الإلكتروني</div>
+            <div style="font-size: 10px; font-weight: 900; color: #0F2044;">دولة قطر</div>
+            <div style="font-size: 9.5px; font-weight: 800; color: #0F2044;">وزارة التربية والتعليم والتعليم العالي</div>
+            <div style="font-size: 8.5px; color: #64748B;">قطاع الشؤون التعليمية — إدارة شؤون المدارس</div>
           </div>
           <div class="header-center">
-            <h1>مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</h1>
-            <h2>تقرير متابعة التقييمات والتسليمات وتصحيح المعلمين — شهر ${d.monthLabel}</h2>
+            <h1 style="font-size: 16px; font-weight: 900; color: #0F2044; margin-bottom: 2px;">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</h1>
+            <div style="font-size: 9.5px; color: #64748B; font-weight: 700; margin-bottom: 4px;">Qatar Science & Technology Secondary School for Boys</div>
+            <h2 style="font-size: 13.5px; font-weight: 800; color: #0284C7; margin-bottom: 5px;">تقرير متابعة التقييمات والتسليمات وتصحيح المعلمين — شهر ${d.monthLabel}</h2>
             <div>
               <span class="meta-tag">العام الأكاديمي: ${academicYear}</span>
               <span class="meta-tag">تاريخ التقرير: ${d.reportDate}</span>
-              <span class="meta-tag" style="background: #DCFCE7; color: #166534;">✓ معتمد ومكتمل</span>
+              <span class="meta-tag" style="background: #DCFCE7; color: #166534;">✓ معتمد وموثق رسمياً</span>
               <span class="meta-tag">نظام قطر للتعليم (LMS)</span>
             </div>
           </div>
-          <div class="header-side">
+          <div class="header-side" style="text-align: left; align-items: flex-end;">
             <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
-            <div style="font-size: 9px; font-weight: 800; color: #0F2044;">قسم المشاريع الإلكترونية</div>
-            <div style="font-size: 8.5px; color: #64748B;">Qatar Science & Technology School</div>
+            <div style="font-size: 9.5px; font-weight: 800; color: #0F2044;">قسم المشاريع والحلول الرقمية</div>
+            <div style="font-size: 8.5px; color: #64748B;">E-Learning & Digital Projects Dept.</div>
+            <div style="font-size: 8px; color: #94A3B8; font-family: monospace;">DOC: QSTSS-LMS-${academicYear.replace('/', '-')}-ASSESSMENTS</div>
           </div>
         </div>
 
@@ -630,7 +636,7 @@ export function printMonthlyAssessmentsReport(options: MonthlyPrintOptions) {
         <!-- Signatures -->
         <div class="signatures-bar">
           <div class="sig-block">
-            <div class="sig-role">إعداد: منسق المشاريع الإلكترونية</div>
+            <div class="sig-role">إعداد: منسق المشاريع والتعليم الإلكتروني</div>
             <div class="sig-name">م. أحمد عادل طبيشات</div>
             <img class="sig-img" src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" />
           </div>
@@ -641,7 +647,7 @@ export function printMonthlyAssessmentsReport(options: MonthlyPrintOptions) {
           </div>
           <div class="sig-block">
             <div class="sig-role">التصديق: مدير المدرسة</div>
-            <div class="sig-name">أ. محمد فوزي خضر</div>
+            <div class="sig-name">محمد علي مندني العمادي</div>
             <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة" />
           </div>
         </div>
@@ -728,25 +734,29 @@ export function printMonthlyTeacherEvaluationsReport(options: MonthlyPrintOption
       <body>
         <!-- Header -->
         <div class="official-header">
-          <div class="header-side">
+          <div class="header-side" style="text-align: right; align-items: flex-start;">
             <img class="header-logo" src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" />
-            <div style="font-size: 9px; font-weight: 700; color: #64748B;">وزارة التربية والتعليم والتعليم العالي</div>
-            <div style="font-size: 8.5px; color: #94A3B8;">إدارة شؤون المدارس والتعليم الإلكتروني</div>
+            <div style="font-size: 10px; font-weight: 900; color: #0F2044;">دولة قطر</div>
+            <div style="font-size: 9.5px; font-weight: 800; color: #0F2044;">وزارة التربية والتعليم والتعليم العالي</div>
+            <div style="font-size: 8.5px; color: #64748B;">قطاع الشؤون التعليمية — إدارة شؤون المدارس</div>
           </div>
           <div class="header-center">
-            <h1>مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</h1>
-            <h2>تقرير التقييم الشهري المعتمد لمعلمي نظام قطر للتعليم — شهر ${d.monthLabel}</h2>
+            <h1 style="font-size: 16px; font-weight: 900; color: #0F2044; margin-bottom: 2px;">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</h1>
+            <div style="font-size: 9.5px; color: #64748B; font-weight: 700; margin-bottom: 4px;">Qatar Science & Technology Secondary School for Boys</div>
+            <h2 style="font-size: 13.5px; font-weight: 800; color: #0284C7; margin-bottom: 5px;">تقرير التقييم الشهري المعتمد لمعلمي نظام قطر للتعليم — شهر ${d.monthLabel}</h2>
             <div>
               <span class="meta-tag">العام الأكاديمي: ${academicYear}</span>
               <span class="meta-tag">الشهر المعتمد: ${d.monthLabel}</span>
               <span class="meta-tag">إجمالي المعلمين: ${totalTeachers} معلماً</span>
-              <span class="meta-tag" style="background: #DCFCE7; color: #166534;">✓ معتمد وموثق</span>
+              <span class="meta-tag" style="background: #DCFCE7; color: #166534;">✓ معتمد وموثق رسمياً</span>
+              <span class="meta-tag">نظام قطر للتعليم (LMS)</span>
             </div>
           </div>
-          <div class="header-side">
+          <div class="header-side" style="text-align: left; align-items: flex-end;">
             <img class="header-logo" src="/school-logo.png" alt="شعار المدرسة" />
-            <div style="font-size: 9px; font-weight: 800; color: #0F2044;">قسم المشاريع الإلكترونية</div>
-            <div style="font-size: 8.5px; color: #64748B;">Qatar Science & Technology School</div>
+            <div style="font-size: 9.5px; font-weight: 800; color: #0F2044;">قسم المشاريع والحلول الرقمية</div>
+            <div style="font-size: 8.5px; color: #64748B;">E-Learning & Digital Projects Dept.</div>
+            <div style="font-size: 8px; color: #94A3B8; font-family: monospace;">DOC: QSTSS-LMS-${academicYear.replace('/', '-')}-EVAL</div>
           </div>
         </div>
 
@@ -829,7 +839,7 @@ export function printMonthlyTeacherEvaluationsReport(options: MonthlyPrintOption
         <!-- Signatures -->
         <div class="signatures-bar">
           <div class="sig-block">
-            <div class="sig-role">إعداد: منسق المشاريع الإلكترونية</div>
+            <div class="sig-role">إعداد: منسق المشاريع والتعليم الإلكتروني</div>
             <div class="sig-name">م. أحمد عادل طبيشات</div>
             <img class="sig-img" src="/signature-ahmad.png" alt="توقيع م. أحمد طبيشات" />
           </div>
@@ -840,7 +850,7 @@ export function printMonthlyTeacherEvaluationsReport(options: MonthlyPrintOption
           </div>
           <div class="sig-block">
             <div class="sig-role">التصديق: مدير المدرسة</div>
-            <div class="sig-name">أ. محمد فوزي خضر</div>
+            <div class="sig-name">محمد علي مندني العمادي</div>
             <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة" />
           </div>
         </div>

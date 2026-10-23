@@ -1518,6 +1518,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                 syncSuccessMsg={syncSuccessMsg}
                 onExportExcel={handleExportActiveReportToExcel}
                 onNavigateToTakreem={() => onNavigateToPage?.('takreem')}
+                onNavigateToPage={onNavigateToPage}
                 canManageEvaluations={canManageEvaluations}
               />
             </div>

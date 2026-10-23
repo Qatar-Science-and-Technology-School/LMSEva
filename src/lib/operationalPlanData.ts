@@ -1421,7 +1421,7 @@ export function printOfficialOperationalPlan(
   <!-- ══════ LETTERHEAD (ENLARGED OFFICIAL LOGOS) ══════ -->
   <div class="hdr ab">
     <div class="hdr-logo-box" style="justify-content: flex-start;">
-      <img src="ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" class="hdr-logo"/>
+      <img src="/ministry-logo.png" alt="وزارة التربية والتعليم والتعليم العالي" class="hdr-logo"/>
     </div>
     <div class="hdr-center">
       <div class="hdr-sub">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
@@ -1433,7 +1433,7 @@ export function printOfficialOperationalPlan(
       <div class="hdr-code">كود الوثيقة: QSTSS-OP-${academicYear} &nbsp;|&nbsp; تاريخ الإصدار: ${printDate}</div>
     </div>
     <div class="hdr-logo-box" style="justify-content: flex-end;">
-      <img src="school-logo.png" alt="مدرسة قطر للعلوم والتكنولوجيا" class="hdr-logo"/>
+      <img src="/school-logo.png" alt="مدرسة قطر للعلوم والتكنولوجيا" class="hdr-logo"/>
     </div>
   </div>
 
@@ -1510,7 +1510,7 @@ export function printOfficialOperationalPlan(
         <div class="sig-nm">م. أحمد عادل طبيشات</div>
         <div class="sig-jb">منسق المشاريع والتعليم الإلكتروني</div>
         <div class="sig-ia">
-          <img class="sig-img" src="signature-ahmad.png" onerror="this.style.display='none'" alt="توقيع م. أحمد عادل طبيشات"/>
+          <img class="sig-img" src="/signature-ahmad.png" onerror="this.style.display='none'" alt="توقيع م. أحمد عادل طبيشات"/>
         </div>
         <div class="sig-ln"></div>
         <div class="sig-lb">التوقيع</div>
@@ -1522,7 +1522,7 @@ export function printOfficialOperationalPlan(
         <div class="sig-nm">د. راني التوم</div>
         <div class="sig-jb">النائب الأكاديمي للمدرسة</div>
         <div class="sig-ia">
-          <img class="sig-img" src="signature-rani.png" onerror="this.style.display='none'" alt="توقيع د. راني التوم"/>
+          <img class="sig-img" src="/signature-rani.png" onerror="this.style.display='none'" alt="توقيع د. راني التوم"/>
         </div>
         <div class="sig-ln"></div>
         <div class="sig-lb">التوقيع</div>
@@ -1534,7 +1534,7 @@ export function printOfficialOperationalPlan(
         <div class="sig-nm">محمد علي مندني العمادي</div>
         <div class="sig-jb">مدير مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
         <div class="sig-ia">
-          <img class="sig-img" src="principal-signature.png" onerror="this.style.display='none'" alt="توقيع مدير المدرسة"/>
+          <img class="sig-img" src="/principal-signature.png" onerror="this.style.display='none'" alt="توقيع مدير المدرسة"/>
         </div>
         <div class="sig-ln"></div>
         <div class="sig-lb">التوقيع والختم الرسمي</div>

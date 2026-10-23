@@ -74,7 +74,7 @@ interface Props {
   onNavigate?: (page: any) => void;
 }
 
-export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: propYear }: Props) {
+export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: propYear, onNavigate }: Props) {
   const currentYear = propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1];
 
   // Academic Year & Month Selectors (Dynamic based on real current date)
@@ -669,6 +669,65 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
   return (
     <div style={{ padding: '1.5rem', direction: 'rtl', minHeight: '100vh', background: '#F8FAFC' }}>
       
+      {/* ── Interconnected Quick Navigation Hub ── */}
+      {onNavigate && (
+        <div
+          className="no-print"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            overflowX: 'auto',
+            padding: '0.65rem 0.85rem',
+            background: '#FFFFFF',
+            borderRadius: '12px',
+            border: '1px solid #E2E8F0',
+            marginBottom: '1rem',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+            flexWrap: 'wrap'
+          }}
+        >
+          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0F2044', display: 'flex', alignItems: 'center', gap: '0.35rem', marginLeft: '0.5rem' }}>
+            <span>🔗</span>
+            <span>التنقل السريع بين أقسام المنظومة:</span>
+          </span>
+          {[
+            { id: 'dashboard', label: 'لوحة المؤشرات', icon: '📊' },
+            { id: 'evaluation', label: 'تقييم نظام قطر للتعليم', icon: '📝' },
+            { id: 'reports', label: 'مركز التقارير الرسمية', icon: '📋' },
+            { id: 'model_lessons', label: 'حصص التعليم الإلكتروني', icon: '💻' },
+            { id: 'takreem', label: 'تكريم المعلمين', icon: '🏆' },
+            { id: 'operational_plan', label: 'الخطة الإجرائية', icon: '🎯' },
+            { id: 'professional_development', label: 'التطوير المهني', icon: '🎓' },
+            { id: 'distance_learning', label: 'التعلم عن بعد', icon: '🌐' },
+            { id: 'elearning_sms', label: 'E-Learning SMS', icon: '📱' },
+            { id: 'analytics', label: 'التحليلات المتقدمة', icon: '📈' },
+          ].map(item => (
+            <button
+              key={item.id}
+              onClick={() => onNavigate(item.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.35rem 0.75rem',
+                borderRadius: '8px',
+                border: '1px solid #E2E8F0',
+                background: '#F8FAFC',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: '#334155',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── 1. Top Header Banner ── */}
       <div
         className="no-print"

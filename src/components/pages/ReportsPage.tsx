@@ -21,6 +21,7 @@ import {
   printMonthlyAssessmentsReport,
   printMonthlyTeacherEvaluationsReport,
   resolveMonthData,
+  getRealCurrentAcademicMonthDef,
 } from '@/lib/data';
 import type { User, Teacher, Evaluation, Department, ModelLessonEvaluation, ModelLessonScheduleItem } from '@/lib/data';
 import { loadEventsMeetings, EventMeetingItem, EVENT_CATEGORY_CONFIG, EVENT_TYPE_CONFIG, EVENT_STATUS_CONFIG } from '@/lib/eventsMeetingsData';
@@ -40,6 +41,8 @@ import {
 interface Props { 
   currentUser: User; 
   selectedYear?: string; 
+  onNavigate?: (page: string) => void;
+  onViewTeacher?: (id: string) => void;
 }
 
 export type ReportCategory = 
@@ -687,35 +690,71 @@ function OfficialReportHeader({
   reportCode?: string;
 }) {
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+    <div style={{ marginBottom: '1.75rem', textAlign: 'center' }}>
       {/* Logos and Centered Titles */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
-        <img
-          src="/ministry-logo.png"
-          alt="وزارة التربية والتعليم والتعليم العالي"
-          style={{ height: '80px', maxWidth: '180px', objectFit: 'contain' }}
-        />
-        <div style={{ textAlign: 'center', flex: 1, padding: '0 1rem' }}>
-          <div style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F2044', letterSpacing: '0.2px' }}>
-            دولة قطر — وزارة التربية والتعليم والتعليم العالي
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.9rem', gap: '1rem' }}>
+        {/* Ministry Logo (Right - RTL Start) */}
+        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: '190px' }}>
+          <img
+            src="/ministry-logo.png"
+            alt="وزارة التربية والتعليم والتعليم العالي"
+            style={{ height: '82px', maxWidth: '185px', objectFit: 'contain', marginBottom: '4px' }}
+          />
+          <div style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0F2044', lineHeight: 1.25 }}>
+            دولة قطر — State of Qatar
           </div>
-          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0284C7', marginTop: '0.2rem' }}>
-            مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
+          <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#0F2044' }}>
+            وزارة التربية والتعليم والتعليم العالي
           </div>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748B', marginTop: '0.15rem' }}>
-            قسم المشاريع والتعليم الإلكتروني والحلول الرقمية | مركز التقارير الرسمية المعتمد
+          <div style={{ fontSize: '0.66rem', fontWeight: 700, color: '#64748B' }}>
+            قطاع الشؤون التعليمية — إدارة شؤون المدارس
           </div>
         </div>
-        <img
-          src="/school-logo.png"
-          alt="شعار المدرسة"
-          style={{ height: '80px', maxWidth: '180px', objectFit: 'contain' }}
-        />
+
+        {/* Center: School Full Title & Verification Seal */}
+        <div style={{ textAlign: 'center', flex: 1, padding: '0 0.5rem' }}>
+          <div style={{ fontSize: '1.18rem', fontWeight: 900, color: '#0F2044', letterSpacing: '0.2px', marginBottom: '2px' }}>
+            مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
+          </div>
+          <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0284C7', marginBottom: '3px' }}>
+            Qatar Science & Technology Secondary School for Boys
+          </div>
+          <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+            قسم المشاريع والحلول الرقمية والتعليم الإلكتروني | المركز المعتمد للتقارير الرسمية
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: '#DCFCE7', border: '1px solid #86EFAC', color: '#166534', padding: '0.2rem 0.75rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 800 }}>
+            <span>✓</span>
+            <span>وثيقة رسمية معتمدة وموثقة إلكترونياً</span>
+            <span>·</span>
+            <span>LMS QES OFFICIAL REPORT</span>
+          </div>
+        </div>
+
+        {/* School Logo (Left - RTL End) */}
+        <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '190px' }}>
+          <img
+            src="/school-logo.png"
+            alt="شعار مدرسة قطر للعلوم والتكنولوجيا"
+            style={{ height: '82px', maxWidth: '185px', objectFit: 'contain', marginBottom: '4px' }}
+          />
+          <div style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0F2044', lineHeight: 1.25 }}>
+            Department of E-Learning & Digital Solutions
+          </div>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748B' }}>
+            اعتماد المنظومة المؤسسية المدرسية
+          </div>
+          <div style={{ fontSize: '0.66rem', fontWeight: 800, color: '#0284C7', fontFamily: 'monospace' }}>
+            QSTSS-GOV-2026/2027
+          </div>
+        </div>
       </div>
+
+      {/* Decorative Gold & Navy Multi-line Divider */}
+      <div style={{ height: '4px', background: 'linear-gradient(90deg, #0F2044 0%, #0284C7 50%, #D97706 100%)', borderRadius: '2px', marginBottom: '0.75rem' }} />
 
       {/* Center Navy Gradient Banner */}
       <div style={{
-        background: 'linear-gradient(135deg, #0F2044 0%, #1e3a6b 100%)',
+        background: 'linear-gradient(135deg, #0A1931 0%, #0F2044 50%, #1e3a6b 100%)',
         borderRadius: '10px',
         padding: '0.85rem 1.5rem',
         display: 'flex',
@@ -723,12 +762,13 @@ function OfficialReportHeader({
         justifyContent: 'center',
         gap: '1.25rem',
         color: '#FFFFFF',
-        boxShadow: '0 2px 8px rgba(15,32,68,0.15)',
+        boxShadow: '0 4px 12px rgba(15,32,68,0.2)',
+        border: '1.5px solid #00B4D8',
         printColorAdjust: 'exact',
         WebkitPrintColorAdjust: 'exact',
         flexWrap: 'wrap',
       }}>
-        <h1 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0, whiteSpace: 'nowrap' }}>
+        <h1 style={{ fontSize: '1.15rem', fontWeight: 900, margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           {title}
         </h1>
         <span style={{ color: '#38BDF8', fontSize: '1.1rem' }}>|</span>
@@ -736,11 +776,11 @@ function OfficialReportHeader({
           {subtitle}
         </span>
         <span style={{ color: '#38BDF8', fontSize: '1.1rem' }}>|</span>
-        <span style={{ fontSize: '0.82rem', fontWeight: 700, background: 'rgba(255,255,255,0.15)', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>
+        <span style={{ fontSize: '0.82rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>
           العام الأكاديمي: {academicYear} {month ? `— ${month}` : ''}
         </span>
         {reportCode && (
-          <span style={{ fontSize: '0.74rem', fontWeight: 700, background: 'rgba(56,189,248,0.2)', color: '#BAE6FD', padding: '0.2rem 0.55rem', borderRadius: '6px' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, background: 'rgba(56,189,248,0.25)', color: '#BAE6FD', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(56,189,248,0.4)' }}>
             كود الوثيقة: {reportCode}
           </span>
         )}
@@ -805,49 +845,50 @@ function OfficialSignaturesFooter() {
       alignItems: 'center',
       marginTop: '2.5rem',
       paddingTop: '1.25rem',
-      borderTop: '2px solid #CBD5E1',
+      borderTop: '2.5px solid #0F2044',
+      position: 'relative',
       pageBreakInside: 'avoid',
       breakInside: 'avoid',
     }}>
-      <div style={{ textAlign: 'center', width: '220px' }}>
+      <div style={{ textAlign: 'center', width: '230px' }}>
         <p style={{ fontWeight: 800, borderBottom: '1.5px solid #0F2044', paddingBottom: '0.4rem', marginBottom: '0.4rem', fontSize: '0.82rem', color: '#0F2044' }}>
-          منسق المشاريع والتعليم الإلكتروني
+          إعداد: منسق المشاريع والتعليم الإلكتروني
         </p>
-        <p style={{ fontSize: '0.82rem', fontWeight: 700, margin: '0 0 4px', color: '#1E293B' }}>
+        <p style={{ fontSize: '0.82rem', fontWeight: 800, margin: '0 0 4px', color: '#1E293B' }}>
           م. أحمد عادل طبيشات
         </p>
         <img
           src="/signature-ahmad.png"
           alt="توقيع م. أحمد طبيشات"
-          style={{ height: '38px', objectFit: 'contain', margin: '0 auto', display: 'block' }}
+          style={{ height: '42px', objectFit: 'contain', margin: '0 auto', display: 'block' }}
         />
       </div>
 
-      <div style={{ textAlign: 'center', width: '220px' }}>
+      <div style={{ textAlign: 'center', width: '230px' }}>
         <p style={{ fontWeight: 800, borderBottom: '1.5px solid #0F2044', paddingBottom: '0.4rem', marginBottom: '0.4rem', fontSize: '0.82rem', color: '#0F2044' }}>
-          النائب الأكاديمي
+          اعتماد: النائب الأكاديمي
         </p>
-        <p style={{ fontSize: '0.82rem', fontWeight: 700, margin: '0 0 4px', color: '#1E293B' }}>
+        <p style={{ fontSize: '0.82rem', fontWeight: 800, margin: '0 0 4px', color: '#1E293B' }}>
           د. راني التوم
         </p>
         <img
           src="/signature-rani.png"
           alt="توقيع د. راني التوم"
-          style={{ height: '38px', objectFit: 'contain', margin: '0 auto', display: 'block' }}
+          style={{ height: '42px', objectFit: 'contain', margin: '0 auto', display: 'block' }}
         />
       </div>
 
-      <div style={{ textAlign: 'center', width: '220px' }}>
+      <div style={{ textAlign: 'center', width: '230px' }}>
         <p style={{ fontWeight: 800, borderBottom: '1.5px solid #0F2044', paddingBottom: '0.4rem', marginBottom: '0.4rem', fontSize: '0.82rem', color: '#0F2044' }}>
-          مدير المدرسة
+          التصديق: مدير المدرسة
         </p>
-        <p style={{ fontSize: '0.82rem', fontWeight: 700, margin: '0 0 4px', color: '#1E293B' }}>
+        <p style={{ fontSize: '0.82rem', fontWeight: 800, margin: '0 0 4px', color: '#1E293B' }}>
           محمد علي مندني العمادي
         </p>
         <img
           src="/principal-signature.png"
           alt="توقيع مدير المدرسة"
-          style={{ height: '38px', objectFit: 'contain', margin: '0 auto', display: 'block' }}
+          style={{ height: '42px', objectFit: 'contain', margin: '0 auto', display: 'block' }}
         />
       </div>
     </div>
@@ -889,7 +930,7 @@ function ReportTable({ headers, rows, emptyMsg }: {
 }
 
 // Main Component
-export default function ReportsPage({ currentUser, selectedYear: propYear }: Props) {
+export default function ReportsPage({ currentUser, selectedYear: propYear, onNavigate, onViewTeacher }: Props) {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -910,7 +951,8 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
   const [activeCategory, setActiveCategory] = useState<ReportCategory>('all');
   const [reportType, setReportType] = useState<ReportType>('op_plan');
   const [selYear, setSelYear] = useState(propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1]);
-  const [selMonth, setSelMonth] = useState('سبتمبر');
+  const realCurrentMonth = getRealCurrentAcademicMonthDef().nameAr || 'أكتوبر';
+  const [selMonth, setSelMonth] = useState(realCurrentMonth);
   const [selDept, setSelDept] = useState('');
   const [selTeacherId, setSelTeacherId] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
@@ -1023,6 +1065,33 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
     if (isCoord && coordDepts.length > 0) return teachers.filter(t => coordDepts.includes(t.departmentId));
     return teachers;
   }, [teachers, isCoord, coordDepts]);
+
+  const renderTeacherCell = (t?: Teacher | null) => {
+    if (!t) return <span>-</span>;
+    const canClick = Boolean(onViewTeacher && t.id);
+    return (
+      <div
+        onClick={() => canClick && onViewTeacher!(t.id)}
+        style={{
+          textAlign: 'right',
+          cursor: canClick ? 'pointer' : 'default',
+        }}
+        title={canClick ? 'انقر للانتقال المباشر لملف وسجل المعلم' : undefined}
+      >
+        <div style={{
+          fontWeight: 800,
+          color: canClick ? '#0284C7' : '#0F2044',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.25rem'
+        }}>
+          <span>{t.nameAr}</span>
+          {canClick && <span style={{ fontSize: '0.7rem', color: '#00B4D8' }}>↗</span>}
+        </div>
+        {t.nameEn && <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{t.nameEn}</div>}
+      </div>
+    );
+  };
 
   // When active category changes, set reportType to first report in that category
   function handleSelectCategory(cat: ReportCategory) {
@@ -1833,6 +1902,62 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           </div>
         </div>
 
+        {/* ── Interconnected System Navigation Hub ── */}
+        {onNavigate && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            overflowX: 'auto',
+            padding: '0.65rem 0.85rem',
+            background: '#FFFFFF',
+            borderRadius: '12px',
+            border: '1px solid #E2E8F0',
+            marginBottom: '1rem',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+            flexWrap: 'wrap'
+          }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0F2044', display: 'flex', alignItems: 'center', gap: '0.35rem', marginLeft: '0.5rem' }}>
+              <span>🔗</span>
+              <span>التنقل السريع والتكامل بين أقسام المنظومة:</span>
+            </span>
+            {[
+              { id: 'dashboard', label: 'لوحة المؤشرات', icon: '📊' },
+              { id: 'evaluation', label: 'تقييم نظام قطر للتعليم', icon: '📝' },
+              { id: 'class_analysis', label: 'تحليل الشعب والمواد', icon: '🏫' },
+              { id: 'model_lessons', label: 'حصص التعليم الإلكتروني', icon: '💻' },
+              { id: 'takreem', label: 'تكريم المعلمين', icon: '🏆' },
+              { id: 'operational_plan', label: 'الخطة الإجرائية', icon: '🎯' },
+              { id: 'professional_development', label: 'التطوير المهني', icon: '🎓' },
+              { id: 'distance_learning', label: 'التعلم عن بعد', icon: '🌐' },
+              { id: 'elearning_sms', label: 'E-Learning SMS', icon: '📱' },
+              { id: 'analytics', label: 'التحليلات المتقدمة', icon: '📈' },
+            ].map(item => (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '8px',
+                  border: '1px solid #E2E8F0',
+                  background: '#F8FAFC',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#334155',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* ── Category Navigation Tabs ── */}
         <div style={{
           display: 'flex',
@@ -2129,9 +2254,25 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             </h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.6rem' }}>
               {honorees.map(h => (
-                <div key={h.teacherId} style={{ padding: '0.6rem 0.9rem', background: '#fff', borderRadius: '8px', border: '1px solid #E0F2FE', borderRight: '4px solid #0369A1' }}>
+                <div 
+                  key={h.teacherId} 
+                  style={{ 
+                    padding: '0.6rem 0.9rem', 
+                    background: '#fff', 
+                    borderRadius: '8px', 
+                    border: '1px solid #E0F2FE', 
+                    borderRight: '4px solid #0369A1',
+                    cursor: onViewTeacher ? 'pointer' : 'default',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onClick={() => onViewTeacher && onViewTeacher(h.teacherId)}
+                  title={onViewTeacher ? 'انقر لعرض ملف المعلم' : undefined}
+                >
                   <div style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: 700 }}>{h.departmentName}</div>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0F2044', margin: '0.2rem 0' }}>{h.teacherNameAr}</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0F2044', margin: '0.2rem 0', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <span>{h.teacherNameAr}</span>
+                    {onViewTeacher && <span style={{ fontSize: '0.7rem', color: '#0284C7' }}>↗</span>}
+                  </div>
                   <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0369A1' }}>الدرجة: {h.totalScore}%</div>
                 </div>
               ))}
@@ -2208,7 +2349,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
                 const perf = getPerformanceLevel((m.overallScore || 0) * 10);
                 return [
                   <span style={{ fontWeight: 700, color: '#64748B' }}>{i + 1}</span>,
-                  <span style={{ fontWeight: 800, color: '#0F2044' }}>{m.teacherNameAr}</span>,
+                  renderTeacherCell(teachers.find(t => t.id === m.teacherId) || { id: m.teacherId, nameAr: m.teacherNameAr, departmentId: m.departmentId } as any),
                   <span>{m.departmentName}</span>,
                   <span>{m.subject} — {m.classGrade}</span>,
                   <span>{m.date} (حصة {m.period})</span>,
@@ -2421,10 +2562,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
               rows={qesReportData.map(({ ev, t, dept, perf }: any, i: number) => [
                 <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
                 <span style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#64748B' }}>{t?.employeeId || '-'}</span>,
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{t?.nameAr || '-'}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{t?.nameEn || ''}</div>
-                </div>,
+                renderTeacherCell(t),
                 <span style={{ fontWeight: 700 }}>{dept}</span>,
                 <span style={{ color: '#64748B' }}>{t?.subject || '-'}</span>,
                 <span style={{ fontWeight: 900, fontSize: '0.9rem', color: perf.color }}>{ev.totalScore}%</span>,
@@ -2443,10 +2581,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
               emptyMsg="لا توجد بيانات لهذا العام."
               rows={qesReportData.map((r: any, i: number) => [
                 <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || '-'}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{r.t?.nameEn || ''}</div>
-                </div>,
+                renderTeacherCell(r.t),
                 <span style={{ fontWeight: 700 }}>{r.dept}</span>,
                 <span>{r.count}</span>,
                 <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
@@ -2465,10 +2600,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
               emptyMsg="لا توجد تقييمات لهذا القسم."
               rows={qesReportData.map((r: any, i: number) => [
                 <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || '-'}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{r.t?.nameEn || ''}</div>
-                </div>,
+                renderTeacherCell(r.t),
                 <span style={{ color: '#64748B' }}>{r.t?.subject || '-'}</span>,
                 <span>{r.count}</span>,
                 <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
@@ -2487,10 +2619,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
               emptyMsg="🎉 لا يوجد معلمون يحتاجون لمتابعة، جميع الأداءات أعلى من 80%!"
               rows={qesReportData.map((r: any, i: number) => [
                 <span style={{ color: '#94A3B8', fontWeight: 700 }}>{i + 1}</span>,
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: 800, color: '#0F2044' }}>{r.t?.nameAr || '-'}</div>
-                  <div style={{ fontSize: '0.62rem', color: '#94A3B8' }}>{r.t?.nameEn || ''}</div>
-                </div>,
+                renderTeacherCell(r.t),
                 <span style={{ fontWeight: 700 }}>{r.dept}</span>,
                 <span style={{ fontWeight: 900, fontSize: '0.9rem', color: r.perf.color }}>{r.averageScore}%</span>,
                 <ProgressBar value={r.averageScore} />,

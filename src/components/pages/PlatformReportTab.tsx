@@ -65,6 +65,7 @@ interface Props {
   syncSuccessMsg: string;
   onExportExcel: () => void;
   onNavigateToTakreem?: () => void;
+  onNavigateToPage?: (page: string) => void;
   selectedMonth?: string;
   onMonthChange?: (month: string) => void;
   canManageEvaluations?: boolean;
@@ -79,6 +80,7 @@ export default function PlatformReportTab({
   syncSuccessMsg,
   onExportExcel,
   onNavigateToTakreem,
+  onNavigateToPage,
   selectedMonth,
   onMonthChange,
   canManageEvaluations = false,
@@ -375,6 +377,52 @@ export default function PlatformReportTab({
               }}
             >
               <span>🏆</span> لوحة تكريم المعلمين والشهادات
+            </button>
+          )}
+
+          {onNavigateToPage && (
+            <button
+              onClick={() => onNavigateToPage('reports')}
+              style={{
+                background: 'linear-gradient(135deg, #0F2044 0%, #1e3a6b 100%)',
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '8px',
+                padding: '0.55rem 1rem',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: '0 2px 8px rgba(15,32,68,0.3)',
+              }}
+              title="الانتقال المباشر إلى مركز التقارير الرسمية"
+            >
+              <span>📋</span> مركز التقارير الرسمية
+            </button>
+          )}
+
+          {onNavigateToPage && (
+            <button
+              onClick={() => onNavigateToPage('class_analysis')}
+              style={{
+                background: '#475569',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '0.55rem 1rem',
+                fontWeight: 800,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: '0 2px 8px rgba(71,85,105,0.3)',
+              }}
+              title="الانتقال إلى صفحة تحليل المواد والشعب الدراسية"
+            >
+              <span>🏫</span> تحليل المواد والشعب
             </button>
           )}
 
