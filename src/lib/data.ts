@@ -2491,6 +2491,124 @@ export const SEED_MEEE_2627_RECORDS = [
   },
 ];
 
+// ── Teacher Normalization & Deduplication Logic ─────────────────────────────
+export function normalizeTeacherName(name: string): string {
+  if (!name) return '';
+  return name
+    .trim()
+    .replace(/[\u064B-\u065F\u0670]/g, '') // strip Arabic diacritics / tashkeel
+    .replace(/^(الأستاذ|الاستاذ|دكتور|الدكتور|أ\.|د\.)\s+/g, '') // strip honorific prefixes
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+export function deduplicateTeachersList(rawTeachers: Teacher[]): {
+  cleanTeachers: Teacher[];
+  idRemap: Record<string, string>;
+  hasDuplicates: boolean;
+} {
+  const validTeachers = (rawTeachers || []).filter(t => !isExcludedTeacher(t));
+  const cleanTeachers: Teacher[] = [];
+  const idRemap: Record<string, string> = {};
+  let hasDuplicates = false;
+
+  for (const t of validTeachers) {
+    if (!t) continue;
+    const tNormName = normalizeTeacherName(t.nameAr);
+    const tEmpId = (t.employeeId || '').trim();
+    const tEmail = (t.email || '').trim().toLowerCase();
+
+    // Check if matches a teacher in initialTeachers
+    const matchedInit = initialTeachers.find(it => {
+      const itNormName = normalizeTeacherName(it.nameAr);
+      const itEmpId = (it.employeeId || '').trim();
+      const itEmail = (it.email || '').trim().toLowerCase();
+      if (tNormName && itNormName && tNormName === itNormName) return true;
+      if (tEmpId && itEmpId && tEmpId === itEmpId) return true;
+      if (tEmail && itEmail && tEmail === itEmail) return true;
+      if (t.id && it.id && t.id === it.id) return true;
+      return false;
+    });
+
+    // Check if we already have this teacher in cleanTeachers
+    const existingIndex = cleanTeachers.findIndex(ct => {
+      if (matchedInit && ct.id === matchedInit.id) return true;
+      const ctNormName = normalizeTeacherName(ct.nameAr);
+      const ctEmpId = (ct.employeeId || '').trim();
+      const ctEmail = (ct.email || '').trim().toLowerCase();
+      if (tNormName && ctNormName && tNormName === ctNormName) return true;
+      if (tEmpId && ctEmpId && tEmpId === ctEmpId) return true;
+      if (tEmail && ctEmail && tEmail === ctEmail) return true;
+      return false;
+    });
+
+    if (existingIndex >= 0) {
+      hasDuplicates = true;
+      const canonical = cleanTeachers[existingIndex];
+      // Map this duplicate ID to canonical ID
+      idRemap[t.id] = canonical.id;
+
+      // Retain the best non-empty values
+      cleanTeachers[existingIndex] = {
+        ...canonical,
+        employeeId: canonical.employeeId || t.employeeId,
+        nameEn: canonical.nameEn || t.nameEn,
+        email: canonical.email || t.email,
+        subject: canonical.subject || t.subject,
+        departmentId: canonical.departmentId || t.departmentId,
+        status: (canonical.status === 'active' || t.status === 'active') ? 'active' : canonical.status,
+      };
+    } else {
+      const canonicalId = matchedInit ? matchedInit.id : t.id;
+      idRemap[t.id] = canonicalId;
+      idRemap[canonicalId] = canonicalId;
+
+      const canonicalTeacher: Teacher = {
+        ...(matchedInit || {}),
+        ...t,
+        id: canonicalId,
+        nameAr: matchedInit ? matchedInit.nameAr : t.nameAr,
+        nameEn: t.nameEn || (matchedInit ? matchedInit.nameEn : ''),
+        employeeId: t.employeeId || (matchedInit ? matchedInit.employeeId : ''),
+        departmentId: t.departmentId || (matchedInit ? matchedInit.departmentId : 'd_stem'),
+        subject: t.subject || (matchedInit ? matchedInit.subject : ''),
+        email: t.email || (matchedInit ? matchedInit.email : ''),
+        status: t.status || 'active',
+      };
+      cleanTeachers.push(canonicalTeacher);
+    }
+  }
+
+  // Ensure all initialTeachers exist in cleanTeachers without duplication
+  for (const it of initialTeachers) {
+    if (isExcludedTeacher(it)) continue;
+    const itNormName = normalizeTeacherName(it.nameAr);
+    const itEmpId = (it.employeeId || '').trim();
+    const itEmail = (it.email || '').trim().toLowerCase();
+
+    const alreadyPresent = cleanTeachers.some(ct => {
+      if (ct.id === it.id) return true;
+      const ctNorm = normalizeTeacherName(ct.nameAr);
+      const ctEmp = (ct.employeeId || '').trim();
+      const ctMail = (ct.email || '').trim().toLowerCase();
+      if (itNormName && ctNorm && itNormName === ctNorm) return true;
+      if (itEmpId && ctEmp && itEmpId === ctEmp) return true;
+      if (itEmail && ctMail && itEmail === ctMail) return true;
+      return false;
+    });
+
+    if (!alreadyPresent) {
+      cleanTeachers.push(it);
+      idRemap[it.id] = it.id;
+    }
+  }
+
+  return { cleanTeachers, idRemap, hasDuplicates };
+}
+
 export const db = {
   getUsers: async (): Promise<User[]> => {
     const stored = await seedIfEmpty<User>(COLLECTIONS.users, initialUsers);
@@ -2543,65 +2661,211 @@ export const db = {
   },
   getTeachers: async (): Promise<Teacher[]> => {
     const list = await seedIfEmpty<Teacher>(COLLECTIONS.teachers, initialTeachers);
-    const existingIds = new Set(list.map(t => t.id));
-    const missing = initialTeachers.filter(t => !existingIds.has(t.id));
-    if (missing.length > 0) {
-      const merged = [...list, ...missing];
+    const { cleanTeachers, idRemap, hasDuplicates } = deduplicateTeachersList(list);
+
+    if (hasDuplicates || list.length !== cleanTeachers.length) {
       try {
-        await saveCollection(COLLECTIONS.teachers, merged);
+        await saveCollection(COLLECTIONS.teachers, cleanTeachers);
+        const duplicateIds = Object.keys(idRemap).filter(id => idRemap[id] !== id);
+        for (const dupId of duplicateIds) {
+          await deleteDocument(COLLECTIONS.teachers, dupId).catch(() => {});
+        }
       } catch (e) {
-        console.error("Failed to save merged teachers:", e);
+        console.error("Failed to auto-save deduplicated teachers:", e);
       }
-      return merged.filter(t => !isExcludedTeacher(t));
     }
-    return list.filter(t => !isExcludedTeacher(t));
+    return cleanTeachers;
   },
   saveTeachers: async (t: Teacher[]): Promise<void> => {
-    await saveCollection(COLLECTIONS.teachers, t.filter(x => !isExcludedTeacher(x)));
+    const { cleanTeachers } = deduplicateTeachersList(t);
+    await saveCollection(COLLECTIONS.teachers, cleanTeachers);
   },
   deleteTeacher: async (id: string): Promise<void> => {
     await deleteDocument(COLLECTIONS.teachers, id);
   },
+  consolidateTeachersAndEvaluations: async (): Promise<{
+    teachersCount: number;
+    evaluationsCount: number;
+    duplicatesRemoved: number;
+  }> => {
+    const rawTeachers = await getCollection<Teacher>(COLLECTIONS.teachers);
+    const { cleanTeachers, idRemap, hasDuplicates } = deduplicateTeachersList(rawTeachers);
+
+    const duplicateIds = Object.keys(idRemap).filter(id => idRemap[id] !== id);
+    const duplicatesRemoved = duplicateIds.length;
+
+    if (hasDuplicates || rawTeachers.length !== cleanTeachers.length || duplicatesRemoved > 0) {
+      await saveCollection(COLLECTIONS.teachers, cleanTeachers);
+      for (const dupId of duplicateIds) {
+        await deleteDocument(COLLECTIONS.teachers, dupId).catch(() => {});
+      }
+    }
+
+    const rawEvals = await getCollection<Evaluation>(COLLECTIONS.evaluations);
+    let evalsChanged = false;
+
+    const remappedEvals = rawEvals.map(e => {
+      if (e.teacherId && idRemap[e.teacherId] && idRemap[e.teacherId] !== e.teacherId) {
+        evalsChanged = true;
+        return { ...e, teacherId: idRemap[e.teacherId] };
+      }
+      return e;
+    });
+
+    const grouped = new Map<string, Evaluation>();
+    const deletedEvalIds: string[] = [];
+
+    for (const ev of remappedEvals) {
+      if (isExcludedTeacher({ teacherId: ev.teacherId, id: ev.teacherId })) continue;
+      const key = `${ev.teacherId}_${ev.academicYear}_${ev.month}_${ev.term || ''}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, ev);
+      } else {
+        evalsChanged = true;
+        const existing = grouped.get(key)!;
+        deletedEvalIds.push(ev.id);
+        const merged: Evaluation = {
+          ...existing,
+          totalScore: Math.max(existing.totalScore || 0, ev.totalScore || 0),
+          averageScore: Math.max(existing.averageScore || 0, ev.averageScore || 0),
+          percentage: Math.max(existing.percentage || 0, ev.percentage || 0),
+          strengths: existing.strengths || ev.strengths || '',
+          improvementAreas: existing.improvementAreas || ev.improvementAreas || '',
+          recommendations: existing.recommendations || ev.recommendations || '',
+          actionPlan: existing.actionPlan || ev.actionPlan || '',
+          evidenceLinks: Array.from(new Set([...(existing.evidenceLinks || []), ...(ev.evidenceLinks || [])])),
+          generalNotes: existing.generalNotes || ev.generalNotes || '',
+        };
+        grouped.set(key, merged);
+      }
+    }
+
+    const cleanEvals = Array.from(grouped.values());
+
+    if (evalsChanged || deletedEvalIds.length > 0) {
+      await saveCollection(COLLECTIONS.evaluations, cleanEvals);
+      for (const dId of deletedEvalIds) {
+        await deleteDocument(COLLECTIONS.evaluations, dId).catch(() => {});
+      }
+    }
+
+    if (duplicatesRemoved > 0) {
+      try {
+        const [mEvals, mScheds, pdRecs, meeeRecs] = await Promise.all([
+          getCollection<any>(COLLECTIONS.modelLessonEvaluations),
+          getCollection<any>(COLLECTIONS.modelLessonSchedules),
+          getCollection<any>(COLLECTIONS.individualPDRecords),
+          getCollection<any>(COLLECTIONS.meeeRecords),
+        ]);
+
+        let mEvalsChanged = false;
+        const cleanMEvals = mEvals.map(m => {
+          if (m.teacherId && idRemap[m.teacherId] && idRemap[m.teacherId] !== m.teacherId) {
+            mEvalsChanged = true;
+            return { ...m, teacherId: idRemap[m.teacherId] };
+          }
+          return m;
+        });
+        if (mEvalsChanged) await saveCollection(COLLECTIONS.modelLessonEvaluations, cleanMEvals);
+
+        let mSchedsChanged = false;
+        const cleanMScheds = mScheds.map(s => {
+          if (s.teacherId && idRemap[s.teacherId] && idRemap[s.teacherId] !== s.teacherId) {
+            mSchedsChanged = true;
+            return { ...s, teacherId: idRemap[s.teacherId] };
+          }
+          return s;
+        });
+        if (mSchedsChanged) await saveCollection(COLLECTIONS.modelLessonSchedules, cleanMScheds);
+
+        let pdChanged = false;
+        const cleanPD = pdRecs.map(r => {
+          if (r.teacherId && idRemap[r.teacherId] && idRemap[r.teacherId] !== r.teacherId) {
+            pdChanged = true;
+            return { ...r, teacherId: idRemap[r.teacherId] };
+          }
+          return r;
+        });
+        if (pdChanged) await saveCollection(COLLECTIONS.individualPDRecords, cleanPD);
+
+        let meeeChanged = false;
+        const cleanMeee = meeeRecs.map(m => {
+          if (m.teacherId && idRemap[m.teacherId] && idRemap[m.teacherId] !== m.teacherId) {
+            meeeChanged = true;
+            return { ...m, teacherId: idRemap[m.teacherId] };
+          }
+          return m;
+        });
+        if (meeeChanged) await saveCollection(COLLECTIONS.meeeRecords, cleanMeee);
+      } catch (subErr) {
+        console.warn('Error remapping subsidiary collections:', subErr);
+      }
+    }
+
+    invalidateCache();
+
+    return {
+      teachersCount: cleanTeachers.length,
+      evaluationsCount: cleanEvals.length,
+      duplicatesRemoved,
+    };
+  },
   getEvaluations: async (): Promise<Evaluation[]> => {
     const list = await seedIfEmpty<Evaluation>(COLLECTIONS.evaluations, initialEvaluations);
     const rawTeachers = await getCollection<Teacher>(COLLECTIONS.teachers);
+    const { idRemap } = deduplicateTeachersList(rawTeachers);
+
+    let hasRemapped = false;
+    const remapped = list.map(e => {
+      if (e.teacherId && idRemap[e.teacherId] && idRemap[e.teacherId] !== e.teacherId) {
+        hasRemapped = true;
+        return { ...e, teacherId: idRemap[e.teacherId] };
+      }
+      return e;
+    });
+
     const excludedIds = new Set(
       rawTeachers.filter(t => isExcludedTeacher(t)).map(t => t.id)
     );
 
     // Auto-merge missing October 2026 evaluations if Firestore only has September 2026
-    const hasOct2026 = list.some(e => e.academicYear === '2026-2027' && e.month === 'أكتوبر');
+    const hasOct2026 = remapped.some(e => e.academicYear === '2026-2027' && e.month === 'أكتوبر');
+    let workingList = remapped;
     if (!hasOct2026) {
       const octEvals = generateOctober2026Evaluations(initialTeachers);
-      const merged = [...list, ...octEvals];
-      try {
-        await saveCollection(COLLECTIONS.evaluations, merged);
-      } catch (e) {
-        console.error("Failed to auto-seed October 2026 evaluations:", e);
-      }
-      return merged.filter(e => {
-        if (excludedIds.has(e.teacherId)) return false;
-        const t = initialTeachers.find(x => x.id === e.teacherId);
-        if (t && isExcludedTeacher(t)) return false;
-        return true;
-      });
+      workingList = [...remapped, ...octEvals];
+      hasRemapped = true;
     }
 
-    return list.filter(e => {
+    if (hasRemapped) {
+      try {
+        await saveCollection(COLLECTIONS.evaluations, workingList);
+      } catch (e) {
+        console.error("Failed to auto-seed/remap evaluations:", e);
+      }
+    }
+
+    return workingList.filter(e => {
       if (excludedIds.has(e.teacherId)) return false;
-      const t = initialTeachers.find(x => x.id === e.teacherId);
+      const t = rawTeachers.find(x => x.id === e.teacherId) || initialTeachers.find(x => x.id === e.teacherId);
       if (t && isExcludedTeacher(t)) return false;
       return true;
     });
   },
   saveEvaluations: async (e: Evaluation[]): Promise<void> => {
     const rawTeachers = await getCollection<Teacher>(COLLECTIONS.teachers);
+    const { idRemap } = deduplicateTeachersList(rawTeachers);
     const excludedIds = new Set(
       rawTeachers.filter(t => isExcludedTeacher(t)).map(t => t.id)
     );
-    const filtered = e.filter(ev => {
+    const filtered = e.map(ev => {
+      if (ev.teacherId && idRemap[ev.teacherId]) {
+        return { ...ev, teacherId: idRemap[ev.teacherId] };
+      }
+      return ev;
+    }).filter(ev => {
       if (excludedIds.has(ev.teacherId)) return false;
-      const t = initialTeachers.find(x => x.id === ev.teacherId);
+      const t = rawTeachers.find(x => x.id === ev.teacherId) || initialTeachers.find(x => x.id === ev.teacherId);
       if (t && isExcludedTeacher(t)) return false;
       return true;
     });

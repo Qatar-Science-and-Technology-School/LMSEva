@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { db, getDeptName, SUBJECT_TO_DEPT, getUserDeptIds, isSuperAdmin } from '@/lib/data';
+import { db, getDeptName, SUBJECT_TO_DEPT, getUserDeptIds, isSuperAdmin, deduplicateTeachersList, normalizeTeacherName } from '@/lib/data';
 import type { User, Teacher, Department, Evaluation } from '@/lib/data';
 import * as XLSX from 'xlsx';
 
@@ -26,23 +26,43 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [consolidating, setConsolidating] = useState(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3500);
   };
 
-  const reload = () => {
-    Promise.all([db.getTeachers(), db.getDepartments(), db.getEvaluations()])
-      .then(([t, d, e]) => { setTeachers(t); setDepartments(d); setEvaluations(e); setLoading(false); });
+  const reload = async () => {
+    try {
+      const [t, d, e] = await Promise.all([db.getTeachers(), db.getDepartments(), db.getEvaluations()]);
+      const { cleanTeachers } = deduplicateTeachersList(t);
+      setTeachers(cleanTeachers);
+      setDepartments(d);
+      setEvaluations(e);
+    } catch (err) {
+      console.error('Error reloading teachers:', err);
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(() => { reload(); }, []);
 
   const coordDepts = getUserDeptIds(currentUser);
 
-  // coordinators only see their dept teachers
+  // coordinators only see their dept teachers - defensively deduplicated by normalized name
   const visibleTeachers = useMemo(() => {
-    let list = teachers;
+    const { cleanTeachers } = deduplicateTeachersList(teachers);
+    let list = cleanTeachers;
+
+    const seenNames = new Set<string>();
+    list = list.filter(t => {
+      const norm = normalizeTeacherName(t.nameAr);
+      if (seenNames.has(norm)) return false;
+      seenNames.add(norm);
+      return true;
+    });
+
     if (isCoord && coordDepts.length > 0)
       list = list.filter(t => coordDepts.includes(t.departmentId));
     if (deptF) list = list.filter(t => t.departmentId === deptF);
@@ -71,6 +91,25 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
   function openAdd() { if (!isAdmin) return; setForm(blankTeacher()); setEditId(null); setShowModal(true); }
   function openEdit(t: Teacher) { if (!isAdmin) return; setForm({ employeeId:t.employeeId, nameAr:t.nameAr, nameEn:t.nameEn, departmentId:t.departmentId, subject:t.subject, email:t.email, jobCategory:t.jobCategory, status:t.status }); setEditId(t.id); setShowModal(true); }
 
+  async function handleManualConsolidate() {
+    if (!isAdmin || consolidating) return;
+    setConsolidating(true);
+    try {
+      const res = await db.consolidateTeachersAndEvaluations();
+      if (res.duplicatesRemoved > 0) {
+        showToast(`تم فحص السجلات وإزالة ${res.duplicatesRemoved} تكرار وتوحيد كافة التقييمات والتحليلات بنجاح!`);
+      } else {
+        showToast(`قاعدة البيانات نظيفة تماماً: لا يوجد أي تكرار لأسماء المعلمين (إجمالي ${res.teachersCount} معلماً، و${res.evaluationsCount} تقييماً محفوظاً بنسبة 100%)`);
+      }
+      await reload();
+    } catch (err) {
+      console.error('Consolidation failed:', err);
+      showToast('حدث خطأ أثناء فحص وتوحيد السجلات');
+    } finally {
+      setConsolidating(false);
+    }
+  }
+
   async function saveTeacher() {
     if (!isAdmin) return;
     try {
@@ -79,6 +118,12 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
       if (editId) {
         updated = list.map(t => t.id === editId ? { ...t, ...form } : t);
       } else {
+        const normForm = normalizeTeacherName(form.nameAr);
+        const exists = list.some(t => normalizeTeacherName(t.nameAr) === normForm);
+        if (exists) {
+          alert(`المعلم "${form.nameAr}" موجود مسبقاً في النظام. لا يمكن إضافة اسم معلم مكرر.`);
+          return;
+        }
         const newTeacher: Teacher = {
           id: `t${Date.now()}`,
           ...form,
@@ -86,9 +131,10 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
         };
         updated = [newTeacher, ...list];
       }
-      setTeachers(updated);
+      const { cleanTeachers } = deduplicateTeachersList(updated);
+      setTeachers(cleanTeachers);
       setShowModal(false);
-      await db.saveTeachers(updated);
+      await db.saveTeachers(cleanTeachers);
       showToast(editId ? `تم تحديث بيانات المعلم "${form.nameAr}" بنجاح` : `تمت إضافة المعلم "${form.nameAr}" بنجاح`);
     } catch (err) {
       console.error('Error saving teacher:', err);
@@ -174,6 +220,25 @@ export default function TeachersPage({ currentUser, onViewTeacher, selectedYear 
           {availableDepts.map(d => <option key={d.id} value={d.id}>{d.nameAr}</option>)}
         </select>
         <button onClick={exportExcel} className="btn btn-ghost">📥 تصدير Excel</button>
+        {isAdmin && (
+          <button 
+            type="button"
+            onClick={handleManualConsolidate} 
+            disabled={consolidating}
+            className="btn btn-ghost"
+            style={{ 
+              borderColor: '#00B4D8', 
+              color: '#0077B6', 
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem'
+            }}
+            title="فحص قاعدة البيانات وإزالة أي أسماء مكررة للمعلمين ودمج تقييماتهم وحفظها سحابياً"
+          >
+            {consolidating ? '⏳ جاري الفحص والتوحيد...' : '🧹 إزالة التكرار وتوحيد السجلات'}
+          </button>
+        )}
         {(isAdmin) && <button onClick={openAdd} className="btn btn-primary">+ إضافة معلم</button>}
       </div>
 
