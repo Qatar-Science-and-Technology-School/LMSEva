@@ -131,10 +131,15 @@ export default function EventsMeetingsPage({
     notes: '',
   });
 
-  // Load Initial Data
+  // Load Initial Data & listen for cloud sync updates
   useEffect(() => {
-    const loaded = loadEventsMeetings();
-    setItems(loaded);
+    const refresh = () => {
+      const loaded = loadEventsMeetings();
+      setItems(loaded);
+    };
+    refresh();
+    window.addEventListener('qstss_events_meetings_updated', refresh);
+    return () => window.removeEventListener('qstss_events_meetings_updated', refresh);
   }, []);
 
   // Filtered Items

@@ -792,7 +792,13 @@ export function isSuperAdmin(user?: User | null): boolean {
   if (!user) return false;
   const email = (user.email || '').trim().toLowerCase();
   const username = (user.username || '').trim().toLowerCase();
-  return email === SUPER_ADMIN_EMAIL.toLowerCase() || username === 'a.tubaishat1704';
+  return (
+    email === SUPER_ADMIN_EMAIL.toLowerCase() ||
+    username === 'a.tubaishat1704' ||
+    email === 'a.tubaishat@edu.gov.qa' ||
+    username === 'a.tubaishat' ||
+    user.id === 'u1'
+  );
 }
 
 /**
@@ -1567,7 +1573,7 @@ export const initialFollowUpForms: CoordinatorFollowUpForm[] = [
 ];
 
 // --- Firestore-based Storage ---
-import { getCollection, saveCollection, saveDocument, deleteDocument, seedIfEmpty, invalidateCache, COLLECTIONS } from './firestoreDb';
+import { getCollection, saveCollection, saveDocument, deleteDocument, seedIfEmpty, invalidateCache, getDeletedIds, COLLECTIONS } from './firestoreDb';
 
 // Keep currentUser key for localStorage session management
 const CURRENT_USER_KEY = 'qstss_current_user';
@@ -2562,8 +2568,9 @@ export const db = {
   },
   getDailyTasks: async (): Promise<DailyTask[]> => {
     const stored = await seedIfEmpty<DailyTask>(COLLECTIONS.dailyTasks, initialDailyTasks);
+    const deletedIds = getDeletedIds(COLLECTIONS.dailyTasks);
     const existingTitles = new Set(stored.map(t => `${t.title}-${t.month}-${t.academicYear}`));
-    const newFromSeed = initialDailyTasks.filter(t => !existingTitles.has(`${t.title}-${t.month}-${t.academicYear}`));
+    const newFromSeed = initialDailyTasks.filter(t => !existingTitles.has(`${t.title}-${t.month}-${t.academicYear}`) && (!t.id || !deletedIds.has(String(t.id))));
     if (newFromSeed.length > 0) {
       const merged = [...stored, ...newFromSeed];
       try {
@@ -2646,8 +2653,10 @@ export const db = {
   },
   getWorkshops: async (): Promise<any[]> => {
     const existing = await getCollection(COLLECTIONS.workshops) as any[];
+    const deletedIds = getDeletedIds(COLLECTIONS.workshops);
     const existingIds = new Set(existing.map((w: any) => w.id));
-    const missing = SEED_WORKSHOPS_2627.filter((w: any) => !existingIds.has(w.id));
+    const allSeeds = [...SEED_WORKSHOPS_2627, ...(typeof PD_WORKSHOPS !== 'undefined' ? PD_WORKSHOPS : [])];
+    const missing = allSeeds.filter((w: any) => !existingIds.has(w.id) && !deletedIds.has(String(w.id)));
     if (missing.length > 0) {
       const merged: any[] = [...existing, ...missing];
       try {
@@ -2657,15 +2666,23 @@ export const db = {
       }
       return merged;
     }
-    return existing.length > 0 ? existing : (typeof PD_WORKSHOPS !== 'undefined' ? PD_WORKSHOPS : SEED_WORKSHOPS_2627);
+    return existing.length > 0 ? existing : allSeeds.filter((w: any) => !deletedIds.has(String(w.id)));
   },
   saveWorkshops: async (w: any[]): Promise<void> => {
     await saveCollection(COLLECTIONS.workshops, w);
   },
+  saveWorkshop: async (w: any): Promise<string> => {
+    return saveDocument(COLLECTIONS.workshops, w);
+  },
+  deleteWorkshop: async (id: string): Promise<void> => {
+    return deleteDocument(COLLECTIONS.workshops, id);
+  },
   getIndividualPDRecords: async (): Promise<any[]> => {
     const existing = await getCollection(COLLECTIONS.individualPDRecords) as any[];
+    const deletedIds = getDeletedIds(COLLECTIONS.individualPDRecords);
     const existingIds = new Set(existing.map((r: any) => r.id));
-    const missing = SEED_INDIVIDUAL_2627_RECORDS.filter((r: any) => !existingIds.has(r.id));
+    const allSeeds = [...SEED_INDIVIDUAL_2627_RECORDS, ...(typeof PD_INDIVIDUAL_RECORDS !== 'undefined' ? PD_INDIVIDUAL_RECORDS : [])];
+    const missing = allSeeds.filter((r: any) => !existingIds.has(r.id) && !deletedIds.has(String(r.id)));
     if (missing.length > 0) {
       const merged: any[] = [...existing, ...missing];
       try {
@@ -2675,13 +2692,20 @@ export const db = {
       }
       return merged;
     }
-    return existing.length > 0 ? existing : (typeof PD_INDIVIDUAL_RECORDS !== 'undefined' ? PD_INDIVIDUAL_RECORDS : SEED_INDIVIDUAL_2627_RECORDS);
+    return existing.length > 0 ? existing : allSeeds.filter((r: any) => !deletedIds.has(String(r.id)));
   },
   saveIndividualPDRecords: async (r: any[]): Promise<void> => {
     await saveCollection(COLLECTIONS.individualPDRecords, r);
   },
+  saveIndividualPDRecord: async (r: any): Promise<string> => {
+    return saveDocument(COLLECTIONS.individualPDRecords, r);
+  },
+  deleteIndividualPDRecord: async (id: string): Promise<void> => {
+    return deleteDocument(COLLECTIONS.individualPDRecords, id);
+  },
   getMeeeRecords: async (): Promise<any[]> => {
     const existing = await getCollection(COLLECTIONS.meeeRecords) as any[];
+    const deletedIds = getDeletedIds(COLLECTIONS.meeeRecords);
     const non2627 = existing.filter((r: any) => r.academicYear !== '2026-2027');
     const existing2627 = existing.filter((r: any) => r.academicYear === '2026-2027');
 
@@ -2689,13 +2713,13 @@ export const db = {
     let hasChanged = false;
 
     const existing2627Ids = new Set(existing2627.map((r: any) => r.id));
-    const missingSeed2627 = SEED_MEEE_2627_RECORDS.filter((r: any) => !existing2627Ids.has(r.id));
+    const missingSeed2627 = SEED_MEEE_2627_RECORDS.filter((r: any) => !existing2627Ids.has(r.id) && !deletedIds.has(String(r.id)));
     if (missingSeed2627.length > 0) {
       updated2627.push(...missingSeed2627);
       hasChanged = true;
     }
 
-    const missingOriginal = SEED_MEEE_RECORDS.filter((r: any) => !non2627.some((e: any) => e.id === r.id));
+    const missingOriginal = SEED_MEEE_RECORDS.filter((r: any) => !non2627.some((e: any) => e.id === r.id) && !deletedIds.has(String(r.id)));
     if (missingOriginal.length > 0) {
       non2627.push(...missingOriginal);
       hasChanged = true;
@@ -2709,15 +2733,22 @@ export const db = {
         console.error("Failed to sync meeeRecords in Firestore:", e);
       }
     }
-    return merged.length > 0 ? merged : [...SEED_MEEE_RECORDS, ...SEED_MEEE_2627_RECORDS];
+    return merged.length > 0 ? merged : [...SEED_MEEE_RECORDS, ...SEED_MEEE_2627_RECORDS].filter((r: any) => !deletedIds.has(String(r.id)));
   },
   saveMeeeRecords: async (r: any[]): Promise<void> => {
     await saveCollection(COLLECTIONS.meeeRecords, r);
   },
+  saveMeeeRecord: async (r: any): Promise<string> => {
+    return saveDocument(COLLECTIONS.meeeRecords, r);
+  },
+  deleteMeeeRecord: async (id: string): Promise<void> => {
+    return deleteDocument(COLLECTIONS.meeeRecords, id);
+  },
   getElearningSms: async (): Promise<ElearningSms[]> => {
     const stored = await seedIfEmpty<ElearningSms>(COLLECTIONS.elearningSms, initialElearningSms);
+    const deletedIds = getDeletedIds(COLLECTIONS.elearningSms);
     const existingIds = new Set(stored.map(s => s.id));
-    const missing = initialElearningSms.filter(s => !existingIds.has(s.id));
+    const missing = initialElearningSms.filter(s => !existingIds.has(s.id) && !deletedIds.has(String(s.id)));
     if (missing.length > 0) {
       const merged = [...stored, ...missing];
       try {

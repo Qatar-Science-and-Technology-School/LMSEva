@@ -559,7 +559,7 @@ export function getDistanceLearningStorageKey(academicYear: string = '2026-2027'
 if (typeof window !== 'undefined') {
   try {
     getCollection<DistanceLearningRecord>(COLLECTIONS.distanceLearning).then(cloudItems => {
-      if (cloudItems && cloudItems.length > 0) {
+      if (cloudItems && cloudItems.length > 0 && localStorage.getItem('qstss_pending_distance_learning') !== '1') {
         const key = getDistanceLearningStorageKey('2026-2027');
         localStorage.setItem(key, JSON.stringify(cloudItems));
         window.dispatchEvent(new CustomEvent('qstss_distance_learning_updated', { detail: { academicYear: '2026-2027', count: cloudItems.length } }));

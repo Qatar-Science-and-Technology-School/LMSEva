@@ -385,7 +385,7 @@ export function getSelfDevelopmentStorageKey(academicYear: string = '2026-2027')
 if (typeof window !== 'undefined') {
   try {
     getCollection<SelfDevelopmentRecord>(COLLECTIONS.selfDevelopment).then(cloudItems => {
-      if (cloudItems && cloudItems.length > 0) {
+      if (cloudItems && cloudItems.length > 0 && localStorage.getItem('qstss_pending_self_development') !== '1') {
         const key = getSelfDevelopmentStorageKey('2026-2027');
         localStorage.setItem(key, JSON.stringify(cloudItems));
         window.dispatchEvent(

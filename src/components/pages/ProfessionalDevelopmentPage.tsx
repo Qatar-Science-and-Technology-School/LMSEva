@@ -29,6 +29,7 @@ import MeeeCertifiedReportModal from './MeeeCertifiedReportModal';
 import { RichBulletTextarea, FormattedReportPoints } from '@/components/RichBulletTextarea';
 import PDPlanTab from './PDPlanTab';
 import SelfDevelopmentTab from './SelfDevelopmentTab';
+import { syncOperationalPlan } from '@/lib/operationalPlanData';
 
 // ─── Automated Arabic to English Translation Helper for Workshops ───────────────
 const AR_EN_DICTIONARY: [RegExp, string][] = [
@@ -197,6 +198,12 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
   const [showComprehensiveReport, setShowComprehensiveReport] = useState(false);
   const [reportingWorkshop, setReportingWorkshop] = useState<Workshop | null>(null);
   const [reportingIndividual, setReportingIndividual] = useState<IndividualPDRecord | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
+    setToastMsg({ text, type });
+    setTimeout(() => setToastMsg(null), 4000);
+  };
 
   // Permissions: ONLY a.tubaishat1704@education.qa has edit/add/delete rights
   const isAdmin = isSuperAdmin(currentUser);
@@ -238,13 +245,18 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
     await db.saveMeeeRecords(newRecords);
   };
 
-  const handleSaveMeee = (r: MeeeRecord) => {
+  const handleSaveMeee = async (r: MeeeRecord) => {
     // Check if editing an existing record
     const isEditing = meeeRecords.find(item => item.id === r.id);
     if (isEditing) {
       // Update existing
       const newRecords = meeeRecords.map(item => item.id === r.id ? r : item);
-      saveMeeeRecords(newRecords);
+      setMeeeRecords(newRecords);
+      setIsMeeeFormOpen(false);
+      setEditingMeee(null);
+      await db.saveMeeeRecord(r);
+      await saveMeeeRecords(newRecords);
+      showToast('✅ تم تحديث سجل شهادة MEEE بنجاح');
     } else {
       // Check for duplicate: same teacher + same academic year
       const duplicate = meeeRecords.find(item => 
@@ -259,19 +271,32 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
         // Different status → update the existing record
         const updated = { ...duplicate, status: r.status, certificationDate: r.certificationDate, notes: r.notes, updatedAt: new Date().toISOString() };
         const newRecords = meeeRecords.map(item => item.id === duplicate.id ? updated : item);
-        saveMeeeRecords(newRecords);
+        setMeeeRecords(newRecords);
+        setIsMeeeFormOpen(false);
+        setEditingMeee(null);
+        await db.saveMeeeRecord(updated);
+        await saveMeeeRecords(newRecords);
+        showToast('✅ تم تحديث حالة شهادة MEEE بنجاح');
       } else {
         // New record
-        saveMeeeRecords([r, ...meeeRecords]);
+        const newRecords = [r, ...meeeRecords];
+        setMeeeRecords(newRecords);
+        setIsMeeeFormOpen(false);
+        setEditingMeee(null);
+        await db.saveMeeeRecord(r);
+        await saveMeeeRecords(newRecords);
+        showToast('✅ تمت إضافة سجل شهادة MEEE بنجاح');
       }
     }
-    setIsMeeeFormOpen(false);
-    setEditingMeee(null);
   };
 
-  const handleDeleteMeee = (id: string) => {
+  const handleDeleteMeee = async (id: string) => {
     if (window.confirm('هل أنت متأكد من حذف هذا السجل؟')) {
-      saveMeeeRecords(meeeRecords.filter(r => r.id !== id));
+      const next = meeeRecords.filter(r => r.id !== id);
+      setMeeeRecords(next);
+      await db.deleteMeeeRecord(id);
+      await saveMeeeRecords(next);
+      showToast('🗑️ تم حذف سجل شهادة MEEE بنجاح');
     }
   };
 
@@ -443,11 +468,26 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
     }
   };
 
-  const handleSaveWorkshop = (w: Workshop) => {
+  const handleSaveWorkshop = async (w: Workshop) => {
     const exists = workshops.find(item => item.id === w.id);
+    const maxNum = workshops.reduce((max, item) => Math.max(max, Number(item.workshopNumber) || 0), 0);
+    const resolvedStatus = w.status || exists?.status || 'تم التنفيذ';
+    const resolvedExecutionLevel =
+      w.executionLevel ||
+      (resolvedStatus === 'موثق' || resolvedStatus === 'تم التنفيذ'
+        ? 'تم'
+        : resolvedStatus === 'قيد التنفيذ'
+        ? 'قيد التنفيذ'
+        : 'مخطط');
+    const resolvedYear = w.academicYear || exists?.academicYear || (filterYear !== 'all' ? filterYear : '2026-2027');
+
     const mergedWorkshop: Workshop = exists ? {
       ...exists,
       ...w,
+      workshopNumber: w.workshopNumber || exists.workshopNumber || maxNum + 1,
+      academicYear: resolvedYear,
+      status: resolvedStatus,
+      executionLevel: resolvedExecutionLevel,
       attendees: (w.attendees && w.attendees.length > 0) ? w.attendees : (exists.attendees || []),
       attendanceCount: (w.attendanceCount && w.attendanceCount > 0) ? w.attendanceCount : (w.attendees?.length || exists.attendanceCount || exists.attendees?.length || 0),
       evidenceUrl: w.evidenceUrl || exists.evidenceUrl,
@@ -457,7 +497,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
       sourceFile: w.sourceFile || exists.sourceFile,
       sourceFileName: w.sourceFileName || exists.sourceFileName,
       notes: (w.notes && w.notes.trim()) ? w.notes : (exists.notes || ''),
-      procedure: (w.procedure && w.procedure.trim()) ? w.procedure : (exists.procedure || ''),
+      procedure: (w.procedure && w.procedure.trim()) ? w.procedure : (exists.procedure || w.objectives || exists.objectives || ''),
       followUpNotes: (w.followUpNotes && w.followUpNotes.trim()) ? w.followUpNotes : (exists.followUpNotes || ''),
       objectives: (w.objectives && w.objectives.trim()) ? w.objectives : (exists.objectives || ''),
       keyPoints: (w.keyPoints && w.keyPoints.trim()) ? w.keyPoints : (exists.keyPoints || ''),
@@ -466,45 +506,71 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
       updatedAt: new Date().toISOString()
     } : {
       ...w,
+      id: w.id || `PD-${resolvedYear.replace('-20', '')}-W${generateId().slice(0, 5)}`,
+      workshopNumber: w.workshopNumber || maxNum + 1,
+      academicYear: resolvedYear,
+      status: resolvedStatus,
+      executionLevel: resolvedExecutionLevel,
+      procedure: w.procedure || w.objectives || '',
       createdAt: w.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
     const newWorkshops = exists ? workshops.map(item => item.id === w.id ? mergedWorkshop : item) : [mergedWorkshop, ...workshops];
-    saveWorkshops(newWorkshops);
+    setWorkshops(newWorkshops);
     setIsFormOpen(false);
     setEditingWorkshop(null);
+    await db.saveWorkshop(mergedWorkshop);
+    await saveWorkshops(newWorkshops);
+    syncOperationalPlan(null, resolvedYear).catch(console.warn);
+    showToast(exists ? '✅ تم تحديث وحفظ بيانات ورشة العمل بنجاح' : '✅ تمت إضافة وحفظ ورشة العمل الجماعية بنجاح');
   };
 
-  const handleDeleteWorkshop = (id: string) => {
+  const handleDeleteWorkshop = async (id: string) => {
     if (window.confirm('هل أنت متأكد من حذف هذه الورشة؟')) {
       const newWorkshops = workshops.filter(w => w.id !== id);
-      saveWorkshops(newWorkshops);
+      setWorkshops(newWorkshops);
+      await db.deleteWorkshop(id);
+      await saveWorkshops(newWorkshops);
+      syncOperationalPlan(null, filterYear !== 'all' ? filterYear : '2026-2027').catch(console.warn);
+      showToast('🗑️ تم حذف ورشة العمل بنجاح');
     }
   };
 
-  const handleSaveIndividual = (r: IndividualPDRecord) => {
+  const handleSaveIndividual = async (r: IndividualPDRecord) => {
     const exists = individualRecords.find(item => item.id === r.id);
+    const resolvedYear = r.academicYear || exists?.academicYear || (filterYear !== 'all' ? filterYear : '2026-2027');
     const mergedRecord: IndividualPDRecord = exists ? {
       ...exists,
       ...r,
+      academicYear: resolvedYear,
       notes: (r.notes && r.notes.trim()) ? r.notes : (exists.notes || ''),
       createdAt: exists.createdAt || r.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     } : {
       ...r,
+      id: r.id || `IND-${resolvedYear.replace('-20', '')}-F${generateId().slice(0, 5)}`,
+      academicYear: resolvedYear,
       createdAt: r.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
     const newRecords = exists ? individualRecords.map(item => item.id === r.id ? mergedRecord : item) : [mergedRecord, ...individualRecords];
-    saveIndividualRecords(newRecords);
+    setIndividualRecords(newRecords);
     setIsIndFormOpen(false);
     setEditingIndividual(null);
+    await db.saveIndividualPDRecord(mergedRecord);
+    await saveIndividualRecords(newRecords);
+    syncOperationalPlan(null, resolvedYear).catch(console.warn);
+    showToast(exists ? '✅ تم تحديث سجل التدريب الفردي بنجاح' : '✅ تمت إضافة وحفظ سجل التدريب الفردي بنجاح');
   };
 
-  const handleDeleteIndividual = (id: string) => {
+  const handleDeleteIndividual = async (id: string) => {
     if (window.confirm('هل أنت متأكد من حذف هذا السجل؟')) {
       const newRecords = individualRecords.filter(r => r.id !== id);
-      saveIndividualRecords(newRecords);
+      setIndividualRecords(newRecords);
+      await db.deleteIndividualPDRecord(id);
+      await saveIndividualRecords(newRecords);
+      syncOperationalPlan(null, filterYear !== 'all' ? filterYear : '2026-2027').catch(console.warn);
+      showToast('🗑️ تم حذف سجل التدريب الفردي بنجاح');
     }
   };
 
@@ -557,10 +623,14 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
         teachers={teachers}
         departments={departments}
         onClose={() => setReportingWorkshop(null)}
-        onUpdateWorkshop={(updated) => {
-          const next = workshops.map(w => w.id === updated.id ? { ...w, ...updated } : w);
-          saveWorkshops(next);
+        onUpdateWorkshop={async (updated) => {
+          const existing = workshops.find(w => w.id === updated.id);
+          const merged = existing ? { ...existing, ...updated } : updated;
+          const next = workshops.map(w => w.id === updated.id ? merged : w);
+          setWorkshops(next);
           setReportingWorkshop(prev => prev ? { ...prev, ...updated } : null);
+          await db.saveWorkshop(merged);
+          await saveWorkshops(next);
         }}
         canEdit={canEdit}
       />
@@ -596,6 +666,29 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
 
   return (
     <div className="pd-page-container" style={{ padding: '2rem', direction: 'rtl', minHeight: '100vh', background: '#F8FAFC' }}>
+      {toastMsg && (
+        <div
+          className="no-print"
+          style={{
+            position: 'fixed',
+            bottom: '1.5rem',
+            left: '1.5rem',
+            zIndex: 9999,
+            background: toastMsg.type === 'error' ? '#991B1B' : '#065F46',
+            color: '#fff',
+            padding: '0.9rem 1.5rem',
+            borderRadius: '14px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+            fontWeight: 800,
+            fontSize: '0.95rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+          }}
+        >
+          {toastMsg.text}
+        </div>
+      )}
       {/* Header */}
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
@@ -743,9 +836,13 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
             filterYear={filterYear}
             onOpenComprehensive={() => setShowComprehensiveReport(true)}
             canEdit={canEdit}
-            onUpdateWorkshop={(updated: Workshop) => {
-              const next = workshops.map(w => w.id === updated.id ? { ...w, ...updated } : w);
-              saveWorkshops(next);
+            onUpdateWorkshop={async (updated: Workshop) => {
+              const existing = workshops.find(w => w.id === updated.id);
+              const merged = existing ? { ...existing, ...updated } : updated;
+              const next = workshops.map(w => w.id === updated.id ? merged : w);
+              setWorkshops(next);
+              await db.saveWorkshop(merged);
+              await saveWorkshops(next);
             }}
           />
         ) : activeTab === 'meee' ? (
@@ -839,6 +936,13 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
             onAddWorkshop={() => { setEditingWorkshop(null); setIsFormOpen(true); }}
             onAddIndividual={() => { setEditingIndividual(null); setIsIndFormOpen(true); }}
             onViewIndividualReport={(r) => setReportingIndividual(r)}
+            onSaveWorkshop={handleSaveWorkshop}
+            onDeleteWorkshop={async (id) => {
+              const next = workshops.filter(w => w.id !== id);
+              setWorkshops(next);
+              await db.deleteWorkshop(id);
+              await saveWorkshops(next);
+            }}
             canEdit={canEdit}
           />
         ) : (
@@ -950,6 +1054,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
         <IndividualPDForm 
           key={editingIndividual?.id || 'new-ind'}
           record={editingIndividual} 
+          defaultYear={filterYear !== 'all' ? filterYear : '2026-2027'}
           onSave={handleSaveIndividual} 
           onClose={() => { setIsIndFormOpen(false); setEditingIndividual(null); }} 
         />
@@ -959,6 +1064,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
         <WorkshopForm 
           key={editingWorkshop?.id || 'new-workshop'}
           workshop={editingWorkshop} 
+          defaultYear={filterYear !== 'all' ? filterYear : '2026-2027'}
           onSave={handleSaveWorkshop} 
           onClose={() => { setIsFormOpen(false); setEditingWorkshop(null); }} 
         />
@@ -1211,19 +1317,21 @@ function FileLink({ label, file, icon }: any) {
   );
 }
 
-function normalizeWorkshopForForm(w?: Workshop | null): Partial<Workshop> {
+function normalizeWorkshopForForm(w?: Workshop | null, defaultYear = '2026-2027'): Partial<Workshop> {
   if (!w) {
+    const today = new Date().toISOString().split('T')[0];
+    const year = defaultYear && defaultYear !== 'all' ? defaultYear : '2026-2027';
     return {
-      id: `PD-2526-W${generateId().slice(0, 4)}`,
+      id: `PD-${year.replace('-20', '')}-W${generateId().slice(0, 5)}`,
       titleAr: '',
       titleEn: '',
-      academicYear: '2026-2027',
-      month: 'أغسطس',
+      academicYear: year,
+      month: getMonthFromDate(today),
       trainingMode: 'جلسة تطويرية Hands on Session',
-      category: 'تطوير ذاتي',
+      category: 'تطوير مهني',
       targetAudience: 'المعلمين',
       targetClasses: 'جميع الصفوف',
-      facilitatorName: '',
+      facilitatorName: 'أحمد طبيشات',
       organizerName: SCHOOL_NAME,
       venue: 'مدرسة قطر للعلوم والتكنولوجيا',
       location: 'مدرسة قطر للعلوم والتكنولوجيا',
@@ -1232,7 +1340,7 @@ function normalizeWorkshopForForm(w?: Workshop | null): Partial<Workshop> {
       recommendations: '',
       status: 'تم التنفيذ',
       hours: '2',
-      date: '',
+      date: today,
       attendanceCount: 0,
       attendees: [],
       updatedAt: new Date().toISOString()
@@ -1299,12 +1407,12 @@ function normalizeWorkshopForForm(w?: Workshop | null): Partial<Workshop> {
   };
 }
 
-function WorkshopForm({ workshop, onSave, onClose }: any) {
-  const [fd, setFd] = useState<Partial<Workshop>>(() => normalizeWorkshopForForm(workshop));
+function WorkshopForm({ workshop, defaultYear = '2026-2027', onSave, onClose }: any) {
+  const [fd, setFd] = useState<Partial<Workshop>>(() => normalizeWorkshopForForm(workshop, defaultYear));
 
   useEffect(() => {
-    setFd(normalizeWorkshopForForm(workshop));
-  }, [workshop]);
+    setFd(normalizeWorkshopForForm(workshop, defaultYear));
+  }, [workshop, defaultYear]);
 
   const [isTranslating, setIsTranslating] = useState(false);
   const [translateFeedback, setTranslateFeedback] = useState<string | null>(null);
@@ -1692,12 +1800,14 @@ function IndividualPDModal({ record, onClose, onEdit, onPrint, canEdit }: any) {
   );
 }
 
-function IndividualPDForm({ record, onSave, onClose }: any) {
+function IndividualPDForm({ record, defaultYear = '2026-2027', onSave, onClose }: any) {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const resolvedYear = defaultYear && defaultYear !== 'all' ? defaultYear : '2026-2027';
   const [fd, setFd] = useState<Partial<IndividualPDRecord>>(record || {
-    id: `IND-2526-F${generateId().slice(0, 4)}`,
-    academicYear: '2026-2027',
-    month: 'سبتمبر',
-    trainingDate: new Date().toISOString().split('T')[0],
+    id: `IND-${resolvedYear.replace('-20', '')}-F${generateId().slice(0, 5)}`,
+    academicYear: resolvedYear,
+    month: getMonthFromDate(todayStr),
+    trainingDate: todayStr,
     traineeNameAr: '',
     department: 'STEM',
     skillProvided: '',
@@ -1817,8 +1927,8 @@ function IndividualPDForm({ record, onSave, onClose }: any) {
   );
 }
 
-function FormLabel({ children }: any) {
-  return <label style={{ display: 'block', fontWeight: 900, marginBottom: '0.5rem', color: '#0F2044', fontSize: '0.85rem' }}>{children}</label>;
+function FormLabel({ children, style }: any) {
+  return <label style={{ display: 'block', fontWeight: 900, marginBottom: '0.5rem', color: '#0F2044', fontSize: '0.85rem', ...(style || {}) }}>{children}</label>;
 }
 
 function MeeeTabContent({ meeeRecords, meeeStats, filterYear, teachers = [], departments = [], canEdit, canDelete, onAdd, onEdit, onDelete, onPrint, COLORS }: any) {

@@ -35,6 +35,8 @@ interface Props {
   onAddWorkshop?: () => void;
   onAddIndividual?: () => void;
   onViewIndividualReport?: (r: IndividualPDRecord) => void;
+  onSaveWorkshop?: (w: Workshop) => void;
+  onDeleteWorkshop?: (id: string) => void;
   canEdit?: boolean;
 }
 
@@ -452,6 +454,8 @@ export default function PDPlanTab({
   onAddWorkshop,
   onAddIndividual,
   onViewIndividualReport,
+  onSaveWorkshop,
+  onDeleteWorkshop,
   canEdit
 }: Props) {
   const [showCertifiedList, setShowCertifiedList] = useState(false);
@@ -511,10 +515,24 @@ export default function PDPlanTab({
     return () => { isMounted = false; };
   }, []);
 
+  const stripHeavyRefs = (rows: PlanRow[] | null): PlanRow[] | null => {
+    if (!rows) return null;
+    return rows.map(({ reportWorkshop, individualRecord, ...rest }) => rest);
+  };
+
   const persistPDPlanToFirestore = (updatedCustomRows: PlanRow[] | null, updatedDeletedIds: string[]) => {
+    const lightRows = stripHeavyRefs(updatedCustomRows);
     try {
+      if (typeof window !== 'undefined') {
+        if (lightRows) {
+          localStorage.setItem('qstss_custom_pd_plan_2627', JSON.stringify(lightRows));
+        } else {
+          localStorage.removeItem('qstss_custom_pd_plan_2627');
+        }
+        localStorage.setItem('qstss_deleted_plan_row_ids', JSON.stringify(updatedDeletedIds));
+      }
       setSingleDocument(COLLECTIONS.pdPlan, 'plan_edits', {
-        customRows: updatedCustomRows,
+        customRows: lightRows,
         deletedRowIds: updatedDeletedIds,
         updatedAt: new Date().toISOString(),
       }).catch(err => {
@@ -793,20 +811,69 @@ export default function PDPlanTab({
   // Handlers for Row Actions
   const handleSaveRow = (updatedRow: PlanRow) => {
     if (!canEdit) return;
+    let finalRow = { ...updatedRow };
+
+    // If this is a collective workshop row, also sync it to the main workshops database
+    if ((finalRow.rowType || 'collective') === 'collective' && onSaveWorkshop) {
+      const targetYear = filterYear && filterYear !== 'all' ? filterYear : '2026-2027';
+      const existingW = workshops.find(w => w.id === finalRow.id) || finalRow.reportWorkshop;
+      const wId = existingW?.id || (finalRow.id.startsWith('plan-custom-') ? `PD-2627-W${Date.now().toString(36).slice(-5).toUpperCase()}` : finalRow.id);
+      const statusVal =
+        finalRow.executionLevel === 'تم'
+          ? (existingW?.status === 'موثق' ? 'موثق' : 'تم التنفيذ')
+          : finalRow.executionLevel === 'قيد التنفيذ'
+          ? 'قيد التنفيذ'
+          : 'مخطط';
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      const syncedWorkshop: Workshop = {
+        ...(existingW || {}),
+        id: wId,
+        academicYear: existingW?.academicYear || targetYear,
+        titleAr: finalRow.title,
+        nameAr: finalRow.title,
+        titleEn: existingW?.titleEn || existingW?.nameEn || '',
+        nameEn: existingW?.nameEn || existingW?.titleEn || '',
+        targetAudience: finalRow.targetAudience || 'المعلمين',
+        targetGroup: finalRow.targetAudience || 'المعلمين',
+        procedure: finalRow.procedure || '',
+        objectives: existingW?.objectives || finalRow.procedure || '',
+        facilitatorName: finalRow.trainer || 'أحمد طبيشات',
+        trainerName: finalRow.trainer || 'أحمد طبيشات',
+        trainer: finalRow.trainer || 'أحمد طبيشات',
+        organizerName: existingW?.organizerName || 'قسم التعلم الإلكتروني',
+        organizedBy: existingW?.organizedBy || 'قسم التعلم الإلكتروني',
+        date: existingW?.date || todayStr,
+        month: existingW?.month || finalRow.timeframe || 'سبتمبر',
+        executionLevel: finalRow.executionLevel,
+        status: statusVal,
+        followUpNotes: finalRow.followUp || '',
+        hours: existingW?.hours || '2',
+        venue: existingW?.venue || 'مدرسة قطر للعلوم والتكنولوجيا',
+        location: existingW?.location || 'مدرسة قطر للعلوم والتكنولوجيا',
+        category: existingW?.category || 'تطوير مهني',
+        trainingMode: existingW?.trainingMode || 'جلسة تطويرية Hands on Session',
+        evidenceUrl: finalRow.externalUrl || existingW?.evidenceUrl,
+        updatedAt: new Date().toISOString(),
+      } as Workshop;
+
+      onSaveWorkshop(syncedWorkshop);
+      finalRow = {
+        ...finalRow,
+        id: wId,
+        reportWorkshop: syncedWorkshop,
+      };
+    }
+
     const current = [...activePlanRows];
-    const idx = current.findIndex(r => r.id === updatedRow.id);
+    const idx = current.findIndex(r => r.id === updatedRow.id || r.id === finalRow.id);
     let next: PlanRow[];
     if (idx >= 0) {
-      next = current.map(r => r.id === updatedRow.id ? updatedRow : r);
+      next = current.map((r, i) => i === idx ? finalRow : r);
     } else {
-      next = [updatedRow, ...current];
+      next = [finalRow, ...current];
     }
     setCustomRows(next);
-    try {
-      localStorage.setItem('qstss_custom_pd_plan_2627', JSON.stringify(next));
-    } catch (e) {
-      console.error(e);
-    }
     persistPDPlanToFirestore(next, deletedRowIds);
     setEditingRow(null);
     setIsAddingRow(false);
@@ -819,11 +886,8 @@ export default function PDPlanTab({
     setDeletedRowIds(newDeleted);
     const next = activePlanRows.filter(r => r.id !== id);
     setCustomRows(next);
-    try {
-      localStorage.setItem('qstss_deleted_plan_row_ids', JSON.stringify(newDeleted));
-      localStorage.setItem('qstss_custom_pd_plan_2627', JSON.stringify(next));
-    } catch (e) {
-      console.error(e);
+    if (onDeleteWorkshop && workshops.some(w => w.id === id)) {
+      onDeleteWorkshop(id);
     }
     persistPDPlanToFirestore(next, newDeleted);
   };
@@ -836,11 +900,6 @@ export default function PDPlanTab({
     const [moved] = next.splice(index, 1);
     next.splice(targetIdx, 0, moved);
     setCustomRows(next);
-    try {
-      localStorage.setItem('qstss_custom_pd_plan_2627', JSON.stringify(next));
-    } catch (e) {
-      console.error(e);
-    }
     persistPDPlanToFirestore(next, deletedRowIds);
   };
 

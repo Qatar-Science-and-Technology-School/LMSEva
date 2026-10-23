@@ -774,8 +774,9 @@ const LOCAL_STORAGE_KEY = 'qstss_events_meetings_september_2026_v5';
 if (typeof window !== 'undefined') {
   try {
     getCollection<EventMeetingItem>(COLLECTIONS.eventsMeetings).then(cloudItems => {
-      if (cloudItems && cloudItems.length > 0) {
+      if (cloudItems && cloudItems.length > 0 && localStorage.getItem('qstss_pending_events_meetings') !== '1') {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cloudItems));
+        window.dispatchEvent(new CustomEvent('qstss_events_meetings_updated'));
       }
     }).catch(() => {});
   } catch (e) {}
@@ -788,11 +789,7 @@ export function loadEventsMeetings(): EventMeetingItem[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        // Validate that parsed items belong to the official September 2026 report
-        const hasOfficialEvents = parsed.some(it => it.id === 'EVT-02' || it.id === 'EVT-05' || it.id === 'EVT-18');
-        if (hasOfficialEvents) {
-          return parsed;
-        }
+        return parsed;
       }
     }
   } catch (err) {
@@ -814,6 +811,7 @@ export function saveEventsMeetings(items: EventMeetingItem[]): void {
   }
   try {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
+    window.dispatchEvent(new CustomEvent('qstss_events_meetings_updated'));
   } catch (err) {
     console.error('Error saving events & meetings to localStorage:', err);
   }

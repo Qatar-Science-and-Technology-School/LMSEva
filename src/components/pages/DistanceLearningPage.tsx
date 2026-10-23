@@ -130,10 +130,15 @@ export default function DistanceLearningPage({
     notes: '',
   });
 
-  // Load records on mount or year change
+  // Load records on mount or year change & listen for cloud sync updates
   useEffect(() => {
-    const loaded = loadDistanceLearningRecords(selectedYear);
-    setRecords(loaded);
+    const refresh = () => {
+      const loaded = loadDistanceLearningRecords(selectedYear);
+      setRecords(loaded);
+    };
+    refresh();
+    window.addEventListener('qstss_distance_learning_updated', refresh);
+    return () => window.removeEventListener('qstss_distance_learning_updated', refresh);
   }, [selectedYear]);
 
   // Recalculate daysCount in form whenever fromDate or toDate changes
