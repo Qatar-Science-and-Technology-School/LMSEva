@@ -20,6 +20,8 @@ import {
   LMS_MONTHLY_OVERVIEW_COMPARISON,
   LMS_SECTIONS_MONTHLY_COMPARISON,
   LMS_GRADES_MONTHLY_COMPARISON,
+  getRealCurrentMonthName,
+  getPreviousMonthName,
   type User, 
   type Teacher, 
   type Evaluation, 
@@ -97,7 +99,9 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
   const [activeTab, setActiveTab] = useState<TabType>('cockpit');
   const [selYear, setSelYear] = useState(propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1] || '2026-2027');
   const [searchTerm, setSearchTerm] = useState('');
-  const [lmsAnalysisMonth, setLmsAnalysisMonth] = useState<'أكتوبر' | 'سبتمبر' | 'مقارنة'>('أكتوبر');
+  const [lmsAnalysisMonth, setLmsAnalysisMonth] = useState<string>(() => getRealCurrentMonthName());
+  const activeCurrentMonthName = useMemo(() => getRealCurrentMonthName(), []);
+  const activePrevMonthName = useMemo(() => getPreviousMonthName(activeCurrentMonthName) || 'سبتمبر', [activeCurrentMonthName]);
 
   useEffect(() => {
     if (propYear) setSelYear(propYear);
@@ -1287,7 +1291,7 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
                 <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.1)', padding: '0.25rem', borderRadius: '10px', backdropFilter: 'blur(8px)', flexWrap: 'wrap', gap: '0.25rem' }}>
                   <button
                     type="button"
-                    onClick={() => setLmsAnalysisMonth('أكتوبر')}
+                    onClick={() => setLmsAnalysisMonth(activeCurrentMonthName)}
                     style={{
                       padding: '0.45rem 0.9rem',
                       borderRadius: '8px',
@@ -1296,16 +1300,16 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
                       border: 'none',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
-                      background: lmsAnalysisMonth === 'أكتوبر' ? '#00B4D8' : 'transparent',
-                      color: lmsAnalysisMonth === 'أكتوبر' ? '#0F2044' : '#E2E8F0',
-                      boxShadow: lmsAnalysisMonth === 'أكتوبر' ? '0 2px 8px rgba(0,180,216,0.4)' : 'none',
+                      background: lmsAnalysisMonth === activeCurrentMonthName ? '#00B4D8' : 'transparent',
+                      color: lmsAnalysisMonth === activeCurrentMonthName ? '#0F2044' : '#E2E8F0',
+                      boxShadow: lmsAnalysisMonth === activeCurrentMonthName ? '0 2px 8px rgba(0,180,216,0.4)' : 'none',
                     }}
                   >
-                    أكتوبر 2026 (المعتمد)
+                    {activeCurrentMonthName} 2026 (الشهر المعتمد الحالي)
                   </button>
                   <button
                     type="button"
-                    onClick={() => setLmsAnalysisMonth('سبتمبر')}
+                    onClick={() => setLmsAnalysisMonth(activePrevMonthName)}
                     style={{
                       padding: '0.45rem 0.9rem',
                       borderRadius: '8px',
@@ -1314,12 +1318,12 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
                       border: 'none',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
-                      background: lmsAnalysisMonth === 'سبتمبر' ? '#00B4D8' : 'transparent',
-                      color: lmsAnalysisMonth === 'سبتمبر' ? '#0F2044' : '#E2E8F0',
-                      boxShadow: lmsAnalysisMonth === 'سبتمبر' ? '0 2px 8px rgba(0,180,216,0.4)' : 'none',
+                      background: lmsAnalysisMonth === activePrevMonthName ? '#00B4D8' : 'transparent',
+                      color: lmsAnalysisMonth === activePrevMonthName ? '#0F2044' : '#E2E8F0',
+                      boxShadow: lmsAnalysisMonth === activePrevMonthName ? '0 2px 8px rgba(0,180,216,0.4)' : 'none',
                     }}
                   >
-                    سبتمبر 2026 (المعتمد)
+                    {activePrevMonthName} 2026 (المعتمد السابق)
                   </button>
                   <button
                     type="button"
@@ -1337,7 +1341,7 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
                       boxShadow: lmsAnalysisMonth === 'مقارنة' ? '0 2px 8px rgba(56,189,248,0.4)' : 'none',
                     }}
                   >
-                    🔄 مقارنة وصافي إنجاز أكتوبر
+                    🔄 مقارنة وصافي إنجاز {activeCurrentMonthName}
                   </button>
                 </div>
               </div>

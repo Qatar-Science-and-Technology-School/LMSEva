@@ -18,6 +18,8 @@ import {
   OCTOBER_2026_LMS_TEACHERS,
   LMS_TAKREEM_MONTHLY_EVOLUTION,
   isSuperAdmin,
+  getRealCurrentMonthName,
+  isMonthCertified,
 } from '@/lib/data';
 import type { User, Evaluation, Teacher, Department } from '@/lib/data';
 import { printTeacherCertificate, printBatchCertificates } from '@/lib/certificatePrinter';
@@ -158,7 +160,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
   const [loading, setLoading] = useState(true);
 
   const [selYear, setSelYear] = useState(propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1]);
-  const [selMonth, setSelMonth] = useState('أكتوبر');
+  const [selMonth, setSelMonth] = useState(() => getRealCurrentMonthName());
   const isOct = selMonth === 'أكتوبر';
   const activeTop10 = isOct ? OCTOBER_TOP_10_INDEX_TEACHERS : TOP_10_INDEX_TEACHERS;
   const activeDeptChampions = isOct ? OCTOBER_DEPARTMENT_CHAMPIONS_10 : DEPARTMENT_CHAMPIONS_10;
@@ -597,7 +599,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   borderRadius: '999px',
                 }}
               >
-                {(selMonth === 'سبتمبر' || selMonth === 'أكتوبر') ? 'معتمد ومكتمل' : 'قيد الانتظار'}
+                {isMonthCertified(selMonth) ? (selMonth === getRealCurrentMonthName() ? '✓ الشهر المعتمد الحالي' : 'معتمد ومكتمل') : 'مجدول لاحقاً'}
               </span>
             </div>
           </div>
@@ -737,13 +739,13 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'top_honorees' && (
         <div>
-          {selMonth !== 'سبتمبر' && selMonth !== 'أكتوبر' && monthlyTop10.length === 0 && currentHonorees.length === 0 ? (
+          {!isMonthCertified(selMonth) && monthlyTop10.length === 0 && currentHonorees.length === 0 ? (
             <div style={{ ...cardStyle, textAlign: 'center', padding: '3.5rem 2rem', background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', marginBottom: '2rem' }}>
               <div style={{ width: '80px', height: '80px', margin: '0 auto 1.25rem', background: '#FEF3C7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem' }}>
                 🏆
               </div>
               <span style={{ background: '#FEF3C7', color: '#92400E', fontSize: '0.82rem', fontWeight: 800, padding: '0.3rem 0.8rem', borderRadius: '999px', display: 'inline-block', marginBottom: '0.75rem' }}>
-                تكريم شهر {selMonth} — قيد الانتظار
+                تكريم شهر {selMonth} — مجدول لاحقاً
               </span>
               <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.5rem' }}>
                 لوحة التميز وشهادات الشكر والتقدير — شهر {selMonth} {selYear}

@@ -25,6 +25,8 @@ import {
   OCTOBER_2026_LMS_TEACHERS,
   isExcludedTeacher,
   isSuperAdmin,
+  getRealCurrentMonthName,
+  isMonthCertified,
   type LmsReportTeacherRecord
 } from '@/lib/data';
 import { saveDocument, COLLECTIONS, invalidateCache } from '@/lib/firestoreDb';
@@ -420,7 +422,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
 
   // Form State
   const [teacherId, setTeacherId] = useState('');
-  const [month, setMonth] = useState('أكتوبر');
+  const [month, setMonth] = useState(() => getRealCurrentMonthName());
   const [term, setTerm] = useState(TERMS[0]);
   const [year, setYear] = useState(propYear || currentYear);
   const [evalDate, setEvalDate] = useState(new Date().toISOString().split('T')[0]);
@@ -1451,7 +1453,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
         {/* Tab Buttons */}
         <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '2px solid #E2E8F0', paddingBottom: '0.5rem', overflowX: 'auto' }}>
           {[
-            { id: 'platform_report', label: `📊 تقرير نشاط المنصة (${month} ٢٠٢٦)`, badge: (month === 'سبتمبر' || month === 'أكتوبر') ? 'موثق ومعتمد' : 'قيد الانتظار' },
+            { id: 'platform_report', label: `📊 تقرير نشاط المنصة (${month} ٢٠٢٦)`, badge: isMonthCertified(month) ? 'موثق ومعتمد' : 'مجدول لاحقاً' },
             { id: 'form', label: '📝 نموذج التقييم الشهري' },
             { id: 'history', label: `📋 سجل التقييمات (${allEvaluations.filter(e => e.academicYear === year).length})` },
             { id: 'reports', label: '📈 التقارير والإحصاءات العصرية' },

@@ -32,6 +32,8 @@ import {
   LMS_MONTHLY_OVERVIEW_COMPARISON,
   LMS_GRADES_MONTHLY_COMPARISON,
   LMS_TAKREEM_MONTHLY_EVOLUTION,
+  getDynamicEvaluationMonths,
+  getRealCurrentAcademicMonthDef,
   type LmsReportTeacherRecord,
   type Teacher,
   type Department,
@@ -49,18 +51,7 @@ export interface EvaluationMonthOption {
   recordCount: number;
 }
 
-export const EVALUATION_MONTHS: EvaluationMonthOption[] = [
-  { id: '2026-10', month: 'أكتوبر', year: '2026-2027', label: 'أكتوبر ٢٠٢٦', status: 'available', badgeText: 'معتمد ومكتمل (٤٧ معلماً)', recordCount: 47 },
-  { id: '2026-09', month: 'سبتمبر', year: '2026-2027', label: 'سبتمبر ٢٠٢٦', status: 'available', badgeText: 'معتمد ومكتمل (٥٢ معلماً)', recordCount: 52 },
-  { id: '2026-11', month: 'نوفمبر', year: '2026-2027', label: 'نوفمبر ٢٠٢٦', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
-  { id: '2026-12', month: 'ديسمبر', year: '2026-2027', label: 'ديسمبر ٢٠٢٦', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
-  { id: '2027-01', month: 'يناير', year: '2026-2027', label: 'يناير ٢٠٢٧', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
-  { id: '2027-02', month: 'فبراير', year: '2026-2027', label: 'فبراير ٢٠٢٧', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
-  { id: '2027-03', month: 'مارس', year: '2026-2027', label: 'مارس ٢٠٢٧', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
-  { id: '2027-04', month: 'أبريل', year: '2026-2027', label: 'أبريل ٢٠٢٧', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
-  { id: '2027-05', month: 'مايو', year: '2026-2027', label: 'مايو ٢٠٢٧', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
-  { id: '2027-06', month: 'يونيو', year: '2026-2027', label: 'يونيو ٢٠٢٧', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
-];
+export const EVALUATION_MONTHS: EvaluationMonthOption[] = getDynamicEvaluationMonths();
 
 interface Props {
   teachers: Teacher[];
@@ -89,8 +80,9 @@ export default function PlatformReportTab({
   onMonthChange,
   canManageEvaluations = false,
 }: Props) {
+  const currentDef = getRealCurrentAcademicMonthDef();
   const [selectedMonthId, setSelectedMonthId] = useState(
-    selectedMonth ? (EVALUATION_MONTHS.find(m => m.month === selectedMonth)?.id || '2026-10') : '2026-10'
+    selectedMonth ? (EVALUATION_MONTHS.find(m => m.month === selectedMonth)?.id || currentDef.id) : currentDef.id
   );
   const currentMonthObj = EVALUATION_MONTHS.find(m => m.id === selectedMonthId) || EVALUATION_MONTHS[0];
 

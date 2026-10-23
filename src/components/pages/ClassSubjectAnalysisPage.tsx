@@ -17,6 +17,12 @@ import {
   LMS_GRADES_MONTHLY_COMPARISON,
   LMS_SUBJECTS_MONTHLY_COMPARISON,
   LMS_TAKREEM_MONTHLY_EVOLUTION,
+  getRealCurrentMonthName,
+  getRealCurrentMonthYearString,
+  getPreviousMonthName,
+  isMonthCertified,
+  getDynamicAvailableMonths,
+  resolveMonthlyDataset,
 } from '@/lib/data';
 import type { User } from '@/lib/data';
 import {
@@ -71,29 +77,21 @@ interface Props {
 export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: propYear }: Props) {
   const currentYear = propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1];
 
-  // Academic Year & Month Selectors
+  // Academic Year & Month Selectors (Dynamic based on real current date)
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(propYear || '2026-2027');
-  const [selectedMonth, setSelectedMonth] = useState<string>('أكتوبر 2026');
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => getRealCurrentMonthYearString());
 
-  const AVAILABLE_MONTHS = [
-    { id: 'أكتوبر 2026', label: 'أكتوبر 2026 (البيانات المعتمدة)', hasData: true },
-    { id: 'سبتمبر 2026', label: 'سبتمبر 2026 (البيانات المعتمدة)', hasData: true },
-    { id: 'نوفمبر 2026', label: 'نوفمبر 2026', hasData: false },
-    { id: 'ديسمبر 2026', label: 'ديسمبر 2026', hasData: false },
-    { id: 'يناير 2027', label: 'يناير 2027', hasData: false },
-    { id: 'فبراير 2027', label: 'فبراير 2027', hasData: false },
-    { id: 'مارس 2027', label: 'مارس 2027', hasData: false },
-    { id: 'أبريل 2027', label: 'أبريل 2027', hasData: false },
-    { id: 'مايو 2027', label: 'مايو 2027', hasData: false },
-    { id: 'يونيو 2027', label: 'يونيو 2027', hasData: false },
-  ];
+  // Dynamic available months list based on real current date
+  const AVAILABLE_MONTHS = useMemo(() => getDynamicAvailableMonths(), []);
 
   // Dynamically resolve datasets based on selected month
-  const isOct = selectedMonth.includes('أكتوبر') || selectedMonth.includes('10');
-  const activeMetrics = isOct ? OCTOBER_2026_LMS_METRICS : SEPTEMBER_2026_LMS_METRICS;
-  const activeSections = isOct ? OCTOBER_SECTIONS_LMS_STATS : SECTIONS_LMS_STATS;
-  const activeSubjects = isOct ? OCTOBER_SUBJECTS_LMS_STATS : SUBJECTS_LMS_STATS;
-  const activeGrades = isOct ? OCTOBER_GRADE_LEVEL_LMS_STATS : GRADE_LEVEL_LMS_STATS;
+  const currentMonthData = useMemo(() => resolveMonthlyDataset(selectedMonth), [selectedMonth]);
+  const isOct = currentMonthData.isOctober;
+  const activeMetrics = currentMonthData.metrics;
+  const activeSections = currentMonthData.sections;
+  const activeSubjects = currentMonthData.subjects;
+  const activeGrades = currentMonthData.grades;
+  const prevMonthName = getPreviousMonthName(selectedMonth) || 'سبتمبر';
 
   // Active sub-tab
   const [activeTab, setActiveTab] = useState<'report' | 'comparison' | 'sections' | 'subjects' | 'grades' | 'matrix' | 'action_plan'>('report');
@@ -770,16 +768,18 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
 
             <span
               style={{
-                background: (selectedMonth === 'سبتمبر 2026' || selectedMonth === 'أكتوبر 2026') ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)',
-                color: (selectedMonth === 'سبتمبر 2026' || selectedMonth === 'أكتوبر 2026') ? '#A7F3D0' : '#FDE68A',
+                background: isMonthCertified(selectedMonth) ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)',
+                color: isMonthCertified(selectedMonth) ? '#A7F3D0' : '#FDE68A',
                 padding: '0.25rem 0.65rem',
                 borderRadius: '6px',
-                border: `1px solid ${(selectedMonth === 'سبتمبر 2026' || selectedMonth === 'أكتوبر 2026') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                border: `1px solid ${isMonthCertified(selectedMonth) ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
                 fontSize: '0.75rem',
                 fontWeight: 800,
               }}
             >
-              {(selectedMonth === 'سبتمبر 2026' || selectedMonth === 'أكتوبر 2026') ? '✓ البيانات معتمدة ومرفوعة ومطابقة للتقارير الرسمية' : '⏳ بانتظار رفع تقارير هذا الشهر'}
+              {isMonthCertified(selectedMonth)
+                ? (selectedMonth.includes(getRealCurrentMonthName()) ? '✓ الشهر المعتمد النشط حالياً ومطابق للتقارير الرسمية' : '✓ البيانات معتمدة ومرفوعة ومطابقة للتقارير الرسمية')
+                : '⏳ مجدول لاحقاً / بانتظار رفع تقارير هذا الشهر'}
             </span>
           </div>
         </div>
@@ -855,7 +855,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       </div>
 
       {/* Notice Banner for Future Months Only (Months that truly do not have data yet) */}
-      {!['سبتمبر 2026', 'أكتوبر 2026'].includes(selectedMonth) && (
+      {!isMonthCertified(selectedMonth) && (
         <div
           className="no-print"
           style={{
@@ -884,7 +884,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             </div>
           </div>
           <button
-            onClick={() => setSelectedMonth('أكتوبر 2026')}
+            onClick={() => setSelectedMonth(getRealCurrentMonthYearString())}
             style={{
               background: '#0F2044',
               color: '#fff',
@@ -897,7 +897,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
               whiteSpace: 'nowrap',
             }}
           >
-            العودة لتحليلات أكتوبر 2026 (المعتمد)
+            العودة لتحليلات {getRealCurrentMonthYearString()} (الشهر المعتمد)
           </button>
         </div>
       )}
@@ -1003,7 +1003,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       >
         {[
           { id: 'report', label: 'التقرير الشهري الشامل (الرسمي)', icon: '📑', badge: 'معتمد' },
-          { id: 'comparison', label: '🔄 مقارنة الأشهر وصافي إنجاز أكتوبر', icon: '📈', badge: 'صافي أكتوبر' },
+          { id: 'comparison', label: `🔄 مقارنة الأشهر وصافي إنجاز ${selectedMonth.split(' ')[0]}`, icon: '📈', badge: `صافي ${selectedMonth.split(' ')[0]}` },
           { id: 'sections', label: `تحليل الشعب (${activeSections.length} شعبة)`, icon: '🏫', badge: `${activeSections.length}` },
           { id: 'subjects', label: `تحليل المواد الدراسية (${activeSubjects.length} مادة)`, icon: '📚', badge: `${activeSubjects.length}` },
           { id: 'grades', label: 'مقارنة الصفوف الدراسية', icon: '📊', badge: `${activeGrades.length} صفوف` },
@@ -1157,13 +1157,13 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                     <span>تحليل النمو الشهري واستخراج الصافي</span>
                   </div>
                   <h2 style={{ fontSize: '1.35rem', fontWeight: 900, margin: '0 0 0.5rem', color: '#fff' }}>
-                    🔄 تحليل مقارنة الأشهر وصافي إنجاز ونمو شهر أكتوبر 2026
+                    🔄 تحليل مقارنة الأشهر وصافي إنجاز ونمو {selectedMonth}
                   </h2>
                   <p style={{ margin: '0 0 0.85rem', fontSize: '0.86rem', color: '#BAE6FD', lineHeight: 1.6 }}>
-                    معادلة التحليل المعتمدة: <strong>(التقرير التجميعي التراكمي لشهر أكتوبر - تقرير شهر سبتمبر = صافي الإنجاز والنمو الفعلي لشهر أكتوبر)</strong>
+                    معادلة التحليل المعتمدة: <strong>(التقرير التجميعي التراكمي لشهر {selectedMonth.split(' ')[0]} - تقرير شهر {prevMonthName} = صافي الإنجاز والنمو الفعلي لشهر {selectedMonth.split(' ')[0]})</strong>
                   </p>
                   <div style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '0.75rem 1rem', border: '1px solid rgba(255, 255, 255, 0.15)', fontSize: '0.78rem', color: '#E2E8F0', lineHeight: 1.6 }}>
-                    💡 <strong>توضيح تحليلي:</strong> نظراً لأن تقارير نظام قطر للتعليم (QES) تصدر بصيغة تجميعية تراكمية تراعي امتداد الفصل الدراسي، تم تصميم هذا التحليل لاحتساب الفارق الصافي الدقيق لكل مؤشر على حدة، بما يوضح القفزات الحقيقية للشعب والمواد الدراسية خلال شهر أكتوبر بصورة مستقلة.
+                    💡 <strong>توضيح تحليلي:</strong> نظراً لأن تقارير نظام قطر للتعليم (QES) تصدر بصيغة تجميعية تراكمية تراعي امتداد الفصل الدراسي، تم تصميم هذا التحليل لاحتساب الفارق الصافي الدقيق لكل مؤشر على حدة، بما يوضح القفزات الحقيقية للشعب والمواد الدراسية خلال شهر {selectedMonth.split(' ')[0]} بصورة مستقلة.
                   </div>
                 </div>
 

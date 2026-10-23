@@ -14,15 +14,16 @@ interface PrintReportOptions {
   academicYear?: string;
 }
 
-function getDatasets(monthName: string = 'سبتمبر 2026') {
-  const isOct = monthName.includes('أكتوبر') || monthName.includes('10');
+function getDatasets(monthName: string = 'أكتوبر 2026') {
+  const isSep = monthName.includes('سبتمبر') || monthName.includes('09');
+  const isOct = !isSep;
   return {
     isOct,
-    metrics: isOct ? OCTOBER_2026_LMS_METRICS : SEPTEMBER_2026_LMS_METRICS,
-    grades: isOct ? OCTOBER_GRADE_LEVEL_LMS_STATS : GRADE_LEVEL_LMS_STATS,
-    sections: isOct ? OCTOBER_SECTIONS_LMS_STATS : SECTIONS_LMS_STATS,
-    subjects: isOct ? OCTOBER_SUBJECTS_LMS_STATS : SUBJECTS_LMS_STATS,
-    reportDate: isOct ? '23 أكتوبر 2026' : '27 سبتمبر 2026',
+    metrics: isSep ? SEPTEMBER_2026_LMS_METRICS : OCTOBER_2026_LMS_METRICS,
+    grades: isSep ? GRADE_LEVEL_LMS_STATS : OCTOBER_GRADE_LEVEL_LMS_STATS,
+    sections: isSep ? SECTIONS_LMS_STATS : OCTOBER_SECTIONS_LMS_STATS,
+    subjects: isSep ? SUBJECTS_LMS_STATS : OCTOBER_SUBJECTS_LMS_STATS,
+    reportDate: isSep ? '27 سبتمبر 2026' : (monthName.includes('أكتوبر') ? '23 أكتوبر 2026' : `${monthName}`),
   };
 }
 

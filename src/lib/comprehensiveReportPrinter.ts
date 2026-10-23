@@ -35,7 +35,8 @@ interface PrintReportOptions {
 export function printComprehensiveLmsReport(options: PrintReportOptions) {
   const { monthName, academicYear = '2026-2027' } = options;
 
-  const isOct = monthName.includes('أكتوبر') || monthName.includes('10');
+  const isSep = monthName.includes('سبتمبر') || monthName.includes('09');
+  const isOct = !isSep;
 
   const metrics = isOct ? OCTOBER_2026_LMS_METRICS : SEPTEMBER_2026_LMS_METRICS;
   const teachersList = isOct ? OCTOBER_2026_LMS_TEACHERS : SEPTEMBER_2026_LMS_TEACHERS;
