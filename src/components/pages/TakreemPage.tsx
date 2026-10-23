@@ -12,6 +12,10 @@ import {
   TOP_10_INDEX_TEACHERS,
   SEPTEMBER_2026_LMS_TEACHERS,
   SECTIONS_LMS_STATS,
+  OCTOBER_TOP_10_INDEX_TEACHERS,
+  OCTOBER_DEPARTMENT_CHAMPIONS_10,
+  OCTOBER_SECTIONS_LMS_STATS,
+  OCTOBER_2026_LMS_TEACHERS,
   isSuperAdmin,
 } from '@/lib/data';
 import type { User, Evaluation, Teacher, Department } from '@/lib/data';
@@ -153,7 +157,11 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
   const [loading, setLoading] = useState(true);
 
   const [selYear, setSelYear] = useState(propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1]);
-  const [selMonth, setSelMonth] = useState(APPROVED_MONTHS[0]);
+  const [selMonth, setSelMonth] = useState('أكتوبر');
+  const isOct = selMonth === 'أكتوبر';
+  const activeTop10 = isOct ? OCTOBER_TOP_10_INDEX_TEACHERS : TOP_10_INDEX_TEACHERS;
+  const activeDeptChampions = isOct ? OCTOBER_DEPARTMENT_CHAMPIONS_10 : DEPARTMENT_CHAMPIONS_10;
+  const activeTopSections = isOct ? OCTOBER_SECTIONS_LMS_STATS.slice(0, 5) : SECTIONS_LMS_STATS.slice(0, 5);
   const [selDept, setSelDept] = useState('');
   const [search, setSearch] = useState('');
   const [selPerf, setSelPerf] = useState('');
@@ -417,8 +425,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
 
   // طباعة جميع شهادات العشرة الأوائل دفعة واحدة
   const handlePrintAllTop10 = () => {
-    if (selMonth === 'سبتمبر') {
-      const certList = TOP_10_INDEX_TEACHERS.map(t => ({
+    if (selMonth === 'أكتوبر' || selMonth === 'سبتمبر') {
+      const certList = activeTop10.map(t => ({
         teacherNameAr: customTop10Names[t.rank] || t.name,
         departmentName: t.department,
         recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
@@ -446,8 +454,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
 
   // طباعة جميع شهادات فرسان الأقسام الأكاديمية دفعة واحدة
   const handlePrintAllDeptChampions = () => {
-    if (selMonth === 'سبتمبر') {
-      const certList = DEPARTMENT_CHAMPIONS_10.map(d => ({
+    if (selMonth === 'أكتوبر' || selMonth === 'سبتمبر') {
+      const certList = activeDeptChampions.map(d => ({
         teacherNameAr: customDeptChampions[d.rank] || d.teacherName,
         departmentName: d.department,
         recognitionReason: `تقديرًا لتميزه وإبداعه في استخدام نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية لقسم ${d.department}، وإسهاماته الفاعلة في تعزيز نواتج التعلم الرقمي.`,
@@ -473,22 +481,17 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
     }
   };
 
-  // طباعة جميع شهادات الشعب الدراسية المتصدرة دفعة واحدة
+  // طباعة جميع شهادات الشعب الدراسية المتصدرة دفعة واحدة (بدون مراكز أو أرقام)
   const handlePrintAllDistinguishedSections = () => {
-    const topSections = SECTIONS_LMS_STATS.slice(0, 5);
-    const certList = topSections.map((sec, idx) => {
-      const medal = idx === 0 ? 'المركز الأول' : idx === 1 ? 'المركز الثاني' : idx === 2 ? 'المركز الثالث' : `المركز ${idx + 1}`;
-      return {
-        teacherNameAr: `طلاب ومعلمي شعبة ${sec.section}`,
-        departmentName: sec.grade,
-        totalScore: sec.solveRate,
-        recognitionReason: `شهادة شكر وتقدير لتصدر شعبة ${sec.section} (${sec.grade}) وحصولها على ${medal} على مستوى مدرسة قطر للعلوم والتكنولوجيا بنسبة حل تقييمات بلغت ${sec.solveRate}% لشهر سبتمبر 2026.`,
-        badgeTitle: `الشعبة المتميزة - ${medal}`,
-        recipientType: 'section' as const,
-        month: selMonth,
-        academicYear: selYear,
-      };
-    });
+    const certList = activeTopSections.map((sec) => ({
+      teacherNameAr: `طلاب ومعلمي شعبة ${sec.section}`,
+      departmentName: sec.grade,
+      recognitionReason: `تقديرًا للمشاركة الفاعلة والتفاعل المتميز لطلاب ومعلمي شعبة ${sec.section} (${sec.grade}) في تفعيل نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية.`,
+      badgeTitle: 'الشعبة المتميزة في التعليم الإلكتروني',
+      recipientType: 'section' as const,
+      month: selMonth,
+      academicYear: selYear,
+    }));
     printBatchCertificates(certList);
   };
 
@@ -579,13 +582,13 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
               >
                 {APPROVED_MONTHS.map(m => (
                   <option key={m} value={m} style={{ color: '#0F2044', fontWeight: 700 }}>
-                    شهر {m} {m === 'سبتمبر' ? '(المعتمد حالياً)' : m === 'أكتوبر' ? '(الشهر القادم)' : ''}
+                    شهر {m} {m === 'أكتوبر' ? '(المعتمد - أحدث تقرير)' : m === 'سبتمبر' ? '(المعتمد)' : ''}
                   </option>
                 ))}
               </select>
               <span
                 style={{
-                  background: selMonth === 'سبتمبر' ? '#10B981' : '#F59E0B',
+                  background: (selMonth === 'سبتمبر' || selMonth === 'أكتوبر') ? '#10B981' : '#F59E0B',
                   color: '#fff',
                   fontSize: '0.7rem',
                   fontWeight: 800,
@@ -593,7 +596,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   borderRadius: '999px',
                 }}
               >
-                {selMonth === 'سبتمبر' ? 'معتمد ومكتمل' : 'قيد الانتظار'}
+                {(selMonth === 'سبتمبر' || selMonth === 'أكتوبر') ? 'معتمد ومكتمل' : 'قيد الانتظار'}
               </span>
             </div>
           </div>
@@ -733,7 +736,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
       ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'top_honorees' && (
         <div>
-          {selMonth !== 'سبتمبر' && monthlyTop10.length === 0 && currentHonorees.length === 0 ? (
+          {selMonth !== 'سبتمبر' && selMonth !== 'أكتوبر' && monthlyTop10.length === 0 && currentHonorees.length === 0 ? (
             <div style={{ ...cardStyle, textAlign: 'center', padding: '3.5rem 2rem', background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 16px rgba(0,0,0,0.06)', marginBottom: '2rem' }}>
               <div style={{ width: '80px', height: '80px', margin: '0 auto 1.25rem', background: '#FEF3C7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem' }}>
                 🏆
@@ -797,7 +800,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
               <div>
                 <h2 style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span>🥇</span> أفضل عشرة معلمين متميزين على مستوى المدرسة (سبتمبر 2026)
+                  <span>🥇</span> أفضل عشرة معلمين متميزين على مستوى المدرسة ({selMonth} {selYear})
                 </h2>
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#64748B' }}>
                   المتصدرون لمؤشر متابعة نظام قطر للتعليم والمنصات الرقمية من واقع التقارير الرسمية المعتمدة
@@ -857,7 +860,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
 
             {/* Top 10 Cards Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-              {TOP_10_INDEX_TEACHERS.map(t => {
+              {activeTop10.map(t => {
                 const medal = t.rank === 1 ? '🥇 المركز الأول' : t.rank === 2 ? '🥈 المركز الثاني' : t.rank === 3 ? '🥉 المركز الثالث' : `المركز ${t.rank}`;
                 const teacherName = customTop10Names[t.rank] || t.name;
                 const isCustomized = Boolean(customTop10Names[t.rank]);
@@ -1106,7 +1109,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   </tr>
                 </thead>
                 <tbody>
-                  {TOP_10_INDEX_TEACHERS.map(t => (
+                  {activeTop10.map(t => (
                     <tr key={t.rank} style={{ borderBottom: '1px solid #E2E8F0', background: t.rank <= 3 ? 'rgba(254, 243, 199, 0.25)' : '#fff' }}>
                       <td style={{ padding: '0.6rem', textAlign: 'center', fontWeight: 900 }}>
                         {t.rank === 1 ? '🥇 1' : t.rank === 2 ? '🥈 2' : t.rank === 3 ? '🥉 3' : t.rank}
@@ -1167,7 +1170,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   <span>🏛️</span> فرسان الأقسام الأكاديمية (أفضل معلم متميز من كل قسم — 10 معلمين)
                 </h2>
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#64748B' }}>
-                  تم اختيار المعلم الأول المتميز في كل قسم أكاديمي بناءً على أعلى مؤشرات الأداء المعتمدة لشهر سبتمبر 2026
+                  تم اختيار المعلم الأول المتميز في كل قسم أكاديمي بناءً على أعلى مؤشرات الأداء المعتمدة لشهر {selMonth} {selYear}
                 </p>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1224,7 +1227,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
 
             {/* Department Champions Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
-              {DEPARTMENT_CHAMPIONS_10.map(d => {
+              {activeDeptChampions.map(d => {
                 const deptTeacherName = customDeptChampions[d.rank] || d.teacherName;
                 const isDeptCustomized = Boolean(customDeptChampions[d.rank]);
                 const isEditing = editingDeptRank === d.rank;
@@ -1453,7 +1456,7 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   <span>🏫</span> الشعب الدراسية المتصدرة في تفعيل نظام قطر للتعليم وحل التقييمات
                 </h2>
                 <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: '#64748B' }}>
-                  أفضل 5 شعب دراسية حققت أعلى نسب إنجاز وحل للتقييمات المسندة لشهر سبتمبر 2026
+                  أفضل 5 شعب دراسية حققت أعلى نسب إنجاز وحل للتقييمات المسندة لشهر {selMonth} {selYear}
                 </p>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1495,14 +1498,14 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                       gap: '0.4rem',
                     }}
                   >
-                    <span>📊</span> عرض تحليل الـ 19 شعبة بالتفصيل
+                    <span>📊</span> عرض تحليل الشعب الدراسية بالتفصيل
                   </button>
                 )}
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-              {SECTIONS_LMS_STATS.slice(0, 5).map((sec, idx) => {
+              {activeTopSections.map((sec, idx) => {
                 const medal = idx === 0 ? '🥇 المركز الأول' : idx === 1 ? '🥈 المركز الثاني' : idx === 2 ? '🥉 المركز الثالث' : `المركز ${idx + 1}`;
                 return (
                   <div
@@ -1545,9 +1548,8 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                       onClick={() => handlePrintCertificate({
                         teacherNameAr: `طلاب ومعلمي شعبة ${sec.section}`,
                         departmentName: sec.grade,
-                        totalScore: sec.solveRate,
-                        recognitionReason: `شهادة شكر وتقدير لتصدر شعبة ${sec.section} (${sec.grade}) وحصولها على ${medal} على مستوى مدرسة قطر للعلوم والتكنولوجيا بنسبة حل تقييمات بلغت ${sec.solveRate}% لشهر سبتمبر 2026.`,
-                        badgeTitle: `الشعبة المتميزة - ${medal}`,
+                        recognitionReason: `تقديرًا للمشاركة الفاعلة والتفاعل المتميز لطلاب ومعلمي شعبة ${sec.section} (${sec.grade}) في تفعيل نظام قطر للتعليم وتوظيف الأدوات التكنولوجية الحديثة داخل الحصص الدراسية.`,
+                        badgeTitle: 'الشعبة المتميزة في التعليم الإلكتروني',
                         recipientType: 'section',
                       })}
                       style={{

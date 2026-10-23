@@ -1,7 +1,9 @@
 import { SEED_TASKS, SEED_NOTES, SEED_ACHIEVEMENTS } from './seedData';
 import { PD_WORKSHOPS, PD_INDIVIDUAL_RECORDS } from './pdData';
 import { generateSeptember2026Evaluations } from './lmsReportSeptember2026';
+import { generateOctober2026Evaluations } from './lmsReportOctober2026';
 export * from './lmsReportSeptember2026';
+export * from './lmsReportOctober2026';
 
 // مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
 export const SCHOOL_NAME = 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين - أم السنيم';
@@ -683,14 +685,31 @@ export function getMonthlyDepartmentHonorees(
     'd_energylab': 't4',  // انس عبدالكريم موسى جرادات
     'd_robotlab': 't19',  // اياد محمود علي سلامه
   };
+
+  const OCT_OFFICIAL_DEPT_CHAMPIONS: Record<string, string> = {
+    'd_islamic': 't50',   // ماهر عيسى حسن علوان (98.75%)
+    'd_arabic': 't48',    // سمير بلفقي (94.15%)
+    'd_social': 't17',    // فيصل محمد مسلم الحضري (87.05%)
+    'd_english': 't2',    // محمد ورسامي عمر (84.15%)
+    'd_math': 't13',      // محمد عماد ازكول (83.95%)
+    'd_cs': 't34',        // محمد سامي ابراهيم عبدالقادر الكفرى (الأعلى تحسناً +29.4)
+    'd_stem': 't9',       // امجد سهيل عزيز (64.9%)
+    'd_fablab': 't15',    // على سالم على سالمين الصيعري (71.5%)
+    'd_techdesign': 't62', // محمد شفاتا احمد (97.3% دروس)
+    'd_energylab': 't4',  // انس عبدالكريم موسى جرادات (61.4% دروس)
+  };
   
   departments.filter(d => d.id !== 'd_admin').forEach(dept => {
     const deptTeachers = validTeachers.filter(t => t.departmentId === dept.id);
     const teacherIds = new Set(deptTeachers.map(t => t.id));
     const deptEvals = evals.filter(e => teacherIds.has(e.teacherId));
     
-    // Check if this department has an official designated champion for September
-    const designatedTeacherId = month === 'سبتمبر' ? SEP_OFFICIAL_DEPT_CHAMPIONS[dept.id] : undefined;
+    // Check if this department has an official designated champion for September or October
+    const designatedTeacherId = month === 'سبتمبر'
+      ? SEP_OFFICIAL_DEPT_CHAMPIONS[dept.id]
+      : (month === 'أكتوبر' && year === '2026-2027')
+        ? OCT_OFFICIAL_DEPT_CHAMPIONS[dept.id]
+        : undefined;
     let winnerEv = designatedTeacherId ? deptEvals.find(e => e.teacherId === designatedTeacherId) : undefined;
     let teacher = designatedTeacherId ? validTeachers.find(t => t.id === designatedTeacherId) : undefined;
 
@@ -907,12 +926,23 @@ const RAW:string[][] = [
   ['27158601882','عمران الله معروفي','IMRAN ULLAH MARUFI','STEM','i.marufi1204@education.qa'],
   ['27040000493','ناصر احمد حسن حلوة','NASER AHMAD HASAN HULWEH','Islamic','n.hulweh2501@education.qa'],
   ['26979200995','اوزدن اوزغور','OZDEN OZGUR','Physics','o.ozgur2906@education.qa'],
+  ['28981800101','محمد عادل عبدالعزيز الطاهر','MOHAMED ADEL ABDELAZIZ','Arabic','m.eltaher@education.qa'],
+  ['28582600999','كريم ولجي','KARIM WALJI','CS','k.walji@education.qa'],
+  ['28779200022','جعفر ياشلي','CAFER YASLI','Math','c.yasli@education.qa'],
+  ['28940000991','احمد اسامه صقر المعاني','AHMAD OSAMA MAANI','Tech Design','a.al-maani@education.qa'],
+  ['28882600988','محمد شفاتا احمد','MUHAMMAD SHAFATA AHMED','Tech Design','m.ahmed11@education.qa'],
+  ['29082600977','محمد عيسي دادي','MOHAMED ISSA DADI','STEM','m.dadi@education.qa'],
+  ['27540000966','طاهر كمال عبدالله الحلو','TAHER KAMAL ALHELOU','PE','t.alhelou@education.qa'],
+  ['27478800955','فتحي المنجي بلحاج صالح','FATHI MANJI BELHADJ','PE','f.belhadj@education.qa'],
+  ['28681800944','محمد علاءالدين محمد عوض الله','MOHAMED ALAAELDIN AWADALLAH','PE','m.awadallah@education.qa'],
 ];
 
 // ── Scoring configuration ──────────────────────────────────────────────────
 
 // Teachers excluded from 2023-2024 and 2024-2025 (only in 2025-2026)
 const EARLY_EXCLUDED = new Set(['t1','t2','t3','t4','t12','t36']);
+// Teachers added for 2026-2027 LMS reports (excluded from 2021-2026)
+const LATE_2627_TEACHERS = new Set(['t58','t59','t60','t61','t62','t63','t64','t65','t66']);
 
 // TARGET HIGH performers for 2023-2024 and 2024-2025 (scores 92-100)
 // Arabic teachers: t33,t47,t48,t55,t54
@@ -943,12 +973,13 @@ const ISLAMIC_TEACHERS = ['t35','t39','t50','t56','t1','t12','t36']; // Removed 
 
 export const initialTeachers:Teacher[] = RAW.map(([empId,nameAr,nameEn,subj,email],i)=>{
   const id = `t${i+1}`;
+  const isLate = LATE_2627_TEACHERS.has(id);
   return {
     id, employeeId:empId, nameAr, nameEn,
     departmentId:SUBJECT_TO_DEPT[subj]||'d_stem',
-    subject:subj, email, jobCategory:'معلم', status:'active' as const, createdAt:'2023-09-01',
-    activeFromYear: EARLY_EXCLUDED.has(id) ? '2025-2026' : '2023-2024',
-    excludedYears: EARLY_EXCLUDED.has(id) ? ['2023-2024','2024-2025'] : [],
+    subject:subj, email, jobCategory:'معلم', status:'active' as const, createdAt: isLate ? '2026-09-01' : '2023-09-01',
+    activeFromYear: isLate ? '2026-2027' : (EARLY_EXCLUDED.has(id) ? '2025-2026' : '2023-2024'),
+    excludedYears: isLate ? ['2021-2022','2022-2023','2023-2024','2024-2025','2025-2026'] : (EARLY_EXCLUDED.has(id) ? ['2023-2024','2024-2025'] : []),
   };
 });
 
@@ -1148,7 +1179,7 @@ function buildSampleEvaluations():Evaluation[] {
 
       initialTeachers.forEach((teacher) => {
         const tid = teacher.id;
-        if (EARLY_EXCLUDED.has(tid)) return; // only in 2025-2026
+        if (EARLY_EXCLUDED.has(tid) || LATE_2627_TEACHERS.has(tid)) return; // only in 2025-2026 or 2026-2027
 
         let clampedTotal: number;
         let criteria: EvaluationCriterion[];
@@ -1236,6 +1267,7 @@ function buildSampleEvaluations():Evaluation[] {
 
     initialTeachers.forEach((teacher) => {
       const tid = teacher.id;
+      if (LATE_2627_TEACHERS.has(tid)) return; // late teachers only for 2026-2027
       const isStem = teacher.departmentId === 'd_stem';
       const annualScore = OFFICIAL_2526[teacher.employeeId];
       const isFollowup = followupSet.has(tid);
@@ -1302,6 +1334,10 @@ function buildSampleEvaluations():Evaluation[] {
   // Append official September 2026 evaluations for all teachers based on the comprehensive LMS report
   const sep26Evals = generateSeptember2026Evaluations(initialTeachers);
   out.push(...sep26Evals);
+
+  // Append official October 2026 evaluations for all teachers based on the October 2026 LMS reports
+  const oct26Evals = generateOctober2026Evaluations(initialTeachers);
+  out.push(...oct26Evals);
 
   return out;
 }
@@ -2505,6 +2541,17 @@ export const db = {
   },
   getTeachers: async (): Promise<Teacher[]> => {
     const list = await seedIfEmpty<Teacher>(COLLECTIONS.teachers, initialTeachers);
+    const existingIds = new Set(list.map(t => t.id));
+    const missing = initialTeachers.filter(t => !existingIds.has(t.id));
+    if (missing.length > 0) {
+      const merged = [...list, ...missing];
+      try {
+        await saveCollection(COLLECTIONS.teachers, merged);
+      } catch (e) {
+        console.error("Failed to save merged teachers:", e);
+      }
+      return merged.filter(t => !isExcludedTeacher(t));
+    }
     return list.filter(t => !isExcludedTeacher(t));
   },
   saveTeachers: async (t: Teacher[]): Promise<void> => {
@@ -2519,6 +2566,25 @@ export const db = {
     const excludedIds = new Set(
       rawTeachers.filter(t => isExcludedTeacher(t)).map(t => t.id)
     );
+
+    // Auto-merge missing October 2026 evaluations if Firestore only has September 2026
+    const hasOct2026 = list.some(e => e.academicYear === '2026-2027' && e.month === 'أكتوبر');
+    if (!hasOct2026) {
+      const octEvals = generateOctober2026Evaluations(initialTeachers);
+      const merged = [...list, ...octEvals];
+      try {
+        await saveCollection(COLLECTIONS.evaluations, merged);
+      } catch (e) {
+        console.error("Failed to auto-seed October 2026 evaluations:", e);
+      }
+      return merged.filter(e => {
+        if (excludedIds.has(e.teacherId)) return false;
+        const t = initialTeachers.find(x => x.id === e.teacherId);
+        if (t && isExcludedTeacher(t)) return false;
+        return true;
+      });
+    }
+
     return list.filter(e => {
       if (excludedIds.has(e.teacherId)) return false;
       const t = initialTeachers.find(x => x.id === e.teacherId);

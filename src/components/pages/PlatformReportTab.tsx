@@ -15,6 +15,20 @@ import {
   FOLLOWUP_PARTIAL_TEACHERS,
   UNASSIGNED_EVAL_TEACHERS,
   ZERO_LESSON_TEACHERS,
+  OCTOBER_2026_LMS_METRICS,
+  OCTOBER_2026_LMS_TEACHERS,
+  OCTOBER_GRADE_LEVEL_LMS_STATS,
+  OCTOBER_TOP_10_INDEX_TEACHERS,
+  OCTOBER_DEPARTMENT_PERFORMANCE_LIST,
+  OCTOBER_ADMINISTRATIVE_RATINGS_LIST,
+  OCTOBER_TOP_OVERALL_TEACHERS,
+  OCTOBER_TOP_DEPT_TEACHERS,
+  OCTOBER_TOP_LESSONS_TEACHERS,
+  OCTOBER_TOP_GRADED_TEACHERS,
+  OCTOBER_FOLLOWUP_PENDING_TEACHERS,
+  OCTOBER_FOLLOWUP_PARTIAL_TEACHERS,
+  OCTOBER_UNASSIGNED_EVAL_TEACHERS,
+  OCTOBER_ZERO_LESSON_TEACHERS,
   type LmsReportTeacherRecord,
   type Teacher,
   type Department,
@@ -33,8 +47,8 @@ export interface EvaluationMonthOption {
 }
 
 export const EVALUATION_MONTHS: EvaluationMonthOption[] = [
+  { id: '2026-10', month: 'أكتوبر', year: '2026-2027', label: 'أكتوبر ٢٠٢٦', status: 'available', badgeText: 'معتمد ومكتمل (٤٧ معلماً)', recordCount: 47 },
   { id: '2026-09', month: 'سبتمبر', year: '2026-2027', label: 'سبتمبر ٢٠٢٦', status: 'available', badgeText: 'معتمد ومكتمل (٥٢ معلماً)', recordCount: 52 },
-  { id: '2026-10', month: 'أكتوبر', year: '2026-2027', label: 'أكتوبر ٢٠٢٦', status: 'upcoming', badgeText: 'قيد الانتظار - الشهر القادم', recordCount: 0 },
   { id: '2026-11', month: 'نوفمبر', year: '2026-2027', label: 'نوفمبر ٢٠٢٦', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
   { id: '2026-12', month: 'ديسمبر', year: '2026-2027', label: 'ديسمبر ٢٠٢٦', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
   { id: '2027-01', month: 'يناير', year: '2026-2027', label: 'يناير ٢٠٢٧', status: 'upcoming', badgeText: 'مجدول لاحقاً', recordCount: 0 },
@@ -73,9 +87,26 @@ export default function PlatformReportTab({
   canManageEvaluations = false,
 }: Props) {
   const [selectedMonthId, setSelectedMonthId] = useState(
-    selectedMonth ? (EVALUATION_MONTHS.find(m => m.month === selectedMonth)?.id || '2026-09') : '2026-09'
+    selectedMonth ? (EVALUATION_MONTHS.find(m => m.month === selectedMonth)?.id || '2026-10') : '2026-10'
   );
   const currentMonthObj = EVALUATION_MONTHS.find(m => m.id === selectedMonthId) || EVALUATION_MONTHS[0];
+
+  const isOct = selectedMonthId === '2026-10';
+  const activeMetrics = isOct ? OCTOBER_2026_LMS_METRICS : SEPTEMBER_2026_LMS_METRICS;
+  const activeTeachers = isOct ? OCTOBER_2026_LMS_TEACHERS : SEPTEMBER_2026_LMS_TEACHERS;
+  const activeGradeStats = isOct ? OCTOBER_GRADE_LEVEL_LMS_STATS : GRADE_LEVEL_LMS_STATS;
+  const activeTop10 = isOct ? OCTOBER_TOP_10_INDEX_TEACHERS : TOP_10_INDEX_TEACHERS;
+  const activeDeptPerf = isOct ? OCTOBER_DEPARTMENT_PERFORMANCE_LIST : DEPARTMENT_PERFORMANCE_LIST;
+  const activeAdminRatings = isOct ? OCTOBER_ADMINISTRATIVE_RATINGS_LIST : ADMINISTRATIVE_RATINGS_LIST;
+  const activeTopOverall = isOct ? OCTOBER_TOP_OVERALL_TEACHERS : TOP_OVERALL_TEACHERS;
+  const activeTopDept = isOct ? OCTOBER_TOP_DEPT_TEACHERS : TOP_DEPT_TEACHERS;
+  const activeTopLessons = isOct ? OCTOBER_TOP_LESSONS_TEACHERS : TOP_LESSONS_TEACHERS;
+  const activeTopGraded = isOct ? OCTOBER_TOP_GRADED_TEACHERS : TOP_GRADED_TEACHERS;
+  const activeFollowupPending = isOct ? OCTOBER_FOLLOWUP_PENDING_TEACHERS : FOLLOWUP_PENDING_TEACHERS;
+  const activeFollowupPartial = isOct ? OCTOBER_FOLLOWUP_PARTIAL_TEACHERS : FOLLOWUP_PARTIAL_TEACHERS;
+  const activeUnassignedEval = isOct ? OCTOBER_UNASSIGNED_EVAL_TEACHERS : UNASSIGNED_EVAL_TEACHERS;
+  const activeZeroLesson = isOct ? OCTOBER_ZERO_LESSON_TEACHERS : ZERO_LESSON_TEACHERS;
+
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
@@ -95,7 +126,7 @@ export default function PlatformReportTab({
   };
 
   const filteredTeachers = useMemo(() => {
-    return SEPTEMBER_2026_LMS_TEACHERS.filter(t => {
+    return activeTeachers.filter(t => {
       if (deptFilter && t.department !== deptFilter) return false;
       if (categoryFilter) {
         if (categoryFilter === 'top_overall' && t.category !== 'top_overall') return false;
@@ -117,7 +148,7 @@ export default function PlatformReportTab({
       }
       return true;
     });
-  }, [search, deptFilter, categoryFilter]);
+  }, [activeTeachers, search, deptFilter, categoryFilter]);
 
   const cardStyle: React.CSSProperties = {
     background: '#fff',
@@ -129,9 +160,9 @@ export default function PlatformReportTab({
   };
 
   const uniqueDepts = useMemo(() => {
-    const set = new Set(SEPTEMBER_2026_LMS_TEACHERS.map(t => t.department));
+    const set = new Set(activeTeachers.map(t => t.department));
     return Array.from(set);
-  }, []);
+  }, [activeTeachers]);
 
   // Handle Certificate Print
   const handlePrintCertificate = (teacher: LmsReportTeacherRecord | { name: string; department: string; generalIndex?: number; notes?: string }) => {
@@ -220,24 +251,24 @@ export default function PlatformReportTab({
             </div>
           </div>
           <p style={{ margin: 0, color: '#94A3B8', fontSize: '0.85rem' }}>
-            تاريخ الإصدار: 27 سبتمبر 2026 · مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين · مؤشرات رسمية مستندة إلى
+            تاريخ الإصدار: {activeMetrics.reportDate} · مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين · مؤشرات رسمية مستندة إلى
             ملفي متابعة التقييمات والدروس الإلكترونية المعتمدين
           </p>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.75rem' }}>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              👥 42 معلماً بالدروس · 26 معلماً بالتقييمات
+              👥 {isOct ? '47 معلماً بالدروس · 27 معلماً بالتقييمات' : '42 معلماً بالدروس · 26 معلماً بالتقييمات'}
             </span>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              🏫 19 شعبة · 158 سجل دروس · 84 سجل تقييمات
+              🏫 {activeMetrics.totalSections} شعبة · {activeMetrics.lessonRecords} سجل دروس · {activeMetrics.subjectSectionRecords} سجل تقييمات
             </span>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              💻 1,460 درساً (796 ظاهرة 54.5% + 664 مخفية · 99% بأقسام)
+              💻 {activeMetrics.totalLessons.toLocaleString()} درساً ({activeMetrics.lessonsVisible.toLocaleString()} ظاهرة {activeMetrics.lessonsVisiblePercent}% + {activeMetrics.lessonsHidden.toLocaleString()} مخفية · {activeMetrics.lessonsValidPercent}% بأقسام)
             </span>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              📝 2,440 تسليماً (1,921 مصححة 78.7% · 519 معلقاً)
+              📝 {activeMetrics.totalSubmissions.toLocaleString()} تسليماً ({activeMetrics.gradedSubmissions.toLocaleString()} مصححة {activeMetrics.gradingRate}% · {activeMetrics.pendingSubmissions.toLocaleString()} معلقاً)
             </span>
             <span style={{ background: 'rgba(255,255,255,0.12)', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem' }}>
-              🎯 249 تقييماً مسنداً (متوسط 3.0 لكل شعبة-مادة)
+              🎯 {activeMetrics.assignedEvaluations} تقييماً مسنداً (متوسط {(activeMetrics.assignedEvaluations / activeMetrics.totalSections).toFixed(1)} لكل شعبة-مادة)
             </span>
           </div>
         </div>
@@ -352,7 +383,7 @@ export default function PlatformReportTab({
       )}
 
       {/* ── Conditional Month View: Available vs Upcoming ── */}
-      {selectedMonthId !== '2026-09' ? (
+      {currentMonthObj.status === 'upcoming' ? (
         <div style={{ ...cardStyle, padding: '3rem 2rem', textAlign: 'center', background: '#fff', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 16px rgba(0,0,0,0.06)' }}>
           <div style={{ width: '80px', height: '80px', margin: '0 auto 1.25rem', background: '#FEF3C7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem' }}>
             📑
@@ -488,13 +519,13 @@ export default function PlatformReportTab({
           {/* Teacher readiness roster */}
           <div style={{ maxWidth: '850px', margin: '0 auto', textAlign: 'right', background: '#F8FAFC', padding: '1.25rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F2044', margin: '0 0 0.4rem' }}>
-              👥 كادر المعلمين المعتمد لتقييم شهر {currentMonthObj.month} (52 معلماً):
+              👥 كادر المعلمين المعتمد لتقييم شهر {currentMonthObj.month} ({activeTeachers.length} معلماً):
             </h4>
             <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0 0 1rem' }}>
               تمت تهيئة سجلات المعلمين والأقسام الأكاديمية لاستقبال بيانات نشاط نظام قطر للتعليم فور اعتماد التقرير.
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '0.5rem', maxHeight: '220px', overflowY: 'auto', padding: '0.6rem', background: '#fff', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
-              {SEPTEMBER_2026_LMS_TEACHERS.slice(0, 24).map((t, idx) => (
+              {activeTeachers.slice(0, 24).map((t, idx) => (
                 <div key={idx} style={{ fontSize: '0.75rem', padding: '0.35rem 0.6rem', background: '#F1F5F9', borderRadius: '4px', display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ fontWeight: 700, color: '#0F2044' }}>{t.name}</span>
                   <span style={{ color: '#64748B' }}>{t.department}</span>
@@ -520,60 +551,60 @@ export default function PlatformReportTab({
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #3B82F6' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>نطاق المعلمين المشمولين</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F2044', margin: '0.2rem 0' }}>
-            42 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>/ 63 كادراً</span>
+            {activeMetrics.teachersCount} <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>/ 63 كادراً</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#3B82F6' }}>
-            42 معلماً بالدروس (15 حققوا 100%) · 26 بالتقييمات (5 متميزون)
+            {isOct ? '47 معلماً بالدروس (8 حققوا 100%) · 27 بالتقييمات (11 أتموا 100% تصحيح)' : '42 معلماً بالدروس (15 حققوا 100%) · 26 بالتقييمات (5 متميزون)'}
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #10B981' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>التقييمات الإلكترونية المسندة</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#047857', margin: '0.2rem 0' }}>
-            249 <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>تقييماً مسنداً</span>
+            {activeMetrics.assignedEvaluations} <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>تقييماً مسنداً</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#10B981' }}>
-            بمعدل 3.0 لكل شعبة-مادة · 8 معلمين حققوا المعدل الأسبوعي (4 فأكثر)
+            بمعدل {(activeMetrics.assignedEvaluations / activeMetrics.totalSections).toFixed(1)} لكل شعبة · {isOct ? '28 سجلاً حقق المستهدف الأسبوعي' : '8 معلمين حققوا المعدل الأسبوعي (4 فأكثر)'}
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #8B5CF6' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>متوسط نسبة حل الطلبة</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#5B21B6', margin: '0.2rem 0' }}>
-            66.7% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>/ المستهدف 80%</span>
+            {activeMetrics.weightedSolveRate}% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>/ المستهدف 80%</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#8B5CF6' }}>
-            39 شعبة-مادة حققت المستهدف (46.4%) · الصف 10 الأعلى (73.2%)
+            {isOct ? '28 شعبة-مادة حققت المستهدف (≥80%) · الصف 9 الأعلى حلًا' : '39 شعبة-مادة حققت المستهدف (46.4%) · الصف 10 الأعلى (73.2%)'}
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #00B4D8' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>إتمام تصحيح التسليمات</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0F2044', margin: '0.2rem 0' }}>
-            78.7% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>(1,921 / 2,440)</span>
+            {activeMetrics.gradingRate}% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>({activeMetrics.gradedSubmissions.toLocaleString()} / {activeMetrics.totalSubmissions.toLocaleString()})</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#00B4D8' }}>
-            13 معلماً أتموا 100% · 519 تسليماً غير مصحح في 40 شعبة-مادة
+            {isOct ? '11 معلماً أتموا 100% · 445 تسليماً معلقاً' : '13 معلماً أتموا 100% · 519 تسليماً غير مصحح في 40 شعبة-مادة'}
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #F59E0B' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>الدروس الإلكترونية الظاهرة</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#92400E', margin: '0.2rem 0' }}>
-            54.5% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>(796 / 1,460)</span>
+            {activeMetrics.lessonsVisiblePercent}% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>({activeMetrics.lessonsVisible.toLocaleString()} / {activeMetrics.totalLessons.toLocaleString()})</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#B45309' }}>
-            796 درساً ظاهراً · 664 درساً مخفياً · 75 سجلاً حقق المستهدف الأسبوعي
+            {activeMetrics.lessonsVisible.toLocaleString()} درساً ظاهراً · {activeMetrics.lessonsHidden.toLocaleString()} درساً مخفياً · {isOct ? '449 درساً ظاهراً جديداً في أكتوبر' : '75 سجلاً حقق المستهدف الأسبوعي'}
           </div>
         </div>
 
         <div style={{ ...cardStyle, marginBottom: 0, borderRight: '4px solid #EC4899' }}>
           <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>اكتمال بنية الدروس (أقسام)</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#831843', margin: '0.2rem 0' }}>
-            99% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>(1,445 / 1,460)</span>
+            {activeMetrics.lessonsValidPercent}% <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748B' }}>({activeMetrics.lessonsValid.toLocaleString()} / {activeMetrics.totalLessons.toLocaleString()})</span>
           </div>
           <div style={{ fontSize: '0.72rem', color: '#DB2777' }}>
-            1,445 درساً تحتوي أقساماً · 15 درساً فقط دون أقسام لدى 6 معلمين
+            {activeMetrics.lessonsValid.toLocaleString()} درساً تحتوي أقساماً · {activeMetrics.totalLessons - activeMetrics.lessonsValid} درساً دون أقسام
           </div>
         </div>
       </div>
@@ -748,8 +779,8 @@ export default function PlatformReportTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {TOP_10_INDEX_TEACHERS.map(t => {
-                    const fullRecord = SEPTEMBER_2026_LMS_TEACHERS.find(r => r.name === t.name);
+                  {activeTop10.map(t => {
+                    const fullRecord = activeTeachers.find(r => r.name === t.name);
                     const rankMedal = t.rank === 1 ? '🥇' : t.rank === 2 ? '🥈' : t.rank === 3 ? '🥉' : `${t.rank}`;
                     return (
                       <tr key={t.rank} style={{ borderBottom: '1px solid #F1F5F9', background: t.rank <= 3 ? 'rgba(254, 243, 199, 0.2)' : 'transparent' }}>
@@ -841,7 +872,7 @@ export default function PlatformReportTab({
               <span>🎖️</span> متصدرو الأقسام الأكاديمية وشهادات التكريم
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '0.85rem' }}>
-              {DEPARTMENT_PERFORMANCE_LIST.filter(d => d.topTeacher && !d.topTeacher.includes('—')).map((dept, idx) => (
+              {activeDeptPerf.filter(d => d.topTeacher && !d.topTeacher.includes('—')).map((dept, idx) => (
                 <div
                   key={idx}
                   style={{
@@ -927,7 +958,7 @@ export default function PlatformReportTab({
                     </tr>
                   </thead>
                   <tbody>
-                    {TOP_LESSONS_TEACHERS.map((t, idx) => (
+                    {activeTopLessons.map((t, idx) => (
                       <tr key={t.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                         <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
                         <td style={{ padding: '0.4rem 0.5rem', fontWeight: 700, color: '#0F2044' }}>{t.name}</td>
@@ -972,7 +1003,7 @@ export default function PlatformReportTab({
                     </tr>
                   </thead>
                   <tbody>
-                    {TOP_GRADED_TEACHERS.map((t, idx) => (
+                    {activeTopGraded.map((t, idx) => (
                       <tr key={t.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                         <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
                         <td style={{ padding: '0.4rem 0.5rem', fontWeight: 700, color: '#0F2044' }}>{t.name}</td>
@@ -1034,7 +1065,7 @@ export default function PlatformReportTab({
                 </tr>
               </thead>
               <tbody>
-                {DEPARTMENT_PERFORMANCE_LIST.map((d, idx) => (
+                {activeDeptPerf.map((d, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
                     <td style={{ padding: '0.6rem 0.75rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
                     <td style={{ padding: '0.6rem 0.75rem', fontWeight: 800, color: '#0F2044' }}>{d.department}</td>
@@ -1116,7 +1147,7 @@ export default function PlatformReportTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {ADMINISTRATIVE_RATINGS_LIST.map((t, idx) => (
+                  {activeAdminRatings.map((t, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9', background: t.rating === 'ممتاز' ? 'rgba(220, 252, 231, 0.2)' : 'transparent' }}>
                       <td style={{ padding: '0.5rem 0.65rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
                       <td style={{ padding: '0.5rem 0.65rem', fontWeight: 800, color: '#0F2044' }}>{t.name}</td>
@@ -1237,7 +1268,7 @@ export default function PlatformReportTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {FOLLOWUP_PENDING_TEACHERS.slice(0, 6).map((t, idx) => (
+                  {activeFollowupPending.slice(0, 8).map((t, idx) => (
                     <tr key={t.id} style={{ borderBottom: '1px solid #FEE2E8' }}>
                       <td style={{ padding: '0.5rem', textAlign: 'center', fontWeight: 800, color: '#991B1B' }}>{idx + 1}</td>
                       <td style={{ padding: '0.5rem', fontWeight: 800, color: '#0F2044' }}>{t.name}</td>
@@ -1290,7 +1321,7 @@ export default function PlatformReportTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {FOLLOWUP_PARTIAL_TEACHERS.map((t, idx) => (
+                  {activeFollowupPartial.map((t, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid #FEF3C7' }}>
                       <td style={{ padding: '0.45rem 0.5rem', fontWeight: 700, color: '#0F2044' }}>{t.name}</td>
                       <td style={{ padding: '0.45rem 0.5rem', color: '#64748B' }}>{t.department}</td>
@@ -1323,7 +1354,7 @@ export default function PlatformReportTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {UNASSIGNED_EVAL_TEACHERS.map((t, idx) => (
+                  {activeUnassignedEval.map((t, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid #E0F2FE' }}>
                       <td style={{ padding: '0.45rem 0.5rem', fontWeight: 700, color: '#0F2044' }}>{t.name}</td>
                       <td style={{ padding: '0.45rem 0.5rem', color: '#64748B' }}>{t.department}</td>
@@ -1354,7 +1385,7 @@ export default function PlatformReportTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {ZERO_LESSON_TEACHERS.map((t, idx) => (
+                  {activeZeroLesson.map((t, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
                       <td style={{ padding: '0.45rem 0.5rem', fontWeight: 700, color: '#0F2044' }}>{t.name}</td>
                       <td style={{ padding: '0.45rem 0.5rem', color: '#64748B' }}>{t.department}</td>
@@ -1602,7 +1633,7 @@ export default function PlatformReportTab({
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-            {GRADE_LEVEL_LMS_STATS.map((g, idx) => (
+            {activeGradeStats.map((g, idx) => (
               <div key={idx} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '1rem' }}>
                 <div style={{ fontSize: '1.1rem', fontWeight: 900, color: '#0F2044', marginBottom: '0.6rem' }}>
                   {g.grade}

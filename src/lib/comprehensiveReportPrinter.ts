@@ -12,6 +12,19 @@ import {
   SECTIONS_LMS_STATS,
   SUBJECTS_LMS_STATS,
   DEPARTMENT_CHAMPIONS_10,
+  OCTOBER_2026_LMS_METRICS,
+  OCTOBER_2026_LMS_TEACHERS,
+  OCTOBER_GRADE_LEVEL_LMS_STATS,
+  OCTOBER_TOP_10_INDEX_TEACHERS,
+  OCTOBER_DEPARTMENT_PERFORMANCE_LIST,
+  OCTOBER_ADMINISTRATIVE_RATINGS_LIST,
+  OCTOBER_FOLLOWUP_PENDING_TEACHERS,
+  OCTOBER_FOLLOWUP_PARTIAL_TEACHERS,
+  OCTOBER_UNASSIGNED_EVAL_TEACHERS,
+  OCTOBER_ZERO_LESSON_TEACHERS,
+  OCTOBER_SECTIONS_LMS_STATS,
+  OCTOBER_SUBJECTS_LMS_STATS,
+  OCTOBER_DEPARTMENT_CHAMPIONS_10,
 } from './data';
 
 interface PrintReportOptions {
@@ -22,22 +35,37 @@ interface PrintReportOptions {
 export function printComprehensiveLmsReport(options: PrintReportOptions) {
   const { monthName, academicYear = '2026-2027' } = options;
 
+  const isOct = monthName.includes('أكتوبر') || monthName.includes('10');
+
+  const metrics = isOct ? OCTOBER_2026_LMS_METRICS : SEPTEMBER_2026_LMS_METRICS;
+  const teachersList = isOct ? OCTOBER_2026_LMS_TEACHERS : SEPTEMBER_2026_LMS_TEACHERS;
+  const gradeLevelStats = isOct ? OCTOBER_GRADE_LEVEL_LMS_STATS : GRADE_LEVEL_LMS_STATS;
+  const top10Teachers = isOct ? OCTOBER_TOP_10_INDEX_TEACHERS : TOP_10_INDEX_TEACHERS;
+  const deptPerfList = isOct ? OCTOBER_DEPARTMENT_PERFORMANCE_LIST : DEPARTMENT_PERFORMANCE_LIST;
+  const adminRatingsList = isOct ? OCTOBER_ADMINISTRATIVE_RATINGS_LIST : ADMINISTRATIVE_RATINGS_LIST;
+  const followupPending = isOct ? OCTOBER_FOLLOWUP_PENDING_TEACHERS : FOLLOWUP_PENDING_TEACHERS;
+  const followupPartial = isOct ? OCTOBER_FOLLOWUP_PARTIAL_TEACHERS : FOLLOWUP_PARTIAL_TEACHERS;
+  const unassignedEval = isOct ? OCTOBER_UNASSIGNED_EVAL_TEACHERS : UNASSIGNED_EVAL_TEACHERS;
+  const zeroLessons = isOct ? OCTOBER_ZERO_LESSON_TEACHERS : ZERO_LESSON_TEACHERS;
+  const sectionsList = isOct ? OCTOBER_SECTIONS_LMS_STATS : SECTIONS_LMS_STATS;
+  const subjectsList = isOct ? OCTOBER_SUBJECTS_LMS_STATS : SUBJECTS_LMS_STATS;
+  const deptChampions = isOct ? OCTOBER_DEPARTMENT_CHAMPIONS_10 : DEPARTMENT_CHAMPIONS_10;
+
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
     alert('يرجى السماح بالنوافذ المنبثقة لطباعة التقرير الشامل.');
     return;
   }
 
-  // Department Champions (Official 27 Sep 2026)
-  const deptChampions = DEPARTMENT_CHAMPIONS_10;
+  // Split teachers into 2 groups for A3 Landscape pages
+  const midIndex = Math.ceil(teachersList.length / 2);
+  const teachersPage1 = teachersList.slice(0, midIndex);
+  const teachersPage2 = teachersList.slice(midIndex);
 
-  // Split teachers into 2 groups for A3 Landscape pages (26 each)
-  const teachersPage1 = SEPTEMBER_2026_LMS_TEACHERS.slice(0, 26);
-  const teachersPage2 = SEPTEMBER_2026_LMS_TEACHERS.slice(26);
-
-  // Split administrative ratings into 2 columns (14 each) for clean A3 Landscape layout
-  const adminRatingsCol1 = ADMINISTRATIVE_RATINGS_LIST.slice(0, 14);
-  const adminRatingsCol2 = ADMINISTRATIVE_RATINGS_LIST.slice(14);
+  // Split administrative ratings into 2 columns for clean A3 Landscape layout
+  const adminMid = Math.ceil(adminRatingsList.length / 2);
+  const adminRatingsCol1 = adminRatingsList.slice(0, adminMid);
+  const adminRatingsCol2 = adminRatingsList.slice(adminMid);
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -409,28 +437,28 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
             <div class="kpi-grid">
               <div class="kpi-card" style="border-top-color: #3B82F6;">
                 <div class="kpi-label">نطاق الكادر الأكاديمي والنشط</div>
-                <div class="kpi-value">42 <span style="font-size: 12px; color: #64748B;">/ 63</span></div>
-                <div class="kpi-sub">26 بالتقييمات + 42 بالدروس (100% نشاط)</div>
+                <div class="kpi-value">${teachersList.length} <span style="font-size: 12px; color: #64748B;">/ 63</span></div>
+                <div class="kpi-sub">${isOct ? '27 بالتقييمات + 47 بالدروس (100% نشاط)' : '26 بالتقييمات + 42 بالدروس (100% نشاط)'}</div>
               </div>
               <div class="kpi-card" style="border-top-color: #10B981;">
                 <div class="kpi-label">تحليل الشعب والمواد الدراسية</div>
-                <div class="kpi-value" style="color: #047857;">19 <span style="font-size: 12px; color: #64748B;">شعبة</span></div>
-                <div class="kpi-sub">5 صفوف (7، 9، 10، 11، 12) · 18 مادة</div>
+                <div class="kpi-value" style="color: #047857;">${metrics.sectionsCount} <span style="font-size: 12px; color: #64748B;">شعبة</span></div>
+                <div class="kpi-sub">${isOct ? '4 صفوف (9، 10، 11، 12) · 20 مادة' : '5 صفوف (7، 9، 10، 11، 12) · 18 مادة'}</div>
               </div>
               <div class="kpi-card" style="border-top-color: #8B5CF6;">
                 <div class="kpi-label">إجمالي تسليمات التقييمات</div>
-                <div class="kpi-value" style="color: #6D28D9;">2,440</div>
-                <div class="kpi-sub">1,921 مصححاً (78.7%) + 519 قيد الانتظار</div>
+                <div class="kpi-value" style="color: #6D28D9;">${metrics.totalSubmissions.toLocaleString()}</div>
+                <div class="kpi-sub">${metrics.gradedSubmissions.toLocaleString()} مصححاً (${metrics.gradingRate}%) + ${metrics.pendingSubmissions.toLocaleString()} معلقاً</div>
               </div>
               <div class="kpi-card" style="border-top-color: #00B4D8;">
                 <div class="kpi-label">نسبة حل التقييمات العامة</div>
-                <div class="kpi-value" style="color: #0284C7;">66.7%</div>
-                <div class="kpi-sub">249 تقييماً مسنداً للطلبة (100% نسبة إسناد)</div>
+                <div class="kpi-value" style="color: #0284C7;">${metrics.weightedSolveRate}%</div>
+                <div class="kpi-sub">${metrics.assignedEvaluations} تقييماً مسنداً للطلبة (${metrics.evalAssignmentRate}% نسبة إسناد)</div>
               </div>
               <div class="kpi-card" style="border-top-color: #F59E0B;">
                 <div class="kpi-label">إجمالي الدروس المفعلة</div>
-                <div class="kpi-value" style="color: #B45309;">1,460</div>
-                <div class="kpi-sub">796 ظاهراً (54.5%) · 99% مستوفية للأقسام</div>
+                <div class="kpi-value" style="color: #B45309;">${metrics.totalLessons.toLocaleString()}</div>
+                <div class="kpi-sub">${metrics.lessonsVisible.toLocaleString()} ظاهراً (${metrics.lessonsVisiblePercent}%) · ${metrics.lessonsValidPercent}% مستوفية للأقسام</div>
               </div>
             </div>
 
@@ -439,7 +467,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
               <!-- Department Performance Bar Chart -->
               <div class="chart-box">
                 <div class="chart-title">📊 ترتيب الأقسام الأكاديمية حسب المؤشر العام المركب (100) — شهر ${monthName}</div>
-                ${DEPARTMENT_PERFORMANCE_LIST.filter(d => d.index !== null).map(d => `
+                ${deptPerfList.filter(d => d.index !== null).map(d => `
                   <div class="bar-item">
                     <div class="bar-header">
                       <span>${d.department}</span>
@@ -455,7 +483,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
               <!-- Grade Level Stats -->
               <div class="chart-box">
                 <div class="chart-title">🏫 تغطية التقييمات والدروس حسب الصفوف الدراسية وتوجيهات الأداء</div>
-                ${GRADE_LEVEL_LMS_STATS.map(g => `
+                ${gradeLevelStats.map(g => `
                   <div style="margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dotted #E2E8F0;">
                     <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 11px; margin-bottom: 3px;">
                       <span class="text-navy">${g.grade}</span>
@@ -506,7 +534,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
                 </tr>
               </thead>
               <tbody>
-                ${TOP_10_INDEX_TEACHERS.map(t => `
+                ${top10Teachers.map(t => `
                   <tr>
                     <td class="text-center font-bold">
                       ${t.rank === 1 ? '🥇 الأول' : t.rank === 2 ? '🥈 الثاني' : t.rank === 3 ? '🥉 الثالث' : t.rank}
@@ -591,7 +619,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${SECTIONS_LMS_STATS.map(s => `
+                    ${sectionsList.map(s => `
                       <tr>
                         <td class="text-center font-bold">${s.rank}</td>
                         <td class="font-bold text-navy" style="font-size: 10px;">شعبة ${s.section}</td>
@@ -637,7 +665,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${SUBJECTS_LMS_STATS.map((sub, i) => `
+                    ${subjectsList.map((sub, i) => `
                       <tr>
                         <td class="text-center font-bold">${i + 1}</td>
                         <td class="font-bold text-navy" style="font-size: 9.5px;">${sub.name}</td>
@@ -694,7 +722,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
                 </tr>
               </thead>
               <tbody>
-                ${DEPARTMENT_PERFORMANCE_LIST.map((d, i) => `
+                ${deptPerfList.map((d, i) => `
                   <tr>
                     <td class="text-center font-bold">${i + 1}</td>
                     <td class="font-bold text-navy">${d.department}</td>
@@ -800,7 +828,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${FOLLOWUP_PENDING_TEACHERS.map(t => `
+                    ${followupPending.map(t => `
                       <tr>
                         <td class="font-bold text-navy">${t.name}</td>
                         <td style="font-size: 9.5px;">${t.department}</td>
@@ -831,7 +859,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${FOLLOWUP_PARTIAL_TEACHERS.map(t => `
+                    ${followupPartial.map(t => `
                       <tr>
                         <td class="font-bold text-navy">${t.name}</td>
                         <td style="font-size: 9.5px;">${t.department}</td>
@@ -859,7 +887,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${UNASSIGNED_EVAL_TEACHERS.map(t => `
+                    ${unassignedEval.map(t => `
                       <tr>
                         <td class="font-bold text-navy">${t.name}</td>
                         <td style="font-size: 9.5px;">${t.department}</td>
@@ -886,7 +914,7 @@ export function printComprehensiveLmsReport(options: PrintReportOptions) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${ZERO_LESSON_TEACHERS.map(t => `
+                    ${zeroLessons.map(t => `
                       <tr>
                         <td class="font-bold text-navy">${t.name}</td>
                         <td style="font-size: 9.5px;">${t.department}</td>

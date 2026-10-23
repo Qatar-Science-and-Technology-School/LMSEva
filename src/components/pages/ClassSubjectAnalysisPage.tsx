@@ -8,6 +8,10 @@ import {
   SUBJECTS_LMS_STATS,
   GRADE_LEVEL_LMS_STATS,
   SEPTEMBER_2026_LMS_METRICS,
+  OCTOBER_SECTIONS_LMS_STATS,
+  OCTOBER_SUBJECTS_LMS_STATS,
+  OCTOBER_GRADE_LEVEL_LMS_STATS,
+  OCTOBER_2026_LMS_METRICS,
 } from '@/lib/data';
 import type { User } from '@/lib/data';
 import {
@@ -64,11 +68,11 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
 
   // Academic Year & Month Selectors
   const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>(propYear || '2026-2027');
-  const [selectedMonth, setSelectedMonth] = useState<string>('سبتمبر 2026');
+  const [selectedMonth, setSelectedMonth] = useState<string>('أكتوبر 2026');
 
   const AVAILABLE_MONTHS = [
+    { id: 'أكتوبر 2026', label: 'أكتوبر 2026 (البيانات المعتمدة)', hasData: true },
     { id: 'سبتمبر 2026', label: 'سبتمبر 2026 (البيانات المعتمدة)', hasData: true },
-    { id: 'أكتوبر 2026', label: 'أكتوبر 2026', hasData: false },
     { id: 'نوفمبر 2026', label: 'نوفمبر 2026', hasData: false },
     { id: 'ديسمبر 2026', label: 'ديسمبر 2026', hasData: false },
     { id: 'يناير 2027', label: 'يناير 2027', hasData: false },
@@ -78,6 +82,13 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
     { id: 'مايو 2027', label: 'مايو 2027', hasData: false },
     { id: 'يونيو 2027', label: 'يونيو 2027', hasData: false },
   ];
+
+  // Dynamically resolve datasets based on selected month
+  const isOct = selectedMonth.includes('أكتوبر') || selectedMonth.includes('10');
+  const activeMetrics = isOct ? OCTOBER_2026_LMS_METRICS : SEPTEMBER_2026_LMS_METRICS;
+  const activeSections = isOct ? OCTOBER_SECTIONS_LMS_STATS : SECTIONS_LMS_STATS;
+  const activeSubjects = isOct ? OCTOBER_SUBJECTS_LMS_STATS : SUBJECTS_LMS_STATS;
+  const activeGrades = isOct ? OCTOBER_GRADE_LEVEL_LMS_STATS : GRADE_LEVEL_LMS_STATS;
 
   // Active sub-tab
   const [activeTab, setActiveTab] = useState<'report' | 'sections' | 'subjects' | 'grades' | 'matrix' | 'action_plan'>('report');
@@ -97,13 +108,13 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
 
   // Distinct Grades list
   const gradesList = useMemo(() => {
-    const set = new Set(SECTIONS_LMS_STATS.map(s => s.grade));
+    const set = new Set(activeSections.map(s => s.grade));
     return Array.from(set);
-  }, []);
+  }, [activeSections]);
 
   // Filtered & Sorted Sections
   const filteredSections = useMemo(() => {
-    return SECTIONS_LMS_STATS.filter(s => {
+    return activeSections.filter(s => {
       if (selectedGrade !== 'all' && s.grade !== selectedGrade) return false;
       if (selectedEvalClass !== 'all' && s.evalClass !== selectedEvalClass) return false;
       if (searchQuery.trim()) {
@@ -123,28 +134,28 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       if (valA > valB) return sortAsc ? 1 : -1;
       return 0;
     });
-  }, [selectedGrade, selectedEvalClass, searchQuery, sortField, sortAsc]);
+  }, [activeSections, selectedGrade, selectedEvalClass, searchQuery, sortField, sortAsc]);
 
   // Top 5 and Bottom 5 Sections
   const top5Sections = useMemo(() => {
-    return [...SECTIONS_LMS_STATS].sort((a, b) => b.solveRate - a.solveRate).slice(0, 5);
-  }, []);
+    return [...activeSections].sort((a, b) => b.solveRate - a.solveRate).slice(0, 5);
+  }, [activeSections]);
 
   const bottom5Sections = useMemo(() => {
-    return [...SECTIONS_LMS_STATS].sort((a, b) => a.solveRate - b.solveRate).slice(0, 5);
-  }, []);
+    return [...activeSections].sort((a, b) => a.solveRate - b.solveRate).slice(0, 5);
+  }, [activeSections]);
 
   // Filtered Subjects
   const filteredSubjects = useMemo(() => {
-    return SUBJECTS_LMS_STATS.filter(sub => {
+    return activeSubjects.filter(sub => {
       if (!subjectSearch.trim()) return true;
       return sub.name.toLowerCase().includes(subjectSearch.toLowerCase().trim());
     });
-  }, [subjectSearch]);
+  }, [activeSubjects, subjectSearch]);
 
   // Chart data for Grades comparison
   const gradeComparisonChartData = useMemo(() => {
-    return GRADE_LEVEL_LMS_STATS.map(g => ({
+    return activeGrades.map(g => ({
       grade: g.grade,
       solveRate: g.solveRate,
       gradingRate: g.gradingRate,
@@ -152,14 +163,14 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       submissions: g.submissions,
       lessons: g.totalLessons,
     }));
-  }, []);
+  }, [activeGrades]);
 
   // Excel Export Handler
   const handleExportExcel = () => {
     const wb = XLSX.utils.book_new();
 
     // Sheet 1: Sections
-    const sectionsRows = SECTIONS_LMS_STATS.map(s => ({
+    const sectionsRows = activeSections.map(s => ({
       'الترتيب العام': s.rank,
       'الشعبة': s.section,
       'الصف': s.grade,
@@ -181,10 +192,10 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       'تصنيف الدروس': s.lessonClass,
     }));
     const wsSections = XLSX.utils.json_to_sheet(sectionsRows);
-    XLSX.utils.book_append_sheet(wb, wsSections, 'تحليل الشعب (19)');
+    XLSX.utils.book_append_sheet(wb, wsSections, `تحليل الشعب (${activeSections.length})`);
 
     // Sheet 2: Subjects
-    const subjectsRows = SUBJECTS_LMS_STATS.map(sub => ({
+    const subjectsRows = activeSubjects.map(sub => ({
       'المادة الدراسية': sub.name,
       'عدد المعلمين': sub.teachersCount,
       'سجلات التقييم': sub.evalRecords,
@@ -201,10 +212,10 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       'نسبة ظهور الدروس (%)': sub.lessonVisibilityRate,
     }));
     const wsSubjects = XLSX.utils.json_to_sheet(subjectsRows);
-    XLSX.utils.book_append_sheet(wb, wsSubjects, 'تحليل المواد (18)');
+    XLSX.utils.book_append_sheet(wb, wsSubjects, `تحليل المواد (${activeSubjects.length})`);
 
     // Sheet 3: Grades
-    const gradesRows = GRADE_LEVEL_LMS_STATS.map(g => ({
+    const gradesRows = activeGrades.map(g => ({
       'الصف الدراسي': g.grade,
       'عدد الشعب': g.sectionsCount,
       'سجلات التقييم': g.evalRecords,
@@ -220,21 +231,21 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       'نسبة ظهور الدروس (%)': g.lessonVisibilityRate,
     }));
     const wsGrades = XLSX.utils.json_to_sheet(gradesRows);
-    XLSX.utils.book_append_sheet(wb, wsGrades, 'مقارنة الصفوف (5)');
+    XLSX.utils.book_append_sheet(wb, wsGrades, `مقارنة الصفوف (${activeGrades.length})`);
 
     // Sheet 4: Summary
     const summaryRows = [
-      { 'المؤشر': 'إجمالي الشعب الدراسية', 'القيمة': SEPTEMBER_2026_LMS_METRICS.totalSections },
-      { 'المؤشر': 'إجمالي المواد الدراسية', 'القيمة': SEPTEMBER_2026_LMS_METRICS.totalSubjects },
-      { 'المؤشر': 'إجمالي تسليمات التقييمات', 'القيمة': SEPTEMBER_2026_LMS_METRICS.totalSubmissions },
-      { 'المؤشر': 'التسليمات المصححة', 'القيمة': SEPTEMBER_2026_LMS_METRICS.gradedSubmissions },
-      { 'المؤشر': 'نسبة إنجاز التصحيح العامة (%)', 'القيمة': SEPTEMBER_2026_LMS_METRICS.gradingRate },
-      { 'المؤشر': 'التسليمات المعلقة (قيد الانتظار)', 'القيمة': SEPTEMBER_2026_LMS_METRICS.pendingSubmissions },
-      { 'المؤشر': 'نسبة حل التقييمات المرجحة (%)', 'القيمة': SEPTEMBER_2026_LMS_METRICS.weightedSolveRate },
-      { 'المؤشر': 'إجمالي الدروس على المنصة', 'القيمة': SEPTEMBER_2026_LMS_METRICS.totalLessons },
-      { 'المؤشر': 'الدروس الظاهرة للطلبة', 'القيمة': SEPTEMBER_2026_LMS_METRICS.lessonsVisible },
-      { 'المؤشر': 'نسبة ظهور الدروس (%)', 'القيمة': SEPTEMBER_2026_LMS_METRICS.lessonsVisiblePercent },
-      { 'المؤشر': 'تاريخ التقرير', 'القيمة': SEPTEMBER_2026_LMS_METRICS.reportDate },
+      { 'المؤشر': 'إجمالي الشعب الدراسية', 'القيمة': activeMetrics.totalSections },
+      { 'المؤشر': 'إجمالي المواد الدراسية', 'القيمة': activeMetrics.totalSubjects },
+      { 'المؤشر': 'إجمالي تسليمات التقييمات', 'القيمة': activeMetrics.totalSubmissions },
+      { 'المؤشر': 'التسليمات المصححة', 'القيمة': activeMetrics.gradedSubmissions },
+      { 'المؤشر': 'نسبة إنجاز التصحيح العامة (%)', 'القيمة': activeMetrics.gradingRate },
+      { 'المؤشر': 'التسليمات المعلقة (قيد الانتظار)', 'القيمة': activeMetrics.pendingSubmissions },
+      { 'المؤشر': 'نسبة حل التقييمات المرجحة (%)', 'القيمة': activeMetrics.weightedSolveRate },
+      { 'المؤشر': 'إجمالي الدروس على المنصة', 'القيمة': activeMetrics.totalLessons },
+      { 'المؤشر': 'الدروس الظاهرة للطلبة', 'القيمة': activeMetrics.lessonsVisible },
+      { 'المؤشر': 'نسبة ظهور الدروس (%)', 'القيمة': activeMetrics.lessonsVisiblePercent },
+      { 'المؤشر': 'تاريخ التقرير', 'القيمة': activeMetrics.reportDate },
     ];
     const wsSummary = XLSX.utils.json_to_sheet(summaryRows);
     XLSX.utils.book_append_sheet(wb, wsSummary, 'الملخص التنفيذي');
@@ -366,7 +377,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             </tr>
           </thead>
           <tbody>
-            {GRADE_LEVEL_LMS_STATS.map((g, idx) => (
+            {activeGrades.map((g, idx) => (
               <tr key={idx} style={{ borderBottom: '1px solid #E2E8F0', background: idx % 2 === 0 ? '#fff' : '#F8FAFC' }}>
                 <td style={{ padding: '0.45rem', fontWeight: 800 }}>{idx + 1}</td>
                 <td style={{ padding: '0.45rem', fontWeight: 900, color: '#0F2044' }}>{g.grade}</td>
@@ -385,10 +396,10 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
         </table>
       </div>
 
-      {/* 2. ترتيب الشعب الـ 19 كاملة */}
+      {/* 2. ترتيب الشعب */}
       <div style={{ marginBottom: '1.5rem' }}>
         <h4 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.6rem', borderRight: '4px solid #10B981', paddingRight: '0.5rem' }}>
-          ثانياً: ترتيب الشعب الدراسية الـ 19 حسب نسبة حل التقييمات:
+          ثانياً: ترتيب الشعب الدراسية الـ {activeSections.length} حسب نسبة حل التقييمات:
         </h4>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
@@ -407,7 +418,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
               </tr>
             </thead>
             <tbody>
-              {[...SECTIONS_LMS_STATS].sort((a, b) => a.rank - b.rank).map(s => (
+              {[...activeSections].sort((a, b) => a.rank - b.rank).map(s => (
                 <tr key={s.section} style={{ borderBottom: '1px solid #E2E8F0', background: s.rank % 2 === 0 ? '#F8FAFC' : '#fff' }}>
                   <td style={{ padding: '0.45rem', textAlign: 'center', fontWeight: 800, color: s.rank <= 3 ? '#D97706' : '#64748B' }}>
                     {s.rank === 1 ? '🥇 1' : s.rank === 2 ? '🥈 2' : s.rank === 3 ? '🥉 3' : `#${s.rank}`}
@@ -440,13 +451,13 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
         </div>
       </div>
 
-      {/* 3. المواد الدراسية الـ 18 */}
+      {/* 3. المواد الدراسية */}
       <div style={{ marginBottom: '1.5rem' }}>
         <h4 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', margin: '0 0 0.6rem', borderRight: '4px solid #0284C7', paddingRight: '0.5rem' }}>
-          ثالثاً: تحليل مؤشرات المواد الدراسية الـ 18:
+          ثالثاً: تحليل مؤشرات المواد الدراسية الـ {activeSubjects.length}:
         </h4>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.65rem' }}>
-          {SUBJECTS_LMS_STATS.map((sub, idx) => (
+          {activeSubjects.map((sub, idx) => (
             <div key={idx} style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.65rem 0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <strong style={{ fontSize: '0.85rem', color: '#0F2044', display: 'block' }}>{sub.name}</strong>
@@ -469,7 +480,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           🚨 رابعاً: خطة التدخل العاجل لشعب الصف الثاني عشر (الأولوية القصوى)
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.78rem' }}>
-          {SECTIONS_LMS_STATS.filter(s => s.grade.includes('الثاني عشر')).map(s => (
+          {activeSections.filter(s => s.grade.includes('الثاني عشر') || s.grade.includes('12')).map(s => (
             <div key={s.section} style={{ background: '#fff', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #FCA5A5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
               <div>
                 <strong style={{ color: '#0F2044' }}>شعبة {s.section} ({s.grade})</strong>
@@ -840,15 +851,15 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
         {[
           {
             title: 'إجمالي الشعب الدراسية',
-            value: `${SEPTEMBER_2026_LMS_METRICS.totalSections} شعبة`,
-            sub: '5 صفوف (7، 9، 10، 11، 12)',
+            value: `${activeMetrics.totalSections} شعبة`,
+            sub: isOct ? '4 صفوف (9، 10، 11، 12)' : '5 صفوف (7، 9، 10، 11، 12)',
             icon: '🏫',
             color: '#0F2044',
             bg: '#F1F5F9',
           },
           {
             title: 'إجمالي المواد المرصودة',
-            value: `${SEPTEMBER_2026_LMS_METRICS.totalSubjects} مادة`,
+            value: `${activeMetrics.totalSubjects} مادة`,
             sub: 'تخصصية وأكاديمية ومختبرات',
             icon: '📚',
             color: '#0284C7',
@@ -856,15 +867,15 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           },
           {
             title: 'إجمالي التسليمات',
-            value: SEPTEMBER_2026_LMS_METRICS.totalSubmissions.toLocaleString('ar-QA'),
-            sub: `${SEPTEMBER_2026_LMS_METRICS.gradedSubmissions} مصححاً | ${SEPTEMBER_2026_LMS_METRICS.pendingSubmissions} معلقاً`,
+            value: activeMetrics.totalSubmissions.toLocaleString('ar-QA'),
+            sub: `${activeMetrics.gradedSubmissions.toLocaleString('ar-QA')} مصححاً | ${activeMetrics.pendingSubmissions.toLocaleString('ar-QA')} معلقاً`,
             icon: '📥',
             color: '#10B981',
             bg: '#DCFCE7',
           },
           {
             title: 'نسبة حل التقييمات',
-            value: `${SEPTEMBER_2026_LMS_METRICS.weightedSolveRate}%`,
+            value: `${activeMetrics.weightedSolveRate}%`,
             sub: 'النسبة المرجحة لمجموع الطلاب',
             icon: '🎯',
             color: '#0D9488',
@@ -872,16 +883,16 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           },
           {
             title: 'نسبة إنجاز التصحيح',
-            value: `${SEPTEMBER_2026_LMS_METRICS.gradingRate}%`,
-            sub: '13 معلماً أتموا التصحيح 100%',
+            value: `${activeMetrics.gradingRate}%`,
+            sub: isOct ? '11 معلماً أتموا التصحيح 100%' : '13 معلماً أتموا التصحيح 100%',
             icon: '✍️',
             color: '#7C3AED',
             bg: '#EDE9FE',
           },
           {
             title: 'تفعيل ونشر الدروس',
-            value: `${SEPTEMBER_2026_LMS_METRICS.lessonsVisiblePercent}%`,
-            sub: `${SEPTEMBER_2026_LMS_METRICS.lessonsVisible} من أصل ${SEPTEMBER_2026_LMS_METRICS.totalLessons} درساً`,
+            value: `${activeMetrics.lessonsVisiblePercent}%`,
+            sub: `${activeMetrics.lessonsVisible.toLocaleString('ar-QA')} من أصل ${activeMetrics.totalLessons.toLocaleString('ar-QA')} درساً`,
             icon: '📖',
             color: '#D97706',
             bg: '#FEF3C7',
@@ -928,9 +939,9 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       >
         {[
           { id: 'report', label: 'التقرير الشهري الشامل (الرسمي)', icon: '📑', badge: 'معتمد' },
-          { id: 'sections', label: 'تحليل الشعب (19 شعبة)', icon: '🏫', badge: `${SECTIONS_LMS_STATS.length}` },
-          { id: 'subjects', label: 'تحليل المواد الدراسية (18 مادة)', icon: '📚', badge: `${SUBJECTS_LMS_STATS.length}` },
-          { id: 'grades', label: 'مقارنة الصفوف الدراسية', icon: '📊', badge: '5 صفوف' },
+          { id: 'sections', label: `تحليل الشعب (${activeSections.length} شعبة)`, icon: '🏫', badge: `${activeSections.length}` },
+          { id: 'subjects', label: `تحليل المواد الدراسية (${activeSubjects.length} مادة)`, icon: '📚', badge: `${activeSubjects.length}` },
+          { id: 'grades', label: 'مقارنة الصفوف الدراسية', icon: '📊', badge: `${activeGrades.length} صفوف` },
           { id: 'matrix', label: 'مصفوفة الشعب والمواد (Heatmap)', icon: '🗺️', badge: 'جديد' },
           { id: 'action_plan', label: 'خطة التدخل لشعب الثاني عشر', icon: '🚨', badge: 'عاجل' },
         ].map(tab => {
@@ -1414,8 +1425,8 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             </div>
 
             <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#64748B' }}>
-              <span>إجمالي السجلات المعروضة: <strong>{filteredSections.length}</strong> من أصل {SECTIONS_LMS_STATS.length} شعبة</span>
-              <span>المصدر: التقارير الرسمية لنظام قطر للتعليم (27 سبتمبر 2026)</span>
+              <span>إجمالي السجلات المعروضة: <strong>{filteredSections.length}</strong> من أصل {activeSections.length} شعبة</span>
+              <span>المصدر: التقارير الرسمية لنظام قطر للتعليم ({isOct ? '23 أكتوبر 2026' : '27 سبتمبر 2026'})</span>
             </div>
 
           </div>
@@ -1426,12 +1437,12 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       )}
 
       {/* ══════════════════════════════════════════════════════════════
-          TAB 2: 📚 تحليل المواد الدراسية (18 مادة)
+          TAB 2: 📚 تحليل المواد الدراسية
       ══════════════════════════════════════════════════════════════ */}
       {activeTab === 'subjects' && (
         <div>
           {renderTabActionHeader({
-            title: 'التقرير التحليلي الشامل لأداء المواد الدراسية الـ 18',
+            title: `التقرير التحليلي الشامل لأداء المواد الدراسية الـ ${activeSubjects.length}`,
             subtitle: 'متابعة نسب حل التقييمات، إنجاز المعلمين، وتفعيل الدروس عبر كافة التخصصات',
             onPrint: () => printSubjectsReport({ monthName: selectedMonth, academicYear: selectedAcademicYear }),
             printLabel: 'طباعة تقرير المواد (A3 - 0 Margins)',
@@ -1446,7 +1457,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                 <span>🌟</span> المواد ذات نسب الحل المرتفعة
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {SUBJECTS_LMS_STATS.slice(0, 5).map(sub => (
+                {activeSubjects.slice(0, 5).map(sub => (
                   <div key={sub.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.8rem', background: '#F0FDF4', borderRadius: '8px' }}>
                     <div>
                       <span style={{ fontWeight: 800, color: '#0F2044', fontSize: '0.85rem' }}>{sub.name}</span>
@@ -1622,7 +1633,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
 
           {/* Grade Comparison Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-            {GRADE_LEVEL_LMS_STATS.map(g => {
+            {activeGrades.map(g => {
               const isWarning = g.solveRate < 50;
               return (
                 <div
@@ -1747,9 +1758,9 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
 
           {/* Matrix Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
-            {SECTIONS_LMS_STATS.map(s => {
+            {activeSections.map(s => {
               const solveColor = getRateColor(s.solveRate);
-              const isGrade12 = s.grade === 'الصف 12';
+              const isGrade12 = s.grade === 'الصف 12' || s.grade.includes('12');
 
               return (
                 <div
@@ -1910,7 +1921,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
                   </tr>
                 </thead>
                 <tbody>
-                  {SECTIONS_LMS_STATS.filter(s => s.grade === 'الصف 12').map(s => (
+                  {activeSections.filter(s => s.grade === 'الصف 12' || s.grade.includes('12')).map(s => (
                     <tr key={s.section} style={{ borderBottom: '1px solid #E2E8F0' }}>
                       <td style={{ padding: '0.6rem', fontWeight: 900 }}>شعبة {s.section}</td>
                       <td style={{ padding: '0.6rem', textAlign: 'center', color: '#DC2626', fontWeight: 800 }}>{s.solveRate}%</td>

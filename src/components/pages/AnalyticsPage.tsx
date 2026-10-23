@@ -14,6 +14,9 @@ import {
   SUBJECTS_LMS_STATS,
   GRADE_LEVEL_LMS_STATS,
   SEPTEMBER_2026_LMS_METRICS,
+  OCTOBER_SECTIONS_LMS_STATS,
+  OCTOBER_GRADE_LEVEL_LMS_STATS,
+  OCTOBER_2026_LMS_METRICS,
   type User, 
   type Teacher, 
   type Evaluation, 
@@ -91,6 +94,7 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
   const [activeTab, setActiveTab] = useState<TabType>('cockpit');
   const [selYear, setSelYear] = useState(propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1] || '2026-2027');
   const [searchTerm, setSearchTerm] = useState('');
+  const [lmsAnalysisMonth, setLmsAnalysisMonth] = useState<'أكتوبر' | 'سبتمبر'>('أكتوبر');
 
   useEffect(() => {
     if (propYear) setSelYear(propYear);
@@ -1256,85 +1260,172 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
       {/* ══════════════════════════════════════════════════════════════
           TAB 4: 🏫 الشعب والمواد الدراسية (Class & Subject LMS Analysis)
       ══════════════════════════════════════════════════════════════ */}
-      {activeTab === 'class_subject' && (
-        <div>
-          {/* Grade Level LMS Overview */}
-          <div style={cardStyle}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', marginBottom: '0.75rem' }}>
-              📊 نشاط وتفاعل المراحل الدراسية على نظام قطر للتعليم (الصفوف 9 - 12)
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-              {GRADE_LEVEL_LMS_STATS.map((g, idx) => (
-                <div key={idx} style={{ background: '#F8FAFC', padding: '1rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#0F2044' }}>{g.grade}</span>
-                    <span style={{ background: '#E0F2FE', color: '#0284C7', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
-                      {g.sectionsCount} شعب دراسية
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#64748B' }}>إجمالي التقييمات:</span>
-                      <span style={{ fontWeight: 800, color: '#0F2044' }}>{g.evalsCount} تقييم</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#64748B' }}>نسبة حل التقييمات:</span>
-                      <span style={{ fontWeight: 800, color: '#10B981' }}>{g.solveRate}%</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: '#64748B' }}>إجمالي الدروس المرفوعة:</span>
-                      <span style={{ fontWeight: 800, color: '#0284C7' }}>{g.totalLessons} درساً</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+      {activeTab === 'class_subject' && (() => {
+        const activeGradeStats = lmsAnalysisMonth === 'أكتوبر' ? OCTOBER_GRADE_LEVEL_LMS_STATS : GRADE_LEVEL_LMS_STATS;
+        const activeSectionsStats = lmsAnalysisMonth === 'أكتوبر' ? OCTOBER_SECTIONS_LMS_STATS : SECTIONS_LMS_STATS;
+        const activeMetrics = lmsAnalysisMonth === 'أكتوبر' ? OCTOBER_2026_LMS_METRICS : SEPTEMBER_2026_LMS_METRICS;
 
-          {/* Top 10 Most Active Sections */}
-          <div style={cardStyle}>
-            <h3 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', marginBottom: '0.75rem' }}>
-              🏆 أفضل 10 شعب دراسية في حل التقييمات وتفاعل الدروس
-            </h3>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
-                <thead>
-                  <tr style={{ background: '#0F2044', color: '#FFFFFF' }}>
-                    <th style={{ padding: '0.65rem 0.8rem', borderRadius: '0 8px 0 0' }}>الترتيب</th>
-                    <th style={{ padding: '0.65rem 0.8rem' }}>الشعبة الدراسية</th>
-                    <th style={{ padding: '0.65rem 0.8rem' }}>الصف</th>
-                    <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>الطلاب</th>
-                    <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>نسبة الحل (%)</th>
-                    <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>نسبة التصحيح (%)</th>
-                    <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center', borderRadius: '8px 0 0 0' }}>متوسط الدرجات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {SECTIONS_LMS_STATS.slice(0, 10).map((sec, idx) => (
-                    <tr key={idx} style={{ background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                      <td style={{ padding: '0.65rem 0.8rem', fontWeight: 800, color: '#64748B' }}>{sec.rank}</td>
-                      <td style={{ padding: '0.65rem 0.8rem', fontWeight: 900, color: '#0F2044' }}>{sec.section}</td>
-                      <td style={{ padding: '0.65rem 0.8rem', color: '#475569' }}>{sec.grade}</td>
-                      <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 700 }}>{sec.studentsCount}</td>
-                      <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>
-                        <span style={{ background: '#ECFDF5', color: '#047857', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>
-                          {sec.solveRate}%
-                        </span>
-                      </td>
-                      <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 800, color: '#0284C7' }}>
-                        {sec.gradingRate}%
-                      </td>
-                      <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 900, color: '#0F2044' }}>
-                        {sec.evalAvg}
-                      </td>
+        return (
+          <div>
+            {/* Month Switcher & Quick Summary Header */}
+            <div style={{ ...cardStyle, background: 'linear-gradient(135deg, #0F2044 0%, #1A365D 100%)', color: '#FFFFFF', marginBottom: '1.25rem', border: 'none' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FFFFFF', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <BookOpen size={20} color="#38BDF8" />
+                    تحليلات نظام قطر للتعليم على مستوى المراحل والشعب
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: '#94A3B8', margin: '0.3rem 0 0' }}>
+                    بيانات رسمية معتمدة ومقارنة للأداء التراكمي ومؤشرات الإنجاز
+                  </p>
+                </div>
+
+                {/* Month Toggle Pills */}
+                <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.1)', padding: '0.25rem', borderRadius: '10px', backdropFilter: 'blur(8px)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setLmsAnalysisMonth('أكتوبر')}
+                    style={{
+                      padding: '0.45rem 1rem',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: lmsAnalysisMonth === 'أكتوبر' ? '#00B4D8' : 'transparent',
+                      color: lmsAnalysisMonth === 'أكتوبر' ? '#0F2044' : '#E2E8F0',
+                      boxShadow: lmsAnalysisMonth === 'أكتوبر' ? '0 2px 8px rgba(0,180,216,0.4)' : 'none',
+                    }}
+                  >
+                    أكتوبر 2026 (المعتمد)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLmsAnalysisMonth('سبتمبر')}
+                    style={{
+                      padding: '0.45rem 1rem',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: lmsAnalysisMonth === 'سبتمبر' ? '#00B4D8' : 'transparent',
+                      color: lmsAnalysisMonth === 'سبتمبر' ? '#0F2044' : '#E2E8F0',
+                      boxShadow: lmsAnalysisMonth === 'سبتمبر' ? '0 2px 8px rgba(0,180,216,0.4)' : 'none',
+                    }}
+                  >
+                    سبتمبر 2026 (المعتمد)
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Metrics KPI row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>إجمالي الدروس</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#38BDF8' }}>{activeMetrics.totalLessons.toLocaleString('ar-QA')}</span>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>التقييمات المسندة</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#34D399' }}>{activeMetrics.assignedEvaluations.toLocaleString('ar-QA')}</span>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>متوسط حل الطلاب</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FBBF24' }}>{activeMetrics.weightedSolveRate}%</span>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>نسبة تصحيح المعلمين</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#A78BFA' }}>{activeMetrics.gradingRate}%</span>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>كادر المعلمين المشمول</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#38BDF8' }}>{activeMetrics.teachersCount} معلماً</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Grade Level LMS Overview */}
+            <div style={cardStyle}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>📊 نشاط وتفاعل المراحل الدراسية على نظام قطر للتعليم (الصفوف 9 - 12)</span>
+                <span style={{ fontSize: '0.75rem', color: '#00B4D8', fontWeight: 800 }}>شهر {lmsAnalysisMonth} 2026</span>
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                {activeGradeStats.map((g, idx) => (
+                  <div key={idx} style={{ background: '#F8FAFC', padding: '1rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#0F2044' }}>{g.grade}</span>
+                      <span style={{ background: '#E0F2FE', color: '#0284C7', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
+                        {g.sectionsCount} شعب دراسية
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748B' }}>إجمالي التقييمات:</span>
+                        <span style={{ fontWeight: 800, color: '#0F2044' }}>{g.evalsCount} تقييم</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748B' }}>نسبة حل التقييمات:</span>
+                        <span style={{ fontWeight: 800, color: '#10B981' }}>{g.solveRate}%</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748B' }}>إجمالي الدروس المرفوعة:</span>
+                        <span style={{ fontWeight: 800, color: '#0284C7' }}>{g.totalLessons} درساً</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Top 10 Most Active Sections */}
+            <div style={cardStyle}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>🏆 أفضل 10 شعب دراسية في حل التقييمات وتفاعل الدروس</span>
+                <span style={{ fontSize: '0.75rem', color: '#00B4D8', fontWeight: 800 }}>شهر {lmsAnalysisMonth} 2026</span>
+              </h3>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
+                  <thead>
+                    <tr style={{ background: '#0F2044', color: '#FFFFFF' }}>
+                      <th style={{ padding: '0.65rem 0.8rem', borderRadius: '0 8px 0 0' }}>الترتيب</th>
+                      <th style={{ padding: '0.65rem 0.8rem' }}>الشعبة الدراسية</th>
+                      <th style={{ padding: '0.65rem 0.8rem' }}>الصف</th>
+                      <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>الطلاب</th>
+                      <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>نسبة الحل (%)</th>
+                      <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>نسبة التصحيح (%)</th>
+                      <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center', borderRadius: '8px 0 0 0' }}>متوسط الدرجات</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {activeSectionsStats.slice(0, 10).map((sec, idx) => (
+                      <tr key={idx} style={{ background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                        <td style={{ padding: '0.65rem 0.8rem', fontWeight: 800, color: '#64748B' }}>{sec.rank}</td>
+                        <td style={{ padding: '0.65rem 0.8rem', fontWeight: 900, color: '#0F2044' }}>{sec.section}</td>
+                        <td style={{ padding: '0.65rem 0.8rem', color: '#475569' }}>{sec.grade}</td>
+                        <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 700 }}>{sec.studentsCount}</td>
+                        <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>
+                          <span style={{ background: '#ECFDF5', color: '#047857', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>
+                            {sec.solveRate}%
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 800, color: '#0284C7' }}>
+                          {sec.gradingRate}%
+                        </td>
+                        <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 900, color: '#0F2044' }}>
+                          {sec.evalAvg}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* ══════════════════════════════════════════════════════════════
           TAB 5: 💻 حصص المشاهدة والتعليم الإلكتروني (Model Lessons & EdTech)

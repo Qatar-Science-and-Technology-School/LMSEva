@@ -35,7 +35,7 @@ export interface LmsReportTeacherRecord {
   bestInDept?: string;
   rankInLessons?: number;
   rankInGrading?: number;
-  adminRating?: 'ممتاز' | 'جيد جداً' | 'لا يوجد تعديل إداري';
+  adminRating?: 'ممتاز' | 'جيد جداً' | 'متميز' | 'لا يوجد تعديل إداري';
   adminRatingBasis?: string;
   evalIndex?: number;
   lessonsIndex?: number;

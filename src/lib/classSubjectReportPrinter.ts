@@ -3,11 +3,27 @@ import {
   GRADE_LEVEL_LMS_STATS,
   SECTIONS_LMS_STATS,
   SUBJECTS_LMS_STATS,
+  OCTOBER_2026_LMS_METRICS,
+  OCTOBER_GRADE_LEVEL_LMS_STATS,
+  OCTOBER_SECTIONS_LMS_STATS,
+  OCTOBER_SUBJECTS_LMS_STATS,
 } from './data';
 
 interface PrintReportOptions {
   monthName?: string;
   academicYear?: string;
+}
+
+function getDatasets(monthName: string = 'سبتمبر 2026') {
+  const isOct = monthName.includes('أكتوبر') || monthName.includes('10');
+  return {
+    isOct,
+    metrics: isOct ? OCTOBER_2026_LMS_METRICS : SEPTEMBER_2026_LMS_METRICS,
+    grades: isOct ? OCTOBER_GRADE_LEVEL_LMS_STATS : GRADE_LEVEL_LMS_STATS,
+    sections: isOct ? OCTOBER_SECTIONS_LMS_STATS : SECTIONS_LMS_STATS,
+    subjects: isOct ? OCTOBER_SUBJECTS_LMS_STATS : SUBJECTS_LMS_STATS,
+    reportDate: isOct ? '23 أكتوبر 2026' : '27 سبتمبر 2026',
+  };
 }
 
 // Common A3 Landscape (0 Margins) CSS Stylesheet
@@ -389,8 +405,9 @@ function openA3PrintWindow(title: string, bodyContent: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 export function printClassSubjectMonthlyReport(options: PrintReportOptions = {}) {
   const { monthName = 'سبتمبر 2026', academicYear = '2026-2027' } = options;
-  const sortedSections = [...SECTIONS_LMS_STATS].sort((a, b) => a.rank - b.rank);
-  const grade12Sections = sortedSections.filter(s => s.grade.includes('الثاني عشر'));
+  const { isOct, metrics, grades, sections, subjects, reportDate } = getDatasets(monthName);
+  const sortedSections = [...sections].sort((a, b) => a.rank - b.rank);
+  const grade12Sections = sortedSections.filter(s => s.grade.includes('الثاني عشر') || s.grade.includes('12'));
 
   const content = `
     <!-- Header (Centered & Organized) -->
@@ -412,7 +429,7 @@ export function printClassSubjectMonthlyReport(options: PrintReportOptions = {})
     <div class="meta-bar">
       <div>الفترة المعتمدة: <strong>شهر ${monthName}</strong></div>
       <div>العام الأكاديمي: <strong>${academicYear}</strong></div>
-      <div>تاريخ التقرير: <strong>27 سبتمبر 2026</strong></div>
+      <div>تاريخ التقرير: <strong>${reportDate}</strong></div>
       <div>كود التقرير: <strong>QES-REP-FULL-A3</strong></div>
       <div>المقاس: <strong>A3 Landscape (0 Margins)</strong></div>
     </div>
@@ -421,40 +438,40 @@ export function printClassSubjectMonthlyReport(options: PrintReportOptions = {})
     <div class="kpi-grid">
       <div class="kpi-card" style="border-top: 3px solid #0F2044;">
         <div class="kpi-title">إجمالي الشعب</div>
-        <div class="kpi-val" style="color: #0F2044;">${SEPTEMBER_2026_LMS_METRICS.totalSections} شعبة</div>
-        <div class="kpi-sub">5 صفوف دراسية</div>
+        <div class="kpi-val" style="color: #0F2044;">${metrics.totalSections} شعبة</div>
+        <div class="kpi-sub">${isOct ? '4 صفوف دراسية (9-12)' : '5 صفوف دراسية'}</div>
       </div>
       <div class="kpi-card" style="border-top: 3px solid #0284C7;">
         <div class="kpi-title">المواد الدراسية</div>
-        <div class="kpi-val" style="color: #0284C7;">${SEPTEMBER_2026_LMS_METRICS.totalSubjects} مادة</div>
+        <div class="kpi-val" style="color: #0284C7;">${metrics.totalSubjects} مادة</div>
         <div class="kpi-sub">تخصصية وأكاديمية</div>
       </div>
       <div class="kpi-card" style="border-top: 3px solid #10B981;">
         <div class="kpi-title">التسليمات المحلولة</div>
-        <div class="kpi-val" style="color: #10B981;">${SEPTEMBER_2026_LMS_METRICS.totalSubmissions.toLocaleString('ar-QA')}</div>
+        <div class="kpi-val" style="color: #10B981;">${metrics.totalSubmissions.toLocaleString('ar-QA')}</div>
         <div class="kpi-sub">تسليم طلابي</div>
       </div>
       <div class="kpi-card" style="border-top: 3px solid #0D9488;">
         <div class="kpi-title">نسبة حل التقييمات</div>
-        <div class="kpi-val" style="color: #0D9488;">${SEPTEMBER_2026_LMS_METRICS.weightedSolveRate}%</div>
+        <div class="kpi-val" style="color: #0D9488;">${metrics.weightedSolveRate}%</div>
         <div class="kpi-sub">المعدل العام للشعب</div>
       </div>
       <div class="kpi-card" style="border-top: 3px solid #7C3AED;">
         <div class="kpi-title">إنجاز التصحيح</div>
-        <div class="kpi-val" style="color: #7C3AED;">${SEPTEMBER_2026_LMS_METRICS.gradingRate}%</div>
-        <div class="kpi-sub">${SEPTEMBER_2026_LMS_METRICS.gradedSubmissions} مصححاً</div>
+        <div class="kpi-val" style="color: #7C3AED;">${metrics.gradingRate}%</div>
+        <div class="kpi-sub">${metrics.gradedSubmissions} مصححاً</div>
       </div>
       <div class="kpi-card" style="border-top: 3px solid #D97706;">
         <div class="kpi-title">تفعيل ونشر الدروس</div>
-        <div class="kpi-val" style="color: #D97706;">${SEPTEMBER_2026_LMS_METRICS.lessonsVisiblePercent}%</div>
-        <div class="kpi-sub">${SEPTEMBER_2026_LMS_METRICS.lessonsVisible} من ${SEPTEMBER_2026_LMS_METRICS.totalLessons}</div>
+        <div class="kpi-val" style="color: #D97706;">${metrics.lessonsVisiblePercent}%</div>
+        <div class="kpi-sub">${metrics.lessonsVisible} من ${metrics.totalLessons}</div>
       </div>
     </div>
 
-    <!-- Section 1: مؤشرات الصفوف الـ 5 -->
+    <!-- Section 1: مؤشرات الصفوف -->
     <div class="section-title">
       <span>🏫 أولاً: تحليل مؤشرات التفاعل حسب الصفوف والمراحل الدراسية</span>
-      <span style="font-size: 9px; color: #64748B;">توزيع شامل للصفوف (7، 9، 10، 11، 12)</span>
+      <span style="font-size: 9px; color: #64748B;">${isOct ? 'توزيع الصفوف (9، 10، 11، 12)' : 'توزيع شامل للصفوف (7، 9، 10، 11، 12)'}</span>
     </div>
     <table>
       <thead>
@@ -471,7 +488,7 @@ export function printClassSubjectMonthlyReport(options: PrintReportOptions = {})
         </tr>
       </thead>
       <tbody>
-        ${GRADE_LEVEL_LMS_STATS.map((g, idx) => `
+        ${grades.map((g, idx) => `
           <tr>
             <td class="text-center" style="font-weight: 800;">${idx + 1}</td>
             <td style="font-weight: 800; color: #0F2044;">${g.grade}</td>
@@ -575,11 +592,12 @@ export function printClassSubjectMonthlyReport(options: PrintReportOptions = {})
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. تقرير تحليل الشعب الدراسية الـ 19 (A3 Landscape - 0 Margins)
+// 2. تقرير تحليل الشعب الدراسية (A3 Landscape - 0 Margins)
 // ─────────────────────────────────────────────────────────────────────────────
 export function printSectionsReport(options: PrintReportOptions = {}) {
   const { monthName = 'سبتمبر 2026', academicYear = '2026-2027' } = options;
-  const sortedSections = [...SECTIONS_LMS_STATS].sort((a, b) => a.rank - b.rank);
+  const { isOct, sections, reportDate } = getDatasets(monthName);
+  const sortedSections = [...sections].sort((a, b) => a.rank - b.rank);
   const topSections = sortedSections.slice(0, 5);
   const bottomSections = sortedSections.slice(-5).reverse();
 
@@ -595,12 +613,18 @@ export function printSectionsReport(options: PrintReportOptions = {}) {
         <div class="country-title">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
         <div class="school-title">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
         <div class="dept-title">قسم التعليم الإلكتروني والحلول الرقمية</div>
-        <div class="doc-title">التقرير التحليلي الشامل لأداء الشعب الدراسية الـ 19 (نظام قطر للتعليم)</div>
+        <div class="doc-title">التقرير التحليلي الشامل لأداء الشعب الدراسية الـ ${sections.length} (نظام قطر للتعليم)</div>
       </div>
     </div>
 
     <!-- Metadata Bar -->
     <div class="meta-bar">
+      <div>الفترة: <strong>شهر ${monthName}</strong></div>
+      <div>العام الأكاديمي: <strong>${academicYear}</strong></div>
+      <div>كود التقرير: <strong>QES-REP-SECTIONS-A3</strong></div>
+      <div>المقاس: <strong>A3 Landscape (0 Margins)</strong></div>
+      <div>تاريخ التقرير: <strong>${reportDate}</strong></div>
+    </div>
       <div>الفترة: <strong>شهر ${monthName}</strong></div>
       <div>العام الأكاديمي: <strong>${academicYear}</strong></div>
       <div>كود التقرير: <strong>QES-REP-SECTIONS-A3</strong></div>
@@ -766,10 +790,11 @@ export function printSectionsReport(options: PrintReportOptions = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. تقرير تحليل المواد الدراسية الـ 18 (A3 Landscape - 0 Margins)
+// 3. تقرير تحليل المواد الدراسية (A3 Landscape - 0 Margins)
 // ─────────────────────────────────────────────────────────────────────────────
 export function printSubjectsReport(options: PrintReportOptions = {}) {
   const { monthName = 'سبتمبر 2026', academicYear = '2026-2027' } = options;
+  const { isOct, subjects, reportDate } = getDatasets(monthName);
 
   const content = `
     <!-- Header (Centered & Organized) -->
@@ -783,7 +808,7 @@ export function printSubjectsReport(options: PrintReportOptions = {}) {
         <div class="country-title">دولة قطر — وزارة التربية والتعليم والتعليم العالي</div>
         <div class="school-title">مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين</div>
         <div class="dept-title">قسم التعليم الإلكتروني والحلول الرقمية</div>
-        <div class="doc-title">التقرير التحليلي الشامل لأداء المواد الدراسية الـ 18 (نظام قطر للتعليم)</div>
+        <div class="doc-title">التقرير التحليلي الشامل لأداء المواد الدراسية الـ ${subjects.length} (نظام قطر للتعليم)</div>
       </div>
     </div>
 
@@ -793,14 +818,14 @@ export function printSubjectsReport(options: PrintReportOptions = {}) {
       <div>العام الأكاديمي: <strong>${academicYear}</strong></div>
       <div>كود التقرير: <strong>QES-REP-SUBJECTS-A3</strong></div>
       <div>المقاس: <strong>A3 Landscape (0 Margins)</strong></div>
-      <div>تاريخ الاعتماد: <strong>27 سبتمبر 2026</strong></div>
+      <div>تاريخ الاعتماد: <strong>${reportDate}</strong></div>
     </div>
 
     <!-- KPI Summary Grid -->
     <div class="kpi-grid">
       <div class="kpi-card" style="border-top: 3px solid #0284C7;">
         <div class="kpi-title">إجمالي المواد المرصودة</div>
-        <div class="kpi-val" style="color: #0284C7;">18 مادة</div>
+        <div class="kpi-val" style="color: #0284C7;">${subjects.length} مادة</div>
         <div class="kpi-sub">تخصصية وأكاديمية</div>
       </div>
       <div class="kpi-card" style="border-top: 3px solid #10B981;">
@@ -820,9 +845,9 @@ export function printSubjectsReport(options: PrintReportOptions = {}) {
       </div>
     </div>
 
-    <!-- Full 18 Subjects Table -->
+    <!-- Full Subjects Table -->
     <div class="section-title" style="border-right-color: #0284C7;">
-      <span>📚 الكشف التفصيلي لمؤشرات المواد الدراسية الـ 18 عبر نظام قطر للتعليم</span>
+      <span>📚 الكشف التفصيلي لمؤشرات المواد الدراسية الـ ${subjects.length} عبر نظام قطر للتعليم</span>
       <span style="font-size: 9px; color: #64748B;">بيانات تفاعلية كاملة مع نسب التصحيح وظهور الدروس</span>
     </div>
     <table>
@@ -844,7 +869,7 @@ export function printSubjectsReport(options: PrintReportOptions = {}) {
         </tr>
       </thead>
       <tbody>
-        ${SUBJECTS_LMS_STATS.map((sub, idx) => `
+        ${subjects.map((sub, idx) => `
           <tr>
             <td class="text-center" style="font-weight: 800;">${idx + 1}</td>
             <td style="font-weight: 900; color: #0F2044;">${sub.name}</td>
@@ -883,6 +908,7 @@ export function printSubjectsReport(options: PrintReportOptions = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 export function printGradesReport(options: PrintReportOptions = {}) {
   const { monthName = 'سبتمبر 2026', academicYear = '2026-2027' } = options;
+  const { isOct, grades, reportDate } = getDatasets(monthName);
 
   const content = `
     <!-- Header (Centered & Organized) -->
@@ -906,12 +932,12 @@ export function printGradesReport(options: PrintReportOptions = {}) {
       <div>العام الأكاديمي: <strong>${academicYear}</strong></div>
       <div>كود التقرير: <strong>QES-REP-GRADES-A3</strong></div>
       <div>المقاس: <strong>A3 Landscape (0 Margins)</strong></div>
-      <div>تاريخ الاعتماد: <strong>27 سبتمبر 2026</strong></div>
+      <div>تاريخ الاعتماد: <strong>${reportDate}</strong></div>
     </div>
 
-    <!-- 5 Grade Cards Grid -->
-    <div class="kpi-grid" style="grid-template-columns: repeat(5, 1fr);">
-      ${GRADE_LEVEL_LMS_STATS.map(g => `
+    <!-- Grade Cards Grid -->
+    <div class="kpi-grid" style="grid-template-columns: repeat(${grades.length}, 1fr);">
+      ${grades.map(g => `
         <div class="kpi-card" style="border-top: 3px solid ${g.solveRate >= 70 ? '#10B981' : g.solveRate >= 50 ? '#0284C7' : '#DC2626'};">
           <div class="kpi-title" style="font-size: 11px; font-weight: 900; color: #0F2044;">${g.grade}</div>
           <div class="kpi-val" style="color: ${g.solveRate >= 70 ? '#166534' : g.solveRate >= 50 ? '#0284C7' : '#991B1B'};">${g.solveRate}% حل</div>
@@ -923,7 +949,7 @@ export function printGradesReport(options: PrintReportOptions = {}) {
 
     <!-- Detailed Grade Comparison Matrix -->
     <div class="section-title" style="border-right-color: #0F2044;">
-      <span>📊 المقارنة المعيارية الشاملة لمؤشرات الصفوف الخمسة (السابع، التاسع، العاشر، الحادي عشر، الثاني عشر)</span>
+      <span>📊 المقارنة المعيارية الشاملة لمؤشرات الصفوف الدراسية</span>
     </div>
     <table>
       <thead>
@@ -944,7 +970,7 @@ export function printGradesReport(options: PrintReportOptions = {}) {
         </tr>
       </thead>
       <tbody>
-        ${GRADE_LEVEL_LMS_STATS.map((g, idx) => `
+        ${grades.map((g, idx) => `
           <tr>
             <td class="text-center" style="font-weight: 800;">${idx + 1}</td>
             <td style="font-weight: 900; color: #0F2044; font-size: 11px;">${g.grade}</td>
@@ -979,6 +1005,7 @@ export function printGradesReport(options: PrintReportOptions = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 export function printMatrixReport(options: PrintReportOptions = {}) {
   const { monthName = 'سبتمبر 2026', academicYear = '2026-2027' } = options;
+  const { isOct, sections, reportDate } = getDatasets(monthName);
 
   const content = `
     <!-- Header (Centered & Organized) -->
@@ -1002,7 +1029,7 @@ export function printMatrixReport(options: PrintReportOptions = {}) {
       <div>العام الأكاديمي: <strong>${academicYear}</strong></div>
       <div>كود التقرير: <strong>QES-REP-MATRIX-A3</strong></div>
       <div>المقاس: <strong>A3 Landscape (0 Margins)</strong></div>
-      <div>تاريخ الاعتماد: <strong>27 سبتمبر 2026</strong></div>
+      <div>تاريخ الاعتماد: <strong>${reportDate}</strong></div>
     </div>
 
     <!-- Legend -->
@@ -1016,8 +1043,8 @@ export function printMatrixReport(options: PrintReportOptions = {}) {
 
     <!-- Matrix Cards Grid for A3 Landscape Printout -->
     <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;">
-      ${SECTIONS_LMS_STATS.map(s => {
-        const isGrade12 = s.grade === 'الصف 12';
+      ${sections.map(s => {
+        const isGrade12 = s.grade === 'الصف 12' || s.grade.includes('12');
         return `
           <div style="background: ${isGrade12 ? '#FFF5F5' : '#FFFFFF'}; border: 1.5px solid ${isGrade12 ? '#FCA5A5' : '#CBD5E1'}; border-radius: 8px; padding: 7px 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -1054,7 +1081,8 @@ export function printMatrixReport(options: PrintReportOptions = {}) {
 // ─────────────────────────────────────────────────────────────────────────────
 export function printActionPlanReport(options: PrintReportOptions = {}) {
   const { monthName = 'سبتمبر 2026', academicYear = '2026-2027' } = options;
-  const grade12Sections = SECTIONS_LMS_STATS.filter(s => s.grade === 'الصف 12');
+  const { isOct, sections, reportDate } = getDatasets(monthName);
+  const grade12Sections = sections.filter(s => s.grade === 'الصف 12' || s.grade.includes('12'));
 
   const content = `
     <!-- Header (Centered & Organized) -->
