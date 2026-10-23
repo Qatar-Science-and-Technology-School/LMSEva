@@ -17,6 +17,10 @@ import {
   SUBJECTS_LMS_STATS,
   GRADE_LEVEL_LMS_STATS,
   SEPTEMBER_2026_LMS_METRICS,
+  printMonthlyLessonsReport,
+  printMonthlyAssessmentsReport,
+  printMonthlyTeacherEvaluationsReport,
+  resolveMonthData,
 } from '@/lib/data';
 import type { User, Teacher, Evaluation, Department, ModelLessonEvaluation, ModelLessonScheduleItem } from '@/lib/data';
 import { loadEventsMeetings, EventMeetingItem, EVENT_CATEGORY_CONFIG, EVENT_TYPE_CONFIG, EVENT_STATUS_CONFIG } from '@/lib/eventsMeetingsData';
@@ -56,6 +60,8 @@ export type ReportType =
   | 'modellessons_scheduled'
   | 'distance_learning'
   // 3. LMS (نظام قطر للتعليم)
+  | 'monthly_lessons_report'
+  | 'monthly_assessments_report'
   | 'lms_monthly'
   | 'lms_annual'
   | 'lms_dept'
@@ -126,12 +132,28 @@ export const ALL_REPORTS: ReportMeta[] = [
 
   // 3. QES / LMS
   { 
+    id: 'monthly_lessons_report', 
+    category: 'qes', 
+    label: 'تقرير الدروس المجمعة للأشهر (كل شهر منفصل)', 
+    icon: '💻', 
+    desc: 'رصد مفصل للدروس الرقمية المرئية والمخفية ونسب الالتزام الصفي لكل شهر منفصل',
+    badge: 'دروس مجمعة شهرياً'
+  },
+  { 
+    id: 'monthly_assessments_report', 
+    category: 'qes', 
+    label: 'تقرير التقييمات والتسليمات المجمعة (كل شهر منفصل)', 
+    icon: '📊', 
+    desc: 'معدلات حل التقييمات، نسب تصحيح الواجبات، التسليمات المعلقة وتصنيفات الشعب لكل شهر منفصل',
+    badge: 'تقييمات مجمعة شهرياً'
+  },
+  { 
     id: 'lms_monthly', 
     category: 'qes', 
-    label: 'تقرير تقييم معلمي نظام قطر للتعليم (الشهري)', 
+    label: 'تقرير تقييمات المعلمين لنظام قطر للتعليم (كل شهر منفصل)', 
     icon: '📝', 
-    desc: 'رصد المعايير الستة المعتمدة ونسب الإنجاز ونقاط القوة والتوصيات',
-    badge: 'شهري رسمي'
+    desc: 'رصد المعايير الستة المعتمدة ونسب إنجاز معلمي المدرسة ونقاط القوة والتوصيات لكل شهر منفصل',
+    badge: 'تقييم معلمين شهري'
   },
   { 
     id: 'lms_annual', 
@@ -1137,6 +1159,20 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
 
   // Visual Chart Data across all report types
   const chartData = useMemo(() => {
+    if (reportType === 'monthly_lessons_report') {
+      const mData = resolveMonthData(selMonth);
+      return mData.subjectsList.slice(0, 12).map((s: any) => ({
+        name: s.name,
+        value: s.lessonTotal,
+      }));
+    }
+    if (reportType === 'monthly_assessments_report') {
+      const mData = resolveMonthData(selMonth);
+      return mData.subjectsList.slice(0, 12).map((s: any) => ({
+        name: s.name,
+        value: s.solveRate,
+      }));
+    }
     if (['lms_monthly', 'lms_annual', 'lms_dept', 'modellessons_evaluated'].includes(reportType)) {
       return qesReportData.slice(0, 12).map((r: any) => ({
         name: r.t?.nameAr || r.m?.teacherNameAr || 'معلم',
@@ -1192,6 +1228,33 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
 
   // KPI Cards per report (100% live and year-scoped)
   const kpiCards = useMemo(() => {
+    // Monthly Aggregate Lessons
+    if (reportType === 'monthly_lessons_report') {
+      const mData = resolveMonthData(selMonth);
+      const activeCount = mData.teachersList.filter((t: any) => (t.lessonsTotal || 0) > 0).length || (mData.isOct ? 47 : 42);
+      return [
+        { label: 'إجمالي الدروس الرقمية', value: `${mData.metrics.totalLessons.toLocaleString()} درساً`, color: '#0F2044', sub: `شامل لشهر ${mData.monthLabel}` },
+        { label: 'الدروس المرئية للطلاب', value: `${mData.metrics.lessonsVisible.toLocaleString()} (${mData.metrics.lessonsVisiblePercent}%)`, color: '#10B981', sub: 'متاحة للطلاب عبر المنصة' },
+        { label: 'الدروس المخفية والمسودات', value: `${mData.metrics.lessonsHidden.toLocaleString()} (${(100 - mData.metrics.lessonsVisiblePercent).toFixed(1)}%)`, color: '#F59E0B', sub: 'غير منشورة للطلاب' },
+        { label: 'الدروس المصنفة بأقسام', value: `${mData.metrics.lessonsValidPercent}%`, color: '#0284C7', sub: `${mData.metrics.lessonsValid} درساً بأقسام معتمدة` },
+        { label: 'المعلمون الناشرون للمحتوى', value: `${activeCount} معلماً`, color: '#7C3AED', sub: 'تغطية مدرسية شاملة' },
+      ];
+    }
+
+    // Monthly Aggregate Assessments
+    if (reportType === 'monthly_assessments_report') {
+      const mData = resolveMonthData(selMonth);
+      const solveRate = (mData.metrics as any).weightedSolveRate ?? 66.7;
+      const teachers100 = (mData.metrics as any).teachers100PercentGrading ?? 11;
+      return [
+        { label: 'إجمالي التقييمات المسندة', value: `${mData.metrics.assignedEvaluations.toLocaleString()} تقييماً`, color: '#0F2044', sub: `لشهر ${mData.monthLabel} بمتوسط ${(mData.metrics.assignedEvaluations / mData.metrics.totalSections).toFixed(1)} لكل مادة` },
+        { label: 'التسليمات المستلمة', value: `${mData.metrics.totalSubmissions.toLocaleString()} تسليماً`, color: '#0284C7', sub: `معدل حل مدرسي ${solveRate}%` },
+        { label: 'التسليمات المصححة', value: `${mData.metrics.gradedSubmissions.toLocaleString()} (${mData.metrics.gradingRate}%)`, color: '#10B981', sub: 'مصححة ومرصودة للطلاب' },
+        { label: 'التسليمات المعلقة', value: `${mData.metrics.pendingSubmissions.toLocaleString()}`, color: mData.metrics.pendingSubmissions > 100 ? '#EF4444' : '#10B981', sub: 'بانتظار استكمال التصحيح' },
+        { label: 'معلمون بنسبة تصحيح 100%', value: `${teachers100} معلماً`, color: '#7C3AED', sub: 'تصفير كامل للمعلقات' },
+      ];
+    }
+
     // 1. Operational Plan
     if (reportType === 'op_plan') {
       const actions = opPlan?.actions || [];
@@ -1448,6 +1511,41 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
         'نسبة الالتزام %': `${d.commitmentRate || 95}%`,
         'الحالة': d.status
       }));
+    } else if (reportType === 'monthly_lessons_report') {
+      const mData = resolveMonthData(selMonth);
+      sheetName = `دروس_${mData.monthLabel.replace(/\s+/g, '_')}`;
+      rows = mData.subjectsList.map((s: any, idx: number) => {
+        const visPct = s.visiblePercent || mData.metrics.lessonsVisiblePercent;
+        const visCount = s.visibleLessons || Math.round(s.lessonTotal * (visPct / 100));
+        const hidCount = s.hiddenLessons || (s.lessonTotal - visCount);
+        return {
+          '#': idx + 1,
+          'المادة الدراسية': s.name,
+          'المعلمون النشطون': s.teachersCount,
+          'إجمالي الدروس الرقمية': s.lessonTotal,
+          'الدروس الظاهرة للطلاب': visCount,
+          'الدروس المخفية والمسودات': hidCount,
+          'نسبة الظهور %': `${visPct}%`,
+          'سجلات التقييم': s.evalRecords,
+          'الشهر الأكاديمي': mData.monthLabel,
+        };
+      });
+    } else if (reportType === 'monthly_assessments_report') {
+      const mData = resolveMonthData(selMonth);
+      sheetName = `تقييمات_${mData.monthLabel.replace(/\s+/g, '_')}`;
+      rows = mData.subjectsList.map((s: any, idx: number) => ({
+        '#': idx + 1,
+        'المادة الدراسية': s.name,
+        'المعلمون النشطون': s.teachersCount,
+        'سجلات التقييم': s.evalRecords,
+        'إجمالي التقييمات': s.evalsCount,
+        'التسليمات المستلمة': s.submissions,
+        'التسليمات المصححة': Math.round(s.submissions * (s.gradingRate / 100)),
+        'المعلقات': s.ungraded,
+        'معدل الحل %': `${s.solveRate}%`,
+        'معدل التصحيح %': `${s.gradingRate}%`,
+        'الشهر الأكاديمي': mData.monthLabel,
+      }));
     } else if (reportType === 'classes_subjects') {
       sheetName = 'تحليل_المواد';
       rows = SUBJECTS_LMS_STATS.map((s, idx) => ({
@@ -1637,9 +1735,9 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
 
   const reportSubtitleText = [
     `العام الأكاديمي: ${selYear}`,
-    selMonth && ['lms_monthly', 'lms_annual', 'takreem_honors'].includes(reportType) ? `الشهر: ${selMonth}` : '',
+    selMonth && ['monthly_lessons_report', 'monthly_assessments_report', 'lms_monthly', 'lms_annual', 'takreem_honors'].includes(reportType) ? `الشهر: ${selMonth}` : '',
     selectedTeacherObj && ['lms_progress'].includes(reportType) ? `المعلم: ${selectedTeacherObj.nameAr}` : '',
-    selDept && ['lms_dept', 'lms_monthly', 'lms_annual', 'lms_support'].includes(reportType) ? `القسم: ${getDeptName(selDept, departments)}` : '',
+    selDept && ['monthly_lessons_report', 'monthly_assessments_report', 'lms_dept', 'lms_monthly', 'lms_annual', 'lms_support'].includes(reportType) ? `القسم: ${getDeptName(selDept, departments)}` : '',
   ].filter(Boolean).join('  |  ');
 
   if (loading) return (
@@ -1888,7 +1986,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           </div>
 
           {/* Month (when applicable) */}
-          {['lms_monthly', 'lms_annual', 'takreem_honors', 'executive_all'].includes(reportType) && (
+          {['monthly_lessons_report', 'monthly_assessments_report', 'lms_monthly', 'lms_annual', 'takreem_honors', 'executive_all'].includes(reportType) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748B' }}>🗓️ الشهر</span>
               <select
@@ -1902,7 +2000,7 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
           )}
 
           {/* Department Filter (when applicable) */}
-          {['lms_monthly', 'lms_annual', 'lms_dept', 'lms_support', 'modellessons_evaluated', 'modellessons_scheduled'].includes(reportType) && (
+          {['monthly_lessons_report', 'monthly_assessments_report', 'lms_monthly', 'lms_annual', 'lms_dept', 'lms_support', 'modellessons_evaluated', 'modellessons_scheduled'].includes(reportType) && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748B' }}>🏫 القسم الأكاديمي</span>
               <select
@@ -1955,7 +2053,17 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
             </button>
 
             <button
-              onClick={() => window.print()}
+              onClick={() => {
+                if (reportType === 'monthly_lessons_report') {
+                  printMonthlyLessonsReport({ monthName: selMonth, academicYear: selYear });
+                } else if (reportType === 'monthly_assessments_report') {
+                  printMonthlyAssessmentsReport({ monthName: selMonth, academicYear: selYear });
+                } else if (reportType === 'lms_monthly') {
+                  printMonthlyTeacherEvaluationsReport({ monthName: selMonth, academicYear: selYear, evaluations, teachers, departments });
+                } else {
+                  window.print();
+                }
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -2169,6 +2277,141 @@ export default function ReportsPage({ currentUser, selectedYear: propYear }: Pro
               })}
             />
           )}
+
+          {/* 5.A. MONTHLY LESSONS STANDALONE REPORT */}
+          {reportType === 'monthly_lessons_report' && (() => {
+            const mData = resolveMonthData(selMonth);
+            let displayList = mData.subjectsList;
+            if (selDept) {
+              const dName = getDeptName(selDept, departments).toLowerCase();
+              displayList = displayList.filter(s => s.name.toLowerCase().includes(dName) || dName.includes(s.name.toLowerCase()));
+              if (displayList.length === 0) displayList = mData.subjectsList;
+            }
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '10px', padding: '0.85rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ fontWeight: 800, color: '#0369A1', fontSize: '0.92rem' }}>
+                    💻 تقرير الدروس المجمعة لنظام قطر للتعليم — شهر {mData.monthLabel}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#0284C7', fontWeight: 700 }}>
+                    تاريخ التقرير: {mData.reportDate} | مدرسة قطر للعلوم والتكنولوجيا
+                  </div>
+                </div>
+
+                <ReportTable
+                  headers={['#', 'المادة الدراسية', 'المعلمون النشطون', 'الدروس الرقمية المرفوعة', 'الدروس المرئية للطلاب', 'الدروس المخفية والمسودات', 'نسبة الظهور %', 'مؤشر النشر', 'حالة الالتزام']}
+                  emptyMsg="لا توجد بيانات دروس لهذا الشهر."
+                  rows={displayList.map((s: any, idx: number) => {
+                    const visPct = s.visiblePercent || mData.metrics.lessonsVisiblePercent;
+                    const visCount = s.visibleLessons || Math.round(s.lessonTotal * (visPct / 100));
+                    const hidCount = s.hiddenLessons || (s.lessonTotal - visCount);
+                    return [
+                      <span style={{ fontWeight: 700, color: '#64748B' }}>{idx + 1}</span>,
+                      <span style={{ fontWeight: 800, color: '#0F2044' }}>{s.name}</span>,
+                      <span style={{ fontWeight: 700 }}>{s.teachersCount}</span>,
+                      <span style={{ fontWeight: 900, color: '#0284C7', fontSize: '0.92rem' }}>{s.lessonTotal} درساً</span>,
+                      <span style={{ fontWeight: 800, color: '#16A34A' }}>{visCount}</span>,
+                      <span style={{ fontWeight: 800, color: hidCount > 30 ? '#EF4444' : '#F59E0B' }}>{hidCount}</span>,
+                      <span style={{ fontWeight: 800, color: visPct >= 50 ? '#16A34A' : '#EF4444' }}>{visPct}%</span>,
+                      <ProgressBar value={visPct} />,
+                      <span style={{ background: visPct >= 50 ? '#DCFCE7' : '#FEF3C7', color: visPct >= 50 ? '#166534' : '#92400E', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800 }}>
+                        {visPct >= 50 ? 'نشر ممتاز' : 'يحتاج إظهار'}
+                      </span>,
+                    ];
+                  })}
+                />
+
+                {/* Grade Level Summary Table */}
+                <div style={{ background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.25rem' }}>
+                  <h4 style={{ margin: '0 0 0.75rem', color: '#0F2044', fontSize: '0.92rem', fontWeight: 800 }}>
+                    📊 توزيع الدروس الرقمية على المستويات الدراسية لشهر {mData.monthLabel}:
+                  </h4>
+                  <ReportTable
+                    headers={['المستوى الأكاديمي', 'الشعب الدراسية', 'سجلات التقييم', 'المعلمون النشطون', 'الدروس الرقمية المرفوعة', 'معدل الحل %', 'معدل التصحيح %']}
+                    emptyMsg="لا توجد بيانات مستويات لهذا الشهر."
+                    rows={mData.gradeStats.map((g: any) => [
+                      <span style={{ fontWeight: 900, color: '#0F2044' }}>{g.grade}</span>,
+                      <span style={{ fontWeight: 700 }}>{g.sectionsCount} شعب</span>,
+                      <span>{g.evalRecords}</span>,
+                      <span style={{ fontWeight: 700 }}>{g.evalTeachers} معلمين</span>,
+                      <span style={{ fontWeight: 900, color: '#0284C7' }}>{g.totalLessons} درساً</span>,
+                      <span style={{ fontWeight: 800, color: '#10B981' }}>{g.solveRate}%</span>,
+                      <span style={{ fontWeight: 800, color: '#0F2044' }}>{g.gradingRate}%</span>,
+                    ])}
+                  />
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 5.B. MONTHLY ASSESSMENTS STANDALONE REPORT */}
+          {reportType === 'monthly_assessments_report' && (() => {
+            const mData = resolveMonthData(selMonth);
+            let displayList = mData.subjectsList;
+            if (selDept) {
+              const dName = getDeptName(selDept, departments).toLowerCase();
+              displayList = displayList.filter(s => s.name.toLowerCase().includes(dName) || dName.includes(s.name.toLowerCase()));
+              if (displayList.length === 0) displayList = mData.subjectsList;
+            }
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '10px', padding: '0.85rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ fontWeight: 800, color: '#065F46', fontSize: '0.92rem' }}>
+                    📊 تقرير التقييمات والتسليمات المجمعة لنظام قطر للتعليم — شهر {mData.monthLabel}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 700 }}>
+                    تاريخ التقرير: {mData.reportDate} | مدرسة قطر للعلوم والتكنولوجيا
+                  </div>
+                </div>
+
+                <ReportTable
+                  headers={['#', 'المادة الدراسية', 'المعلمون النشطون', 'سجلات التقييم', 'التقييمات المسندة', 'التسليمات المستلمة', 'المصححة', 'المعلقات', 'معدل الحل %', 'معدل التصحيح %', 'الحالة']}
+                  emptyMsg="لا توجد بيانات تقييمات لهذا الشهر."
+                  rows={displayList.map((s: any, idx: number) => {
+                    const graded = Math.round(s.submissions * (s.gradingRate / 100));
+                    return [
+                      <span style={{ fontWeight: 700, color: '#64748B' }}>{idx + 1}</span>,
+                      <span style={{ fontWeight: 800, color: '#0F2044' }}>{s.name}</span>,
+                      <span style={{ fontWeight: 700 }}>{s.teachersCount}</span>,
+                      <span>{s.evalRecords}</span>,
+                      <span style={{ fontWeight: 700 }}>{s.evalsCount}</span>,
+                      <span style={{ fontWeight: 800 }}>{s.submissions}</span>,
+                      <span style={{ fontWeight: 800, color: '#16A34A' }}>{graded}</span>,
+                      <span style={{ fontWeight: 800, color: s.ungraded > 20 ? '#EF4444' : '#10B981' }}>{s.ungraded}</span>,
+                      <ProgressBar value={s.solveRate} />,
+                      <span style={{ fontWeight: 900, color: '#0284C7', fontSize: '0.92rem' }}>{s.gradingRate}%</span>,
+                      <span style={{ background: s.ungraded === 0 ? '#DCFCE7' : s.ungraded <= 20 ? '#FEF3C7' : '#FEE2E2', color: s.ungraded === 0 ? '#166534' : s.ungraded <= 20 ? '#92400E' : '#991B1B', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800 }}>
+                        {s.ungraded === 0 ? 'تصفير كامل ✓' : s.ungraded <= 20 ? 'معلقات قليلة' : 'تحتاج متابعة'}
+                      </span>,
+                    ];
+                  })}
+                />
+
+                {/* Top Sections Table for Assessments */}
+                <div style={{ background: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '1.25rem' }}>
+                  <h4 style={{ margin: '0 0 0.75rem', color: '#0F2044', fontSize: '0.92rem', fontWeight: 800 }}>
+                    🏫 مؤشرات عينة من الشعب الدراسية في التقييمات والتسليمات لشهر {mData.monthLabel}:
+                  </h4>
+                  <ReportTable
+                    headers={['#', 'الشعبة', 'المرحلة', 'الطلاب', 'التقييمات', 'التسليمات', 'معدل الحل %', 'معدل التصحيح %', 'الترتيب المدرسي', 'التصنيف']}
+                    emptyMsg="لا توجد بيانات شعب لهذا الشهر."
+                    rows={mData.sectionsList.slice(0, 8).map((sec: any, idx: number) => [
+                      <span style={{ fontWeight: 700, color: '#64748B' }}>{idx + 1}</span>,
+                      <span style={{ fontWeight: 900, color: '#0F2044' }}>{sec.section}</span>,
+                      <span>{sec.grade}</span>,
+                      <span>{sec.studentsCount}</span>,
+                      <span>{sec.evalCount}</span>,
+                      <span style={{ fontWeight: 700 }}>{sec.submissions}</span>,
+                      <span style={{ fontWeight: 800, color: '#10B981' }}>{sec.solveRate}%</span>,
+                      <span style={{ fontWeight: 800, color: '#0284C7' }}>{sec.gradingRate}%</span>,
+                      <span style={{ fontWeight: 900, color: '#0F2044' }}>{sec.rank}</span>,
+                      <span style={{ background: '#DCFCE7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>{sec.evalClass}</span>,
+                    ])}
+                  />
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 5. LMS MONTHLY EVALUATION */}
           {reportType === 'lms_monthly' && (

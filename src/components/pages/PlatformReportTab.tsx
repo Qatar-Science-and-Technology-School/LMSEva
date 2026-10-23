@@ -34,6 +34,9 @@ import {
   FULL_YEAR_2026_2027_LMS_MONTHLY_COMPARISONS,
   getDynamicEvaluationMonths,
   getRealCurrentAcademicMonthDef,
+  printMonthlyLessonsReport,
+  printMonthlyAssessmentsReport,
+  printMonthlyTeacherEvaluationsReport,
   type LmsReportTeacherRecord,
   type Teacher,
   type Department,
@@ -270,6 +273,69 @@ export default function PlatformReportTab({
 
         {/* Header Action Buttons */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            onClick={() => printMonthlyLessonsReport({ monthName: currentMonthObj.label, academicYear: currentMonthObj.year })}
+            style={{
+              background: '#0F2044',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.55rem 0.9rem',
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              boxShadow: '0 2px 8px rgba(15,32,68,0.25)',
+            }}
+            title="طباعة التقرير الشهري الرسمي لدروس نظام قطر للتعليم (PDF - A3)"
+          >
+            <span>💻</span> تقرير الدروس للشهر
+          </button>
+
+          <button
+            onClick={() => printMonthlyAssessmentsReport({ monthName: currentMonthObj.label, academicYear: currentMonthObj.year })}
+            style={{
+              background: '#047857',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.55rem 0.9rem',
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              boxShadow: '0 2px 8px rgba(4,120,87,0.25)',
+            }}
+            title="طباعة التقرير الشهري الرسمي للتقييمات والتسليمات المجمعة (PDF - A3)"
+          >
+            <span>📊</span> تقرير التقييمات للشهر
+          </button>
+
+          <button
+            onClick={() => printMonthlyTeacherEvaluationsReport({ monthName: currentMonthObj.label, academicYear: currentMonthObj.year, teachers, departments })}
+            style={{
+              background: '#7C3AED',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.55rem 0.9rem',
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              boxShadow: '0 2px 8px rgba(124,58,237,0.25)',
+            }}
+            title="طباعة التقرير الشهري المعتمد لتقييمات أداء المعلمين (PDF - A3)"
+          >
+            <span>👨‍🏫</span> تقرير تقييمات المعلمين
+          </button>
+
           <button
             onClick={printComprehensiveReport}
             style={{
