@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { SCHOOL_NAME, getDeptName } from '@/lib/data';
 import type { Workshop, IndividualPDRecord, PDAttendee } from '@/lib/pdData';
+import { extractRecordMonth, PD_MONTH_OPTIONS } from '@/lib/pdData';
+import { MonthlyWorkshopsReport, MonthlyIndividualReport } from './PDMonthlyReports';
 import { loadSelfDevelopmentRecords, SelfDevelopmentRecord, calculateSelfDevelopmentStats } from '@/lib/selfDevelopmentData';
 import { printComprehensiveSelfDevelopmentReport, printSingleSelfDevelopmentCard } from '@/lib/selfDevelopmentReportPrinter';
 import { FormattedReportPoints, RichBulletTextarea } from '@/components/RichBulletTextarea';
@@ -2624,6 +2626,12 @@ export function PDReportsCenterTab({
 }) {
   const [reportSubTab, setReportSubTab] = useState<'workshops' | 'individual' | 'self_dev' | 'annual'>('workshops');
   
+  // Month Filters and Modal states for Monthly Certified Reports
+  const [reportsWorkshopMonth, setReportsWorkshopMonth] = useState('all');
+  const [reportsIndividualMonth, setReportsIndividualMonth] = useState('all');
+  const [showMonthlyWorkshopsModal, setShowMonthlyWorkshopsModal] = useState(false);
+  const [showMonthlyIndividualModal, setShowMonthlyIndividualModal] = useState(false);
+
   // Self Development records for Projects Coordinator
   const selfDevRecords = useMemo(() => {
     return loadSelfDevelopmentRecords(filterYear);
@@ -2632,12 +2640,17 @@ export function PDReportsCenterTab({
 
   // Workshops filtering and selection
   const yearWorkshops = useMemo(() => {
-    return workshops.filter(w => filterYear === 'all' || w.academicYear === filterYear);
-  }, [workshops, filterYear]);
+    return workshops.filter(w => {
+      const matchYear = filterYear === 'all' || w.academicYear === filterYear;
+      const recMonth = extractRecordMonth(w.month, w.date);
+      const matchMonth = reportsWorkshopMonth === 'all' || recMonth === reportsWorkshopMonth;
+      return matchYear && matchMonth;
+    });
+  }, [workshops, filterYear, reportsWorkshopMonth]);
 
   const [selectedWorkshopId, setSelectedWorkshopId] = useState<string>(yearWorkshops[0]?.id || '');
   React.useEffect(() => {
-    if (!selectedWorkshopId && yearWorkshops.length > 0) {
+    if ((!selectedWorkshopId || !yearWorkshops.some(w => w.id === selectedWorkshopId)) && yearWorkshops.length > 0) {
       setSelectedWorkshopId(yearWorkshops[0].id);
     }
   }, [yearWorkshops, selectedWorkshopId]);
@@ -2648,12 +2661,17 @@ export function PDReportsCenterTab({
 
   // Individual PD filtering and selection
   const yearIndividual = useMemo(() => {
-    return individualRecords.filter(r => filterYear === 'all' || r.academicYear === filterYear);
-  }, [individualRecords, filterYear]);
+    return individualRecords.filter(r => {
+      const matchYear = filterYear === 'all' || r.academicYear === filterYear;
+      const recMonth = extractRecordMonth(r.month, r.trainingDate);
+      const matchMonth = reportsIndividualMonth === 'all' || recMonth === reportsIndividualMonth;
+      return matchYear && matchMonth;
+    });
+  }, [individualRecords, filterYear, reportsIndividualMonth]);
 
   const [selectedIndId, setSelectedIndId] = useState<string>(yearIndividual[0]?.id || '');
   React.useEffect(() => {
-    if (!selectedIndId && yearIndividual.length > 0) {
+    if ((!selectedIndId || !yearIndividual.some(r => r.id === selectedIndId)) && yearIndividual.length > 0) {
       setSelectedIndId(yearIndividual[0].id);
     }
   }, [yearIndividual, selectedIndId]);
@@ -2661,6 +2679,34 @@ export function PDReportsCenterTab({
   const activeIndividual = useMemo(() => {
     return yearIndividual.find(r => r.id === selectedIndId) || yearIndividual[0] || null;
   }, [yearIndividual, selectedIndId]);
+
+  if (showMonthlyWorkshopsModal) {
+    return (
+      <MonthlyWorkshopsReport
+        workshops={yearWorkshops}
+        allWorkshops={workshops}
+        selectedMonth={reportsWorkshopMonth}
+        selectedYear={filterYear}
+        teachers={teachers}
+        departments={departments}
+        onClose={() => setShowMonthlyWorkshopsModal(false)}
+      />
+    );
+  }
+
+  if (showMonthlyIndividualModal) {
+    return (
+      <MonthlyIndividualReport
+        records={yearIndividual}
+        allRecords={individualRecords}
+        selectedMonth={reportsIndividualMonth}
+        selectedYear={filterYear}
+        teachers={teachers}
+        departments={departments}
+        onClose={() => setShowMonthlyIndividualModal(false)}
+      />
+    );
+  }
 
   return (
     <div>
@@ -2731,28 +2777,63 @@ export function PDReportsCenterTab({
             border: '1px solid #E2E8F0', marginBottom: '1.5rem',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem', flexWrap: 'wrap'
           }}>
-            <div style={{ flex: 1, minWidth: '280px' }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#64748B', marginBottom: '0.35rem' }}>
-                اختر ورشة العمل لعرض تقريرها وكشف حضورها:
-              </label>
-              <select
-                value={selectedWorkshopId}
-                onChange={e => setSelectedWorkshopId(e.target.value)}
-                style={{
-                  width: '100%', padding: '0.85rem 1.25rem', borderRadius: '12px',
-                  border: '1.5px solid #0F2044', fontWeight: 800, fontSize: '0.95rem',
-                  background: '#fff', color: '#0F2044', cursor: 'pointer'
-                }}
-              >
-                {yearWorkshops.map(w => (
-                  <option key={w.id} value={w.id}>
-                    {w.workshopNumber ? `#${w.workshopNumber} - ` : ''}{w.titleAr || w.nameAr} ({w.date || w.month}) - {w.facilitatorName || w.trainer}
-                  </option>
-                ))}
-              </select>
+            <div style={{ display: 'flex', gap: '1rem', flex: 1, minWidth: '320px', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: '150px' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#64748B', marginBottom: '0.35rem' }}>
+                  فلتر شهر الورشة:
+                </label>
+                <select
+                  value={reportsWorkshopMonth}
+                  onChange={e => setReportsWorkshopMonth(e.target.value)}
+                  style={{
+                    width: '100%', padding: '0.85rem 1rem', borderRadius: '12px',
+                    border: '1.5px solid #0F2044', fontWeight: 800, fontSize: '0.95rem',
+                    background: '#fff', color: '#0F2044', cursor: 'pointer'
+                  }}
+                >
+                  <option value="all">كافة الأشهر</option>
+                  {PD_MONTH_OPTIONS.filter(m => m !== 'all').map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ flex: 1, minWidth: '240px' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#64748B', marginBottom: '0.35rem' }}>
+                  اختر ورشة العمل لعرض تقريرها وكشف حضورها:
+                </label>
+                <select
+                  value={selectedWorkshopId}
+                  onChange={e => setSelectedWorkshopId(e.target.value)}
+                  style={{
+                    width: '100%', padding: '0.85rem 1.25rem', borderRadius: '12px',
+                    border: '1.5px solid #0F2044', fontWeight: 800, fontSize: '0.95rem',
+                    background: '#fff', color: '#0F2044', cursor: 'pointer'
+                  }}
+                >
+                  {yearWorkshops.map(w => (
+                    <option key={w.id} value={w.id}>
+                      {w.workshopNumber ? `#${w.workshopNumber} - ` : ''}{w.titleAr || w.nameAr} ({w.date || w.month}) - {w.facilitatorName || w.trainer}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setShowMonthlyWorkshopsModal(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  background: 'linear-gradient(135deg, #0F2044 0%, #1E3A8A 100%)', color: '#fff', border: 'none',
+                  padding: '0.85rem 1.4rem', borderRadius: '12px', fontWeight: 900,
+                  cursor: 'pointer', fontSize: '0.9rem',
+                  boxShadow: '0 2px 8px rgba(15,32,68,0.2)'
+                }}
+              >
+                <Printer size={18} /> طباعة التقرير الشهري للورش ({reportsWorkshopMonth === 'all' ? 'كافة الأشهر' : `شهر ${reportsWorkshopMonth}`})
+              </button>
+
               <button
                 onClick={async () => {
                   if (activeWorkshop) {
@@ -2762,23 +2843,23 @@ export function PDReportsCenterTab({
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.5rem',
                   background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)', color: '#fff', border: 'none',
-                  padding: '0.85rem 1.6rem', borderRadius: '12px', fontWeight: 900,
+                  padding: '0.85rem 1.4rem', borderRadius: '12px', fontWeight: 900,
                   cursor: 'pointer', fontSize: '0.9rem',
                   boxShadow: '0 2px 8px rgba(2,132,199,0.25)'
                 }}
               >
-                <Download size={18} /> حفظ وتحميل كـ PDF مباشر (A4 عرضي)
+                <Download size={18} /> PDF مباشر للورشة
               </button>
               <button
                 onClick={() => window.print()}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  background: '#0F2044', color: '#fff', border: 'none',
-                  padding: '0.85rem 1.6rem', borderRadius: '12px', fontWeight: 900,
+                  background: '#334155', color: '#fff', border: 'none',
+                  padding: '0.85rem 1.4rem', borderRadius: '12px', fontWeight: 900,
                   cursor: 'pointer', fontSize: '0.9rem'
                 }}
               >
-                <Printer size={18} /> طباعة التقرير (عرضي)
+                <Printer size={18} /> طباعة الورشة الحالية
               </button>
             </div>
           </div>
@@ -2810,28 +2891,63 @@ export function PDReportsCenterTab({
             border: '1px solid #E2E8F0', marginBottom: '1.5rem',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem', flexWrap: 'wrap'
           }}>
-            <div style={{ flex: 1, minWidth: '280px' }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#64748B', marginBottom: '0.35rem' }}>
-                اختر جلسة التدريب الفردي لعرض التقرير وإقرار التوقيع:
-              </label>
-              <select
-                value={selectedIndId}
-                onChange={e => setSelectedIndId(e.target.value)}
-                style={{
-                  width: '100%', padding: '0.85rem 1.25rem', borderRadius: '12px',
-                  border: '1.5px solid #00B4D8', fontWeight: 800, fontSize: '0.95rem',
-                  background: '#fff', color: '#0F2044', cursor: 'pointer'
-                }}
-              >
-                {yearIndividual.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {r.traineeNameAr} | {r.department} - {r.skillProvided} ({r.trainingDate})
-                  </option>
-                ))}
-              </select>
+            <div style={{ display: 'flex', gap: '1rem', flex: 1, minWidth: '320px', flexWrap: 'wrap' }}>
+              <div style={{ minWidth: '150px' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#64748B', marginBottom: '0.35rem' }}>
+                  فلتر شهر التدريب:
+                </label>
+                <select
+                  value={reportsIndividualMonth}
+                  onChange={e => setReportsIndividualMonth(e.target.value)}
+                  style={{
+                    width: '100%', padding: '0.85rem 1rem', borderRadius: '12px',
+                    border: '1.5px solid #00B4D8', fontWeight: 800, fontSize: '0.95rem',
+                    background: '#fff', color: '#0F2044', cursor: 'pointer'
+                  }}
+                >
+                  <option value="all">كافة الأشهر</option>
+                  {PD_MONTH_OPTIONS.filter(m => m !== 'all').map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ flex: 1, minWidth: '240px' }}>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 800, color: '#64748B', marginBottom: '0.35rem' }}>
+                  اختر جلسة التدريب الفردي لعرض التقرير وإقرار التوقيع:
+                </label>
+                <select
+                  value={selectedIndId}
+                  onChange={e => setSelectedIndId(e.target.value)}
+                  style={{
+                    width: '100%', padding: '0.85rem 1.25rem', borderRadius: '12px',
+                    border: '1.5px solid #00B4D8', fontWeight: 800, fontSize: '0.95rem',
+                    background: '#fff', color: '#0F2044', cursor: 'pointer'
+                  }}
+                >
+                  {yearIndividual.map(r => (
+                    <option key={r.id} value={r.id}>
+                      {r.traineeNameAr} | {r.department} - {r.skillProvided} ({r.trainingDate})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setShowMonthlyIndividualModal(true)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  background: 'linear-gradient(135deg, #00B4D8 0%, #0284C7 100%)', color: '#fff', border: 'none',
+                  padding: '0.85rem 1.4rem', borderRadius: '12px', fontWeight: 900,
+                  cursor: 'pointer', fontSize: '0.9rem',
+                  boxShadow: '0 2px 8px rgba(0,180,216,0.25)'
+                }}
+              >
+                <Printer size={18} /> طباعة التقرير الشهري للتطوير الفردي ({reportsIndividualMonth === 'all' ? 'كافة الأشهر' : `شهر ${reportsIndividualMonth}`})
+              </button>
+
               <button
                 onClick={async () => {
                   if (activeIndividual) {
@@ -2841,23 +2957,23 @@ export function PDReportsCenterTab({
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.5rem',
                   background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)', color: '#fff', border: 'none',
-                  padding: '0.85rem 1.6rem', borderRadius: '12px', fontWeight: 900,
+                  padding: '0.85rem 1.4rem', borderRadius: '12px', fontWeight: 900,
                   cursor: 'pointer', fontSize: '0.9rem',
                   boxShadow: '0 2px 8px rgba(2,132,199,0.25)'
                 }}
               >
-                <Download size={18} /> حفظ وتحميل كـ PDF مباشر (A4 عرضي)
+                <Download size={18} /> PDF مباشر للجلسة
               </button>
               <button
                 onClick={() => window.print()}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.5rem',
                   background: '#0F2044', color: '#fff', border: 'none',
-                  padding: '0.85rem 1.6rem', borderRadius: '12px', fontWeight: 900,
+                  padding: '0.85rem 1.4rem', borderRadius: '12px', fontWeight: 900,
                   cursor: 'pointer', fontSize: '0.9rem'
                 }}
               >
-                <Printer size={18} /> طباعة التقرير (عرضي)
+                <Printer size={18} /> طباعة الجلسة الحالية
               </button>
             </div>
           </div>

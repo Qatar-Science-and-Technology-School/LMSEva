@@ -17,7 +17,11 @@ import {
   getDepartmentStaffCount, getInstitutionalEvaluation, resolveTeacherDepartment,
   isSuperAdmin
 } from '@/lib/data';
-import { type Workshop, type PDAttendance, type PDEvidence, type IndividualPDRecord, type IndividualPDSkill, classifyIndividualSkill } from '@/lib/pdData';
+import { 
+  type Workshop, type PDAttendance, type PDEvidence, type IndividualPDRecord, 
+  type IndividualPDSkill, classifyIndividualSkill, extractRecordMonth, PD_MONTH_OPTIONS 
+} from '@/lib/pdData';
+import { MonthlyWorkshopsReport, MonthlyIndividualReport } from './PDMonthlyReports';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line,
@@ -187,6 +191,10 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAudience, setFilterAudience] = useState('all');
   const [filterDept, setFilterDept] = useState('all');
+  const [filterWorkshopMonth, setFilterWorkshopMonth] = useState('all');
+  const [filterIndividualMonth, setFilterIndividualMonth] = useState('all');
+  const [showMonthlyWorkshopsReport, setShowMonthlyWorkshopsReport] = useState(false);
+  const [showMonthlyIndividualReport, setShowMonthlyIndividualReport] = useState(false);
   const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
   const [selectedIndividual, setSelectedIndividual] = useState<IndividualPDRecord | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -369,9 +377,12 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
       const matchesStatus = filterStatus === 'all' || w.status === filterStatus;
       const matchesAudience = filterAudience === 'all' || (w.targetAudience || w.targetGroup || '').includes(filterAudience);
       
-      return matchesSearch && matchesYear && matchesCategory && matchesStatus && matchesAudience;
+      const recMonth = extractRecordMonth(w.month, w.date);
+      const matchesMonth = filterWorkshopMonth === 'all' || recMonth === filterWorkshopMonth;
+      
+      return matchesSearch && matchesYear && matchesCategory && matchesStatus && matchesAudience && matchesMonth;
     }).sort((a, b) => (b.workshopNumber || 0) - (a.workshopNumber || 0));
-  }, [workshops, searchTerm, filterYear, filterCategory, filterStatus, filterAudience]);
+  }, [workshops, searchTerm, filterYear, filterCategory, filterStatus, filterAudience, filterWorkshopMonth]);
 
   const filteredIndividual = useMemo(() => {
     return individualRecords.filter(r => {
@@ -388,9 +399,12 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
       const matchesDept = filterDept === 'all' || r.department === filterDept;
       const matchesCategory = filterCategory === 'all' || r.skillCategory === filterCategory;
       
-      return matchesSearch && matchesYear && matchesDept && matchesCategory;
+      const recMonth = extractRecordMonth(r.month, r.trainingDate);
+      const matchesMonth = filterIndividualMonth === 'all' || recMonth === filterIndividualMonth;
+      
+      return matchesSearch && matchesYear && matchesDept && matchesCategory && matchesMonth;
     }).sort((a, b) => new Date(b.trainingDate).getTime() - new Date(a.trainingDate).getTime());
-  }, [individualRecords, searchTerm, filterYear, filterDept, filterCategory]);
+  }, [individualRecords, searchTerm, filterYear, filterDept, filterCategory, filterIndividualMonth]);
 
   // --- KPI Calculation ---
   const dashboardStats = useMemo(() => {
@@ -613,6 +627,35 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
       setIsPrintMode(false);
     }, 500);
   };
+
+  // Monthly Comprehensive Official Reports
+  if (showMonthlyWorkshopsReport) {
+    return (
+      <MonthlyWorkshopsReport
+        workshops={filteredWorkshops}
+        allWorkshops={workshops}
+        selectedMonth={filterWorkshopMonth}
+        selectedYear={filterYear}
+        teachers={teachers}
+        departments={departments}
+        onClose={() => setShowMonthlyWorkshopsReport(false)}
+      />
+    );
+  }
+
+  if (showMonthlyIndividualReport) {
+    return (
+      <MonthlyIndividualReport
+        records={filteredIndividual}
+        allRecords={individualRecords}
+        selectedMonth={filterIndividualMonth}
+        selectedYear={filterYear}
+        teachers={teachers}
+        departments={departments}
+        onClose={() => setShowMonthlyIndividualReport(false)}
+      />
+    );
+  }
 
   // Full-Screen Dedicated Official Report Viewers
   if (reportingWorkshop) {
@@ -864,7 +907,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
           <SelfDevelopmentTab academicYear={filterYear} canEdit={canEdit} />
         ) : activeTab === 'individual' ? (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.2fr 1fr', gap: '1.25rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr 1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
               <div style={{ position: 'relative' }}>
                 <Search size={20} style={{ position: 'absolute', right: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
                 <input 
@@ -876,8 +919,62 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
                 />
               </div>
               <FilterSelect value={filterYear} onChange={setFilterYear} options={['all', ...ACADEMIC_YEARS]} label="العام الدراسي" />
+              <FilterSelect value={filterIndividualMonth} onChange={setFilterIndividualMonth} options={PD_MONTH_OPTIONS} label="الشهر" />
               <FilterSelect value={filterDept} onChange={setFilterDept} options={['all', ...Array.from(new Set(individualRecords.map(r => r.department)))]} label="القسم" />
               <FilterSelect value={filterCategory} onChange={setFilterCategory} options={['all', ...Array.from(new Set(individualRecords.map(r => r.skillCategory)))]} label="نوع المهارة" />
+            </div>
+
+            {/* Monthly Print & Action Bar */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.5rem',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              background: '#F8FAFC',
+              padding: '0.9rem 1.4rem',
+              borderRadius: '16px',
+              border: '1px solid #E2E8F0'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <span style={{ fontSize: '1.3rem' }}>👤</span>
+                <div>
+                  <span style={{ fontWeight: 800, color: '#0F2044', fontSize: '0.95rem' }}>
+                    جلسات التدريب والتطوير الفردي:
+                  </span>
+                  <span style={{ color: '#00B4D8', fontWeight: 900, marginRight: '0.4rem', fontSize: '1.05rem' }}>
+                    {filteredIndividual.length} جلسة
+                  </span>
+                  <span style={{ color: '#64748B', fontSize: '0.85rem', marginRight: '0.5rem' }}>
+                    ({filterIndividualMonth === 'all' ? 'كافة أشهر العام' : `شهر ${filterIndividualMonth}`} للعام {filterYear})
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setShowMonthlyIndividualReport(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.55rem',
+                    background: 'linear-gradient(135deg, #00B4D8 0%, #0284C7 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '0.7rem 1.4rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,180,216,0.3)',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  <Printer size={17} />
+                  <span>🖨️ طباعة تقرير التطوير الفردي ({filterIndividualMonth === 'all' ? 'كافة الأشهر' : `شهر ${filterIndividualMonth}`})</span>
+                </button>
+              </div>
             </div>
 
             <div style={{ overflowX: 'auto', borderRadius: '24px', border: '1px solid #F1F5F9' }}>
@@ -947,7 +1044,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
           />
         ) : (
           <div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '1.25rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1fr 1fr 1fr 1fr 1fr', gap: '1.25rem', marginBottom: '1.5rem' }}>
               <div style={{ position: 'relative' }}>
                 <Search size={20} style={{ position: 'absolute', right: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
                 <input 
@@ -959,9 +1056,63 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
                 />
               </div>
               <FilterSelect value={filterYear} onChange={setFilterYear} options={['all', ...ACADEMIC_YEARS]} label="العام الدراسي" />
+              <FilterSelect value={filterWorkshopMonth} onChange={setFilterWorkshopMonth} options={PD_MONTH_OPTIONS} label="الشهر" />
               <FilterSelect value={filterAudience} onChange={setFilterAudience} options={['all', 'المعلمين', 'المعلمين الجدد', 'الطلاب', 'الاداريين']} label="الفئة المستهدفة" />
               <FilterSelect value={filterCategory} onChange={setFilterCategory} options={['all', ...Array.from(new Set(workshops.map(w => w.category)))]} label="التصنيف" />
               <FilterSelect value={filterStatus} onChange={setFilterStatus} options={['all', 'موثق', 'تم التنفيذ', 'قيد التنفيذ', 'يحتاج متابعة']} label="الحالة" />
+            </div>
+
+            {/* Monthly Print & Action Bar */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '1.5rem',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              background: '#F8FAFC',
+              padding: '0.9rem 1.4rem',
+              borderRadius: '16px',
+              border: '1px solid #E2E8F0'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <span style={{ fontSize: '1.3rem' }}>📋</span>
+                <div>
+                  <span style={{ fontWeight: 800, color: '#0F2044', fontSize: '0.95rem' }}>
+                    ورش العمل الجماعية المطابقة:
+                  </span>
+                  <span style={{ color: '#0284C7', fontWeight: 900, marginRight: '0.4rem', fontSize: '1.05rem' }}>
+                    {filteredWorkshops.length} ورشة
+                  </span>
+                  <span style={{ color: '#64748B', fontSize: '0.85rem', marginRight: '0.5rem' }}>
+                    ({filterWorkshopMonth === 'all' ? 'كافة أشهر العام' : `شهر ${filterWorkshopMonth}`} للعام {filterYear})
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setShowMonthlyWorkshopsReport(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.55rem',
+                    background: 'linear-gradient(135deg, #0F2044 0%, #1E3A8A 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '0.7rem 1.4rem',
+                    borderRadius: '12px',
+                    fontWeight: 800,
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(15,32,68,0.2)',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  <Printer size={17} />
+                  <span>🖨️ طباعة تقرير ورش العمل الجماعية ({filterWorkshopMonth === 'all' ? 'كافة الأشهر' : `شهر ${filterWorkshopMonth}`})</span>
+                </button>
+              </div>
             </div>
 
             <div style={{ overflowX: 'auto', borderRadius: '24px', border: '1px solid #F1F5F9' }}>

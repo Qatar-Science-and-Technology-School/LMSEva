@@ -917,3 +917,51 @@ export const PD_INDIVIDUAL_RECORDS: IndividualPDRecord[] = [
   ...generateHistoricalRecords('2024-2025', SKILLS_2425, 10),
   ...generateHistoricalRecords('2023-2024', SKILLS_2324, 8)
 ];
+
+// ── Month Extraction & Filtering Helpers for Group and Individual PD ──
+export const PD_MONTH_OPTIONS = [
+  'all',
+  'أغسطس',
+  'سبتمبر',
+  'أكتوبر',
+  'نوفمبر',
+  'ديسمبر',
+  'يناير',
+  'فبراير',
+  'مارس',
+  'أبريل',
+  'مايو',
+  'يونيو',
+];
+
+export const extractRecordMonth = (month?: string, dateStr?: string): string => {
+  if (month && month.trim()) {
+    const trimmed = month.trim();
+    const ARABIC_MONTHS = ['أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو'];
+    for (const m of ARABIC_MONTHS) {
+      if (trimmed.includes(m)) return m;
+    }
+  }
+  if (dateStr && dateStr.trim()) {
+    const parts = dateStr.trim().split(/[-/]/);
+    if (parts.length >= 2) {
+      let mNum = 0;
+      if (parts[0].length === 4) {
+        mNum = parseInt(parts[1], 10);
+      } else if (parts[2] && parts[2].length === 4) {
+        mNum = parseInt(parts[1], 10);
+      }
+      const numMap: Record<number, string> = {
+        1: 'يناير', 2: 'فبراير', 3: 'مارس', 4: 'أبريل',
+        5: 'مايو', 6: 'يونيو', 7: 'يوليو', 8: 'أغسطس',
+        9: 'سبتمبر', 10: 'أكتوبر', 11: 'نوفمبر', 12: 'ديسمبر'
+      };
+      if (numMap[mNum]) return numMap[mNum];
+    }
+    const ARABIC_MONTHS = ['أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو'];
+    for (const m of ARABIC_MONTHS) {
+      if (dateStr.includes(m)) return m;
+    }
+  }
+  return '';
+};
