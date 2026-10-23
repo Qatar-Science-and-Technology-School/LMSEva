@@ -94,6 +94,270 @@ export const LMS_MONTHLY_OVERVIEW_COMPARISON = {
   },
 };
 
+// ── 1.1. المقارنة الشاملة لكافة أشهر العام الأكاديمي 2026-2027م (التراكمي وصافي الإنجاز الشهري) ──
+export interface FullYearMonthlyComparisonItem {
+  monthId: string;
+  monthName: string;
+  year: number;
+  label: string;
+  reportDate: string;
+  isCertified: boolean;
+  isCurrentActive: boolean;
+  statusBadge: {
+    label: string;
+    color: string;
+    bg: string;
+  };
+  cumulative: {
+    totalLessons: number;
+    visibleLessons: number;
+    visiblePercent: number;
+    hiddenLessons: number;
+    validLessons: number;
+    validPercent: number;
+    assessmentsCreated: number;
+    submissionsTotal: number;
+    submissionsGraded: number;
+    submissionsPending: number;
+    gradingRate: number;
+    solveRate: number;
+    teachersCount: number;
+    teachers100Grading: number;
+    sectionsCount: number;
+  };
+  net: {
+    netTotalLessons: number;
+    netTotalLessonsGrowthPercent: number;
+    netVisibleLessons: number;
+    netVisibleGrowthPercent: number;
+    netAssessments: number;
+    netGradedSubmissions: number;
+    pendingChange: number;
+    gradingRateChange: number;
+    teachers100GradingChange: number;
+    solveRateChange: number;
+    teachersCountChange: number;
+  };
+  impactSummary: string;
+}
+
+export const FULL_YEAR_2026_2027_LMS_MONTHLY_COMPARISONS: FullYearMonthlyComparisonItem[] = [
+  {
+    monthId: '2026-09',
+    monthName: 'سبتمبر',
+    year: 2026,
+    label: 'سبتمبر 2026',
+    reportDate: '27 سبتمبر 2026',
+    isCertified: true,
+    isCurrentActive: false,
+    statusBadge: { label: 'معتمد ومكتمل', color: '#065F46', bg: '#DCFCE7' },
+    cumulative: {
+      totalLessons: 1460,
+      visibleLessons: 796,
+      visiblePercent: 54.5,
+      hiddenLessons: 664,
+      validLessons: 1445,
+      validPercent: 99.0,
+      assessmentsCreated: 249,
+      submissionsTotal: 2440,
+      submissionsGraded: 1921,
+      submissionsPending: 519,
+      gradingRate: 78.7,
+      solveRate: 66.7,
+      teachersCount: 42,
+      teachers100Grading: 5,
+      sectionsCount: 19,
+    },
+    net: {
+      netTotalLessons: 1460,
+      netTotalLessonsGrowthPercent: 100,
+      netVisibleLessons: 796,
+      netVisibleGrowthPercent: 100,
+      netAssessments: 249,
+      netGradedSubmissions: 1921,
+      pendingChange: 0,
+      gradingRateChange: 0,
+      teachers100GradingChange: 5,
+      solveRateChange: 0,
+      teachersCountChange: 42,
+    },
+    impactSummary: 'التقرير التأسيسي الأول واعتماد انطلاق المنصة للعام الأكاديمي',
+  },
+  {
+    monthId: '2026-10',
+    monthName: 'أكتوبر',
+    year: 2026,
+    label: 'أكتوبر 2026',
+    reportDate: '23 أكتوبر 2026',
+    isCertified: true,
+    isCurrentActive: true,
+    statusBadge: { label: 'الشهر المعتمد حالياً', color: '#0F2044', bg: '#00B4D8' },
+    cumulative: {
+      totalLessons: 3026,
+      visibleLessons: 1245,
+      visiblePercent: 41.1,
+      hiddenLessons: 1781,
+      validLessons: 3008,
+      validPercent: 99.4,
+      assessmentsCreated: 287,
+      submissionsTotal: 2417,
+      submissionsGraded: 1972,
+      submissionsPending: 445,
+      gradingRate: 81.6,
+      solveRate: 57.5,
+      teachersCount: 47,
+      teachers100Grading: 11,
+      sectionsCount: 20,
+    },
+    net: {
+      netTotalLessons: 1566,
+      netTotalLessonsGrowthPercent: 107.3,
+      netVisibleLessons: 449,
+      netVisibleGrowthPercent: 56.4,
+      netAssessments: 38,
+      netGradedSubmissions: 51,
+      pendingChange: -74,
+      gradingRateChange: 2.9,
+      teachers100GradingChange: 6,
+      solveRateChange: -9.2,
+      teachersCountChange: 5,
+    },
+    impactSummary: 'نمو فائق (+1,566 درساً)، تحسن التصحيح لـ 81.6%، ومضاعفة المعلمين 100%',
+  },
+  {
+    monthId: '2026-11',
+    monthName: 'نوفمبر',
+    year: 2026,
+    label: 'نوفمبر 2026',
+    reportDate: 'نهاية نوفمبر 2026',
+    isCertified: false,
+    isCurrentActive: false,
+    statusBadge: { label: 'بانتظار كشوف الشهر', color: '#92400E', bg: '#FEF3C7' },
+    cumulative: {
+      totalLessons: 0,
+      visibleLessons: 0,
+      visiblePercent: 0,
+      hiddenLessons: 0,
+      validLessons: 0,
+      validPercent: 0,
+      assessmentsCreated: 0,
+      submissionsTotal: 0,
+      submissionsGraded: 0,
+      submissionsPending: 0,
+      gradingRate: 0,
+      solveRate: 0,
+      teachersCount: 47,
+      teachers100Grading: 0,
+      sectionsCount: 20,
+    },
+    net: {
+      netTotalLessons: 0,
+      netTotalLessonsGrowthPercent: 0,
+      netVisibleLessons: 0,
+      netVisibleGrowthPercent: 0,
+      netAssessments: 0,
+      netGradedSubmissions: 0,
+      pendingChange: 0,
+      gradingRateChange: 0,
+      teachers100GradingChange: 0,
+      solveRateChange: 0,
+      teachersCountChange: 0,
+    },
+    impactSummary: 'مجدول / بانتظار استلام التقرير التجميعي لشهر نوفمبر عند حلوله',
+  },
+  {
+    monthId: '2026-12',
+    monthName: 'ديسمبر',
+    year: 2026,
+    label: 'ديسمبر 2026',
+    reportDate: 'نهاية ديسمبر 2026',
+    isCertified: false,
+    isCurrentActive: false,
+    statusBadge: { label: 'مجدول لاحقاً', color: '#64748B', bg: '#F1F5F9' },
+    cumulative: { totalLessons: 0, visibleLessons: 0, visiblePercent: 0, hiddenLessons: 0, validLessons: 0, validPercent: 0, assessmentsCreated: 0, submissionsTotal: 0, submissionsGraded: 0, submissionsPending: 0, gradingRate: 0, solveRate: 0, teachersCount: 47, teachers100Grading: 0, sectionsCount: 20 },
+    net: { netTotalLessons: 0, netTotalLessonsGrowthPercent: 0, netVisibleLessons: 0, netVisibleGrowthPercent: 0, netAssessments: 0, netGradedSubmissions: 0, pendingChange: 0, gradingRateChange: 0, teachers100GradingChange: 0, solveRateChange: 0, teachersCountChange: 0 },
+    impactSummary: 'نهاية الفصل الدراسي الأول واختبارات نهاية الفصل',
+  },
+  {
+    monthId: '2027-01',
+    monthName: 'يناير',
+    year: 2027,
+    label: 'يناير 2027',
+    reportDate: 'نهاية يناير 2027',
+    isCertified: false,
+    isCurrentActive: false,
+    statusBadge: { label: 'مجدول لاحقاً', color: '#64748B', bg: '#F1F5F9' },
+    cumulative: { totalLessons: 0, visibleLessons: 0, visiblePercent: 0, hiddenLessons: 0, validLessons: 0, validPercent: 0, assessmentsCreated: 0, submissionsTotal: 0, submissionsGraded: 0, submissionsPending: 0, gradingRate: 0, solveRate: 0, teachersCount: 47, teachers100Grading: 0, sectionsCount: 20 },
+    net: { netTotalLessons: 0, netTotalLessonsGrowthPercent: 0, netVisibleLessons: 0, netVisibleGrowthPercent: 0, netAssessments: 0, netGradedSubmissions: 0, pendingChange: 0, gradingRateChange: 0, teachers100GradingChange: 0, solveRateChange: 0, teachersCountChange: 0 },
+    impactSummary: 'انطلاق الفصل الدراسي الثاني والخطط التشغيلية المحدثة',
+  },
+  {
+    monthId: '2027-02',
+    monthName: 'فبراير',
+    year: 2027,
+    label: 'فبراير 2027',
+    reportDate: 'نهاية فبراير 2027',
+    isCertified: false,
+    isCurrentActive: false,
+    statusBadge: { label: 'مجدول لاحقاً', color: '#64748B', bg: '#F1F5F9' },
+    cumulative: { totalLessons: 0, visibleLessons: 0, visiblePercent: 0, hiddenLessons: 0, validLessons: 0, validPercent: 0, assessmentsCreated: 0, submissionsTotal: 0, submissionsGraded: 0, submissionsPending: 0, gradingRate: 0, solveRate: 0, teachersCount: 47, teachers100Grading: 0, sectionsCount: 20 },
+    net: { netTotalLessons: 0, netTotalLessonsGrowthPercent: 0, netVisibleLessons: 0, netVisibleGrowthPercent: 0, netAssessments: 0, netGradedSubmissions: 0, pendingChange: 0, gradingRateChange: 0, teachers100GradingChange: 0, solveRateChange: 0, teachersCountChange: 0 },
+    impactSummary: 'متابعة الخطط الدراسية وورش ومشاريع STEM المتقدمة',
+  },
+  {
+    monthId: '2027-03',
+    monthName: 'مارس',
+    year: 2027,
+    label: 'مارس 2027',
+    reportDate: 'نهاية مارس 2027',
+    isCertified: false,
+    isCurrentActive: false,
+    statusBadge: { label: 'مجدول لاحقاً', color: '#64748B', bg: '#F1F5F9' },
+    cumulative: { totalLessons: 0, visibleLessons: 0, visiblePercent: 0, hiddenLessons: 0, validLessons: 0, validPercent: 0, assessmentsCreated: 0, submissionsTotal: 0, submissionsGraded: 0, submissionsPending: 0, gradingRate: 0, solveRate: 0, teachersCount: 47, teachers100Grading: 0, sectionsCount: 20 },
+    net: { netTotalLessons: 0, netTotalLessonsGrowthPercent: 0, netVisibleLessons: 0, netVisibleGrowthPercent: 0, netAssessments: 0, netGradedSubmissions: 0, pendingChange: 0, gradingRateChange: 0, teachers100GradingChange: 0, solveRateChange: 0, teachersCountChange: 0 },
+    impactSummary: 'متابعة منتصف الفصل الدراسي الثاني واختبارات منتصف الفصل',
+  },
+  {
+    monthId: '2027-04',
+    monthName: 'أبريل',
+    year: 2027,
+    label: 'أبريل 2027',
+    reportDate: 'نهاية أبريل 2027',
+    isCertified: false,
+    isCurrentActive: false,
+    statusBadge: { label: 'مجدول لاحقاً', color: '#64748B', bg: '#F1F5F9' },
+    cumulative: { totalLessons: 0, visibleLessons: 0, visiblePercent: 0, hiddenLessons: 0, validLessons: 0, validPercent: 0, assessmentsCreated: 0, submissionsTotal: 0, submissionsGraded: 0, submissionsPending: 0, gradingRate: 0, solveRate: 0, teachersCount: 47, teachers100Grading: 0, sectionsCount: 20 },
+    net: { netTotalLessons: 0, netTotalLessonsGrowthPercent: 0, netVisibleLessons: 0, netVisibleGrowthPercent: 0, netAssessments: 0, netGradedSubmissions: 0, pendingChange: 0, gradingRateChange: 0, teachers100GradingChange: 0, solveRateChange: 0, teachersCountChange: 0 },
+    impactSummary: 'تكثيف التقييمات الإثرائية ودروس المشاهدة والأنشطة الرقمية',
+  },
+  {
+    monthId: '2027-05',
+    monthName: 'مايو',
+    year: 2027,
+    label: 'مايو 2027',
+    reportDate: 'نهاية مايو 2027',
+    isCertified: false,
+    isCurrentActive: false,
+    statusBadge: { label: 'مجدول لاحقاً', color: '#64748B', bg: '#F1F5F9' },
+    cumulative: { totalLessons: 0, visibleLessons: 0, visiblePercent: 0, hiddenLessons: 0, validLessons: 0, validPercent: 0, assessmentsCreated: 0, submissionsTotal: 0, submissionsGraded: 0, submissionsPending: 0, gradingRate: 0, solveRate: 0, teachersCount: 47, teachers100Grading: 0, sectionsCount: 20 },
+    net: { netTotalLessons: 0, netTotalLessonsGrowthPercent: 0, netVisibleLessons: 0, netVisibleGrowthPercent: 0, netAssessments: 0, netGradedSubmissions: 0, pendingChange: 0, gradingRateChange: 0, teachers100GradingChange: 0, solveRateChange: 0, teachersCountChange: 0 },
+    impactSummary: 'الاستعداد لاختبارات نهاية العام والأبحاث العلمية والتكريم الختامي',
+  },
+  {
+    monthId: '2027-06',
+    monthName: 'يونيو',
+    year: 2027,
+    label: 'يونيو 2027',
+    reportDate: 'نهاية يونيو 2027',
+    isCertified: false,
+    isCurrentActive: false,
+    statusBadge: { label: 'مجدول لاحقاً', color: '#64748B', bg: '#F1F5F9' },
+    cumulative: { totalLessons: 0, visibleLessons: 0, visiblePercent: 0, hiddenLessons: 0, validLessons: 0, validPercent: 0, assessmentsCreated: 0, submissionsTotal: 0, submissionsGraded: 0, submissionsPending: 0, gradingRate: 0, solveRate: 0, teachersCount: 47, teachers100Grading: 0, sectionsCount: 20 },
+    net: { netTotalLessons: 0, netTotalLessonsGrowthPercent: 0, netVisibleLessons: 0, netVisibleGrowthPercent: 0, netAssessments: 0, netGradedSubmissions: 0, pendingChange: 0, gradingRateChange: 0, teachers100GradingChange: 0, solveRateChange: 0, teachersCountChange: 0 },
+    impactSummary: 'التقرير السنوي الختامي للعام الأكاديمي 2026-2027م',
+  },
+];
+
 // ── 2. مقارنة الشعب الدراسية: تراكمي vs صافي شهر أكتوبر ──
 export interface SectionMonthlyComparisonItem {
   section: string;
