@@ -205,7 +205,7 @@ export default function AppShell({ user, onLogout }: Props) {
           {page === 'distance_learning' && <DistanceLearningPage currentUser={user} selectedYear={selectedYear} />}
           {page === 'profile'    && selectedTeacherId && <TeacherProfilePage teacherId={selectedTeacherId} currentUser={user} onBack={() => setPage('teachers')} selectedYear={selectedYear} />}
           {page === 'takreem'    && <TakreemPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
-          {page === 'analytics'  && <AnalyticsPage currentUser={user} selectedYear={selectedYear} />}
+          {page === 'analytics'  && <AnalyticsPage currentUser={user} selectedYear={selectedYear} onNavigate={setPage} />}
           {page === 'reports'    && <ReportsPage currentUser={user} selectedYear={selectedYear} />}
           {page === 'achievements' && <AchievementsPage currentUser={user} onNavigate={setPage} selectedYear={selectedYear} />}
           {page === 'professional_development' && <ProfessionalDevelopmentPage currentUser={user} selectedYear={selectedYear} />}

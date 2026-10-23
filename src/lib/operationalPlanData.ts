@@ -532,7 +532,8 @@ export async function extractLiveSourceActions(academicYear: string = '2026-2027
 // ─── Continuous Multi-Layer Synchronization Engine ──────────────────────────
 export async function syncOperationalPlan(
   existingState?: OperationalPlanState | null,
-  academicYear: string = '2026-2027'
+  academicYear: string = '2026-2027',
+  persistChanges: boolean = true
 ): Promise<OperationalPlanState> {
   // If no state passed, load from localStorage / Firestore
   let state = existingState;
@@ -570,6 +571,7 @@ export async function syncOperationalPlan(
   const liveActions = await extractLiveSourceActions(academicYear);
   const updatedActions: OperationalAction[] = [];
   const handledSourceIds = new Set<string>();
+  let hasNewSyncedItems = false;
 
   // 1. Process live imported items
   for (const live of liveActions) {
@@ -583,6 +585,7 @@ export async function syncOperationalPlan(
 
     const existing = existingMap.get(live.sourceId);
     if (!existing) {
+      hasNewSyncedItems = true;
       // Brand new item from source: add cleanly
       updatedActions.push({
         ...live,
@@ -632,16 +635,12 @@ export async function syncOperationalPlan(
     }
   }
 
-  // 2. Preserve purely manual actions (created by admin)
+  // 2. Preserve purely manual actions and any historical actions (never delete user data)
   for (const act of existingActions) {
     if (act.isManual || act.sourceModule === 'manual' || !act.sourceId) {
       updatedActions.push(act);
     } else if (!handledSourceIds.has(act.sourceId) && !excludedSet.has(act.sourceId)) {
-      // Item previously imported whose source might be missing:
-      // If customized, keep it! If uncustomized, keep as historical or prune
-      if (act.isCustomized) {
-        updatedActions.push(act);
-      }
+      updatedActions.push(act);
     }
   }
 
@@ -659,7 +658,7 @@ export async function syncOperationalPlan(
     academicYear,
   };
 
-  if (isAuthorizedToSave()) {
+  if ((persistChanges || hasNewSyncedItems) && isAuthorizedToSave()) {
     await saveOperationalPlan(newState);
   }
   return newState;
@@ -667,18 +666,23 @@ export async function syncOperationalPlan(
 
 // ─── Persistence Helpers (LocalStorage + Firestore) ─────────────────────────
 export async function loadOperationalPlan(academicYear: string = '2026-2027'): Promise<OperationalPlanState> {
+  let localParsed: OperationalPlanState | null = null;
   if (typeof window !== 'undefined') {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_V2) || localStorage.getItem(STORAGE_KEY_V1);
       if (stored) {
         const parsed = JSON.parse(stored) as OperationalPlanState;
         if (parsed && Array.isArray(parsed.objectives) && Array.isArray(parsed.actions)) {
-          return parsed;
+          localParsed = parsed;
         }
       }
     } catch (e) {
       console.warn('Error reading operational plan from localStorage:', e);
     }
+  }
+
+  if (localParsed && localParsed.actions.length > 0) {
+    return syncOperationalPlan(localParsed, academicYear, false);
   }
 
   // Fallback: Attempt Firestore collection
@@ -687,14 +691,16 @@ export async function loadOperationalPlan(academicYear: string = '2026-2027'): P
     if (firestoreDocs && firestoreDocs.length > 0) {
       const docState = firestoreDocs.find(d => d.id === 'current_state' || d.academicYear === academicYear) || firestoreDocs[0];
       if (docState && docState.objectives && docState.actions) {
-        return {
+        const cloudState: OperationalPlanState = {
           objectives: docState.objectives,
           actions: docState.actions,
           excludedSourceIds: docState.excludedSourceIds || [],
+          deletedObjectiveIds: docState.deletedObjectiveIds || [],
           lastSyncedAt: docState.lastSyncedAt || new Date().toISOString(),
           syncStatus: 'success',
           academicYear: docState.academicYear || academicYear,
         };
+        return syncOperationalPlan(cloudState, academicYear, false);
       }
     }
   } catch (err) {
@@ -712,7 +718,7 @@ export async function loadOperationalPlan(academicYear: string = '2026-2027'): P
   };
 
   // Perform initial sync
-  return syncOperationalPlan(initialState, academicYear);
+  return syncOperationalPlan(initialState, academicYear, true);
 }
 
 export async function saveOperationalPlan(state: OperationalPlanState): Promise<void> {

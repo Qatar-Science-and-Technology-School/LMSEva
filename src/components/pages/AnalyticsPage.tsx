@@ -58,6 +58,7 @@ interface MeeeRecord {
 interface Props { 
   currentUser: User; 
   selectedYear?: string; 
+  onNavigate?: (page: any) => void;
 }
 
 type TabType = 
@@ -71,7 +72,7 @@ type TabType =
 
 const COLORS = ['#00B4D8', '#10B981', '#F59E0B', '#6366F1', '#EC4899', '#8B5CF6', '#14B8A6', '#F97316', '#3B82F6', '#84CC16'];
 
-export default function AnalyticsPage({ currentUser, selectedYear: propYear }: Props) {
+export default function AnalyticsPage({ currentUser, selectedYear: propYear, onNavigate }: Props) {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -95,11 +96,11 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
     if (propYear) setSelYear(propYear);
   }, [propYear]);
 
-  // Load all data sources across the entire LMS platform
+  // Load all data sources across the entire LMS platform & listen for live updates
   useEffect(() => {
     let isMounted = true;
-    const loadAllData = async () => {
-      setLoading(true);
+    const loadAllData = async (isSilent = false) => {
+      if (!isSilent) setLoading(true);
       try {
         const [
           t, e, d, mle, ach, w, ind, meee, sms, opPlan, evts, dl, sd
@@ -141,8 +142,13 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
       }
     };
 
-    loadAllData();
-    return () => { isMounted = false; };
+    loadAllData(false);
+    const handleLiveSync = () => loadAllData(true);
+    window.addEventListener('qstss_data_updated', handleLiveSync);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('qstss_data_updated', handleLiveSync);
+    };
   }, [selYear]);
 
   // Scoping for coordinator if applicable
@@ -354,15 +360,21 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
     return { total, overallScoreAvg, samrData, tkAvg, pkAvg, ckAvg, tpackAvg, topTools };
   }, [yearModelLessons]);
 
-  // ─── 4. Professional & Self Development Analytics ─────────────────────────
+  // ─── 4. Professional & Self Development Analytics (Year-Scoped) ────────────
   const pdStats = useMemo(() => {
-    const totalWorkshops = workshops.length;
-    const workshopHours = workshops.reduce((sum, w) => sum + (Number(w.hours) || 1), 0);
-    const individualCount = individualRecords.length;
-    const individualHours = individualCount * 1; // approx 1 hr per 1-on-1 session
+    const yearWorkshops = workshops.filter(w => !w.academicYear || w.academicYear === selYear);
+    const yearIndividual = individualRecords.filter(r => !r.academicYear || r.academicYear === selYear);
+    const yearMeee = meeeRecords.filter(r => !r.academicYear || r.academicYear === selYear);
+
+    const totalWorkshops = yearWorkshops.length;
+    const workshopHours = yearWorkshops.reduce((sum, w) => sum + (Number(w.hours) || 1), 0);
+    const individualCount = yearIndividual.length;
+    const individualHours = Math.round(
+      yearIndividual.reduce((sum, r) => sum + (Number(r.durationMinutes) || 45), 0) / 60
+    ) || individualCount;
     const selfDevHours = selfDevRecords.reduce((sum, r) => sum + (Number(r.hours) || 0), 0);
-    const meeeCertified = meeeRecords.filter(r => r.status === 'حصل على الشهادة').length;
-    const meeePending = meeeRecords.filter(r => r.status === 'تم التقديم').length;
+    const meeeCertified = yearMeee.filter(r => r.status === 'حصل على الشهادة').length;
+    const meeePending = yearMeee.filter(r => r.status === 'تم التقديم').length;
 
     // Self Development by Category
     const selfDevCatCounts: Record<string, { count: number; hours: number }> = {};
@@ -400,10 +412,11 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
       hoursBreakdown,
       grandTotalHours,
     };
-  }, [workshops, individualRecords, selfDevRecords, meeeRecords]);
+  }, [workshops, individualRecords, selfDevRecords, meeeRecords, selYear]);
 
-  // ─── 5. Distance Learning & Events Analytics ──────────────────────────────
+  // ─── 5. Distance Learning & Events Analytics (Year-Scoped) ────────────────
   const distanceAndEventsStats = useMemo(() => {
+    const yearEvents = eventsMeetings.filter(ev => !ev.academicYear || ev.academicYear === selYear);
     // Distance Learning Attendance Rate
     const dlTotal = distanceLearning.length;
     let avgAttendance = 96.2;
@@ -414,7 +427,7 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
 
     // Events by Category
     const eventCategoryMap: Record<string, number> = {};
-    eventsMeetings.forEach(ev => {
+    yearEvents.forEach(ev => {
       const cat = ev.category || 'اجتماع';
       eventCategoryMap[cat] = (eventCategoryMap[cat] || 0) + 1;
     });
@@ -425,16 +438,16 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
       color: COLORS[i % COLORS.length]
     }));
 
-    const totalParticipants = eventsMeetings.reduce((sum, ev) => sum + (ev.participantsCount || 0), 0);
+    const totalParticipants = yearEvents.reduce((sum, ev) => sum + (ev.participantsCount || 0), 0);
 
     return {
       dlTotal,
       avgAttendance,
-      eventsCount: eventsMeetings.length,
+      eventsCount: yearEvents.length,
       totalParticipants,
       eventCatData,
     };
-  }, [distanceLearning, eventsMeetings]);
+  }, [distanceLearning, eventsMeetings, selYear]);
 
   // ─── 6. Honors & Recognition Analytics ─────────────────────────────────────
   const recognitionStats = useMemo(() => {
@@ -459,6 +472,7 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
 
   // ─── 7. Cross-Department Composite Matrix ──────────────────────────────────
   const crossDeptMatrix = useMemo(() => {
+    const officialHonorees = getMonthlyDepartmentHonorees(evaluations, teachers, departments, selYear, 'سبتمبر');
     return departments.map(d => {
       const deptTeachers = teachers.filter(t => t.departmentId === d.id);
       const evs = yearEvals.filter(e => deptTeachers.some(t => t.id === e.teacherId));
@@ -468,12 +482,23 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
       const lessonCount = dLessons.length;
       const lessonAvg = lessonCount ? Math.round((dLessons.reduce((a, b) => a + (b.overallScore || 0), 0) / lessonCount) * 10) / 10 : 0;
 
-      const dMeee = meeeRecords.filter(m => m.department === d.nameAr && m.status === 'حصل على الشهادة').length;
+      const dMeee = meeeRecords.filter(
+        m => (!m.academicYear || m.academicYear === selYear) && m.department === d.nameAr && m.status === 'حصل على الشهادة'
+      ).length;
       
-      // Top Teacher in Department
+      // Official Department Honoree / Top Teacher in Department
+      const officialDeptChamp = officialHonorees.find(h => h.departmentId === d.id || h.departmentName === d.nameAr);
       const deptRanks = teacherRanks.filter(r => r.teacher.departmentId === d.id);
-      const champion = deptRanks.length > 0 ? deptRanks[0].teacher.nameAr : '—';
-      const championScore = deptRanks.length > 0 ? deptRanks[0].avg : 0;
+      const champion = officialDeptChamp
+        ? officialDeptChamp.teacherNameAr
+        : deptRanks.length > 0
+          ? deptRanks[0].teacher.nameAr
+          : '—';
+      const championScore = officialDeptChamp
+        ? officialDeptChamp.totalScore
+        : deptRanks.length > 0
+          ? deptRanks[0].avg
+          : 0;
 
       return {
         id: d.id,
@@ -487,7 +512,7 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
         championScore: championScore || 95,
       };
     }).sort((a, b) => b.lmsAvg - a.lmsAvg);
-  }, [departments, teachers, yearEvals, yearModelLessons, meeeRecords, teacherRanks]);
+  }, [departments, teachers, evaluations, selYear, yearEvals, yearModelLessons, meeeRecords, teacherRanks]);
 
   // ─── 8. Institutional Maturity Radar ───────────────────────────────────────
   const maturityRadarData = useMemo(() => {
@@ -635,6 +660,21 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
             </select>
           </div>
 
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('reports')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                background: '#059669', color: '#FFFFFF', border: 'none',
+                padding: '0.45rem 0.9rem', borderRadius: '8px', fontSize: '0.8rem',
+                fontWeight: 800, cursor: 'pointer', boxShadow: '0 1px 4px rgba(5,150,105,0.2)',
+              }}
+            >
+              <span>📋</span>
+              <span>مركز التقارير الرسمية</span>
+            </button>
+          )}
+
           {/* Export Excel */}
           <button 
             onClick={handleExportExcel}
@@ -666,11 +706,15 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
         </div>
       </div>
 
-      {/* ─── High-Level Executive 6 KPI Cards ─── */}
+      {/* ─── High-Level Executive 6 KPI Cards (Interactive Drill-Down) ─── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(195px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
         
         {/* KPI 1: LMS Evaluation Index */}
-        <div style={{ ...cardStyle, borderRight: '4px solid #00B4D8', marginBottom: 0, padding: '1.1rem' }}>
+        <div
+          onClick={() => onNavigate && onNavigate('evaluation')}
+          title="انقر للانتقال إلى صفحة تقييم نظام قطر للتعليم"
+          style={{ ...cardStyle, borderRight: '4px solid #00B4D8', marginBottom: 0, padding: '1.1rem', cursor: onNavigate ? 'pointer' : 'default' }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800 }}>مؤشر تفعيل LMS</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#F0F9FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -686,7 +730,11 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
         </div>
 
         {/* KPI 2: Operational Plan Completion */}
-        <div style={{ ...cardStyle, borderRight: '4px solid #10B981', marginBottom: 0, padding: '1.1rem' }}>
+        <div
+          onClick={() => onNavigate && onNavigate('operational_plan')}
+          title="انقر للانتقال إلى صفحة الخطة الإجرائية"
+          style={{ ...cardStyle, borderRight: '4px solid #10B981', marginBottom: 0, padding: '1.1rem', cursor: onNavigate ? 'pointer' : 'default' }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800 }}>إنجاز الخطة الإجرائية</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -702,7 +750,11 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
         </div>
 
         {/* KPI 3: Model Lessons Observed */}
-        <div style={{ ...cardStyle, borderRight: '4px solid #6366F1', marginBottom: 0, padding: '1.1rem' }}>
+        <div
+          onClick={() => onNavigate && onNavigate('model_lessons')}
+          title="انقر للانتقال إلى صفحة حصص التعليم الإلكتروني"
+          style={{ ...cardStyle, borderRight: '4px solid #6366F1', marginBottom: 0, padding: '1.1rem', cursor: onNavigate ? 'pointer' : 'default' }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800 }}>حصص التعليم الإلكتروني</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -718,7 +770,11 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
         </div>
 
         {/* KPI 4: Total Training & Development Hours */}
-        <div style={{ ...cardStyle, borderRight: '4px solid #F59E0B', marginBottom: 0, padding: '1.1rem' }}>
+        <div
+          onClick={() => onNavigate && onNavigate('professional_development')}
+          title="انقر للانتقال إلى صفحة التطوير المهني"
+          style={{ ...cardStyle, borderRight: '4px solid #F59E0B', marginBottom: 0, padding: '1.1rem', cursor: onNavigate ? 'pointer' : 'default' }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800 }}>ساعات التطوير المهني والذاتي</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#FFFBEB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -734,7 +790,11 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
         </div>
 
         {/* KPI 5: Distance Learning Attendance */}
-        <div style={{ ...cardStyle, borderRight: '4px solid #14B8A6', marginBottom: 0, padding: '1.1rem' }}>
+        <div
+          onClick={() => onNavigate && onNavigate('distance_learning')}
+          title="انقر للانتقال إلى صفحة التعلم عن بعد"
+          style={{ ...cardStyle, borderRight: '4px solid #14B8A6', marginBottom: 0, padding: '1.1rem', cursor: onNavigate ? 'pointer' : 'default' }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800 }}>حضور التعلم عن بعد</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#F0FDFA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -750,7 +810,11 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear }: P
         </div>
 
         {/* KPI 6: Events, Meetings & Achievements */}
-        <div style={{ ...cardStyle, borderRight: '4px solid #8B5CF6', marginBottom: 0, padding: '1.1rem' }}>
+        <div
+          onClick={() => onNavigate && onNavigate('events_meetings')}
+          title="انقر للانتقال إلى صفحة الفعاليات والاجتماعات"
+          style={{ ...cardStyle, borderRight: '4px solid #8B5CF6', marginBottom: 0, padding: '1.1rem', cursor: onNavigate ? 'pointer' : 'default' }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800 }}>الفعاليات والشراكات</span>
             <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#F5F3FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
-import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, EVALUATION_CRITERIA, SCHOOL_NAME, getTeacherRecognitionHistory, isSuperAdmin } from '@/lib/data';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { db, MONTHS, ACADEMIC_YEARS, getPerformanceLevel, getDeptName, EVALUATION_CRITERIA, SCHOOL_NAME, getTeacherRecognitionHistory, getMonthlyDepartmentHonorees, isSuperAdmin } from '@/lib/data';
 import { invalidateCache } from '@/lib/firestoreDb';
-import type { User, Teacher, Evaluation, Department, ModelLessonEvaluation, Achievement } from '@/lib/data';
-import type { IndividualPDRecord } from '@/lib/pdData';
+import type { User, Teacher, Evaluation, Department, ModelLessonEvaluation, ModelLessonScheduleItem, Achievement } from '@/lib/data';
+import type { IndividualPDRecord, Workshop } from '@/lib/pdData';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from 'recharts';
 import PrintHeader from '@/components/PrintHeader';
 
@@ -17,32 +17,45 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [modelLessonEvals, setModelLessonEvals] = useState<ModelLessonEvaluation[]>([]);
+  const [modelLessonSchedules, setModelLessonSchedules] = useState<ModelLessonScheduleItem[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [individualRecords, setIndividualRecords] = useState<IndividualPDRecord[]>([]);
+  const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [meeeRecords, setMeeeRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'modellessons' | 'pd' | 'achievements'>('overview');
 
-  useEffect(() => {
+  const loadProfileData = useCallback(() => {
     Promise.all([
       db.getTeachers(),
       db.getEvaluations(),
       db.getDepartments(),
       db.getModelLessonEvaluations().catch(() => []),
+      db.getModelLessonSchedules().catch(() => []),
       db.getAchievements().catch(() => []),
       db.getIndividualPDRecords().catch(() => []),
+      db.getWorkshops().catch(() => []),
       db.getMeeeRecords().catch(() => [])
-    ]).then(([t, e, d, mle, ach, ipd, meee]) => {
+    ]).then(([t, e, d, mle, mls, ach, ipd, ws, meee]) => {
       setTeachers(t);
       setEvaluations(e);
       setDepartments(d);
-      setModelLessonEvals(mle);
+      setModelLessonEvals(mle || []);
+      setModelLessonSchedules(mls || []);
       setAchievements(ach);
       setIndividualRecords(ipd);
+      setWorkshops(ws);
       setMeeeRecords(meee);
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    loadProfileData();
+    const handleUpdate = () => loadProfileData();
+    window.addEventListener('qstss_data_updated', handleUpdate);
+    return () => window.removeEventListener('qstss_data_updated', handleUpdate);
+  }, [loadProfileData]);
 
   const recognitionHistory = useMemo(() => {
     return getTeacherRecognitionHistory(evaluations, teachers, departments, teacherId);
@@ -50,19 +63,31 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
 
   const teacher = teachers.find(t => t.id === teacherId);
 
+  const isOfficialHonoree = useMemo(() => {
+    if (!teacher) return false;
+    const honorees = getMonthlyDepartmentHonorees(evaluations, teachers, departments, propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1], '');
+    return honorees.some(h => h.teacher?.id === teacher.id);
+  }, [evaluations, teachers, departments, teacher, propYear]);
+
   // Model lessons for this teacher
   const teacherModelLessons = useMemo(() => {
-    return modelLessonEvals.filter(m => m.teacherId === teacherId);
-  }, [modelLessonEvals, teacherId]);
+    return modelLessonEvals.filter(m => m.teacherId === teacherId || (teacher && m.teacherNameAr && m.teacherNameAr.includes(teacher.nameAr)));
+  }, [modelLessonEvals, teacherId, teacher]);
+
+  const teacherScheduledLessons = useMemo(() => {
+    return modelLessonSchedules.filter(s => s.teacherId === teacherId || (teacher && s.teacherNameAr && s.teacherNameAr.includes(teacher.nameAr)));
+  }, [modelLessonSchedules, teacherId, teacher]);
 
   // Achievements for this teacher
   const teacherAchievements = useMemo(() => {
     if (!teacher) return [];
+    const deptObj = departments.find(d => d.id === teacher.departmentId);
     return achievements.filter(a => 
       (a.supervisorName && a.supervisorName.includes(teacher.nameAr)) ||
-      (a.achievementName && a.achievementName.includes(teacher.nameAr))
+      (a.achievementName && a.achievementName.includes(teacher.nameAr)) ||
+      (deptObj && a.organizer && a.organizer.includes(deptObj.nameAr.replace('قسم ', '')))
     );
-  }, [achievements, teacher]);
+  }, [achievements, teacher, departments]);
 
   // PD records for this teacher
   const teacherPD = useMemo(() => {
@@ -72,6 +97,16 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
       (r.traineeNameAr && r.traineeNameAr.includes(teacher.nameAr))
     );
   }, [individualRecords, teacherId, teacher]);
+
+  // Collective Workshops attended by this teacher
+  const teacherWorkshops = useMemo(() => {
+    if (!teacher) return [];
+    return workshops.filter(w =>
+      (w.attendees && w.attendees.some(att => att.teacherId === teacherId || (att.name && att.name.includes(teacher.nameAr)))) ||
+      (w.trainerName && w.trainerName.includes(teacher.nameAr)) ||
+      (w.facilitatorName && w.facilitatorName.includes(teacher.nameAr))
+    );
+  }, [workshops, teacherId, teacher]);
 
   // MEEE for this teacher
   const teacherMeee = useMemo(() => {
@@ -179,7 +214,12 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
           <h2 style={{ fontSize:'1.3rem', fontWeight:800, color:'#0F2044', margin:0 }}>{teacher.nameAr}</h2>
           <p style={{ fontSize:'0.75rem', color:'#64748B', margin:'0.1rem 0 0' }}>{teacher.nameEn} · {deptName} · {teacher.subject}</p>
         </div>
-        <div style={{ marginRight:'auto', display:'flex', gap:'0.5rem', alignItems:'center' }}>
+        <div style={{ marginRight:'auto', display:'flex', gap:'0.5rem', alignItems:'center', flexWrap:'wrap' }}>
+          {isOfficialHonoree && (
+            <span style={{ background:'linear-gradient(135deg, #FEF3C7, #FDE68A)', color:'#92400E', border:'1px solid #F59E0B', padding:'0.3rem 0.85rem', borderRadius:'999px', fontSize:'0.78rem', fontWeight:900 }}>
+              🏆 معلم مكرم على مستوى القسم والمدرسة
+            </span>
+          )}
           <button onClick={() => window.print()} className="btn btn-primary" style={{ fontSize:'0.8rem' }}>🖨️ طباعة الملف</button>
           <span style={{ background:perf.bg, color:perf.color, padding:'0.3rem 1rem', borderRadius:'999px', fontSize:'0.8rem', fontWeight:700 }}>
             {perf.label}
@@ -191,8 +231,8 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
       <div className="no-print" style={{ display:'flex', gap:'0.5rem', marginBottom:'1.25rem', flexWrap:'wrap' }}>
         {[
           { id:'overview', label:'📊 التقييم الشهري والتحليلات', count: teacherEvals.length },
-          { id:'modellessons', label:'💻 حصص التعليم الإلكتروني', count: teacherModelLessons.length },
-          { id:'pd', label:'🎓 التطوير المهني وشهادة MEEE', count: teacherPD.length },
+          { id:'modellessons', label:'💻 حصص التعليم الإلكتروني', count: teacherModelLessons.length + teacherScheduledLessons.length },
+          { id:'pd', label:'🎓 التطوير المهني وشهادة MEEE', count: teacherPD.length + teacherWorkshops.length },
           { id:'achievements', label:'🌟 الإنجازات والمسابقات', count: teacherAchievements.length },
         ].map(tab => (
           <button
@@ -416,6 +456,26 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
               ))}
             </div>
           )}
+
+          {/* Scheduled Model Lessons */}
+          {teacherScheduledLessons.length > 0 && (
+            <div style={{ marginTop:'1.25rem', paddingTop:'1rem', borderTop:'1px solid #E2E8F0' }}>
+              <h4 style={{ fontSize:'0.85rem', fontWeight:800, color:'#0F2044', margin:'0 0 0.75rem' }}>📅 حصص التعليم الإلكتروني المجدولة ({teacherScheduledLessons.length})</h4>
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+                {teacherScheduledLessons.map((sl, i) => (
+                  <div key={sl.id || i} style={{ padding:'0.75rem', background:'#F0F9FF', borderRadius:'8px', border:'1px solid #BAE6FD', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'0.5rem' }}>
+                    <div>
+                      <div style={{ fontWeight:800, fontSize:'0.8rem', color:'#0369A1' }}>{sl.lessonTopic || 'حصة نموذجية'}</div>
+                      <div style={{ fontSize:'0.72rem', color:'#475569' }}>📅 {sl.date} | الحصة: {sl.period} | الصف: {sl.classGrade}</div>
+                    </div>
+                    <span style={{ background:'#E0F2FE', color:'#075985', padding:'3px 10px', borderRadius:'10px', fontSize:'0.72rem', fontWeight:800 }}>
+                      {sl.status || 'مجدولة'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -437,11 +497,11 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
           </div>
 
           {/* Individual PD Records */}
-          <h4 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'0.75rem' }}>📋 الورش التدريبية الفردية</h4>
+          <h4 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', marginBottom:'0.75rem' }}>📋 الورش التدريبية الفردية ({teacherPD.length})</h4>
           {teacherPD.length === 0 ? (
-            <div style={{ padding:'2rem', textAlign:'center', color:'#94A3B8', fontSize:'0.8rem' }}>لا توجد سجلات تطوير مهني فردية مسجلة</div>
+            <div style={{ padding:'1.5rem', textAlign:'center', color:'#94A3B8', fontSize:'0.8rem' }}>لا توجد سجلات تطوير مهني فردية مسجلة</div>
           ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', marginBottom:'1.25rem' }}>
               {teacherPD.map(pd => (
                 <div key={pd.id} style={{ padding:'0.75rem', background:'#F8FAFC', borderRadius:'8px', border:'1px solid #E2E8F0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                   <div>
@@ -450,6 +510,26 @@ export default function TeacherProfilePage({ teacherId, currentUser, onBack, sel
                   </div>
                   <span style={{ background:'#EEF2FF', color:'#4338CA', padding:'2px 8px', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700 }}>
                     {pd.trainingType || 'تدريب فردي'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Collective Workshops */}
+          <h4 style={{ fontSize:'0.85rem', fontWeight:700, color:'#0F2044', margin:'1rem 0 0.75rem' }}>🏫 الورش التدريبية الجماعية المشارك بها ({teacherWorkshops.length})</h4>
+          {teacherWorkshops.length === 0 ? (
+            <div style={{ padding:'1.5rem', textAlign:'center', color:'#94A3B8', fontSize:'0.8rem' }}>لا توجد ورش جماعية مسجلة باسم المعلم مباشرة</div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+              {teacherWorkshops.map(w => (
+                <div key={w.id} style={{ padding:'0.75rem', background:'#F0FDF4', borderRadius:'8px', border:'1px solid #BBF7D0', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                  <div>
+                    <div style={{ fontWeight:700, fontSize:'0.8rem', color:'#065F46' }}>{w.titleAr || w.nameAr}</div>
+                    <div style={{ fontSize:'0.7rem', color:'#475569' }}>📅 {w.date} | المحاضر: {w.trainerName || w.facilitatorName || '-'} | المكان: {w.venue || w.location || '-'}</div>
+                  </div>
+                  <span style={{ background:'#DCFCE7', color:'#166534', padding:'2px 8px', borderRadius:'6px', fontSize:'0.7rem', fontWeight:700 }}>
+                    {w.targetAudience || 'ورشة جماعية'}
                   </span>
                 </div>
               ))}

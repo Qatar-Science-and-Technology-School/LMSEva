@@ -189,6 +189,20 @@ export function invalidateCache(collectionName?: string) {
   }
 }
 
+export function notifyDataUpdated(collectionName: string) {
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(
+        new CustomEvent('qstss_data_updated', {
+          detail: { collection: resolveCollectionName(collectionName), timestamp: Date.now() },
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }
+}
+
 /**
  * Get all documents from a Firestore collection
  */
@@ -352,6 +366,7 @@ export async function saveCollection<T extends { id?: string }>(
   // 0. Synchronously update cache and localStorage BEFORE network requests
   setCache(colName, normalizedData);
   writeLocalBackup(colName, normalizedData, true);
+  notifyDataUpdated(colName);
   if (typeof window !== 'undefined') {
     try {
       localStorage.setItem(`qstss_pending_${colName}`, '1');
@@ -445,6 +460,7 @@ export async function saveDocument<T extends { id?: string }>(
   }
   setCache(colName, list);
   writeLocalBackup(colName, list, true);
+  notifyDataUpdated(colName);
 
   // 2. Persist to Firestore
   try {
@@ -489,6 +505,7 @@ export async function deleteDocument(
     setCache(colName, filtered);
     writeLocalBackup(colName, filtered, true);
   }
+  notifyDataUpdated(colName);
 
   // 2. Delete from Firestore
   try {
@@ -611,6 +628,7 @@ export async function setSingleDocument<T extends object>(
       // ignore
     }
   }
+  notifyDataUpdated(colName);
 
   try {
     const docRef = doc(firestore, colName, cleanId);
