@@ -17,6 +17,9 @@ import {
   OCTOBER_SECTIONS_LMS_STATS,
   OCTOBER_GRADE_LEVEL_LMS_STATS,
   OCTOBER_2026_LMS_METRICS,
+  LMS_MONTHLY_OVERVIEW_COMPARISON,
+  LMS_SECTIONS_MONTHLY_COMPARISON,
+  LMS_GRADES_MONTHLY_COMPARISON,
   type User, 
   type Teacher, 
   type Evaluation, 
@@ -94,7 +97,7 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
   const [activeTab, setActiveTab] = useState<TabType>('cockpit');
   const [selYear, setSelYear] = useState(propYear || ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1] || '2026-2027');
   const [searchTerm, setSearchTerm] = useState('');
-  const [lmsAnalysisMonth, setLmsAnalysisMonth] = useState<'أكتوبر' | 'سبتمبر'>('أكتوبر');
+  const [lmsAnalysisMonth, setLmsAnalysisMonth] = useState<'أكتوبر' | 'سبتمبر' | 'مقارنة'>('أكتوبر');
 
   useEffect(() => {
     if (propYear) setSelYear(propYear);
@@ -1281,14 +1284,14 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
                 </div>
 
                 {/* Month Toggle Pills */}
-                <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.1)', padding: '0.25rem', borderRadius: '10px', backdropFilter: 'blur(8px)' }}>
+                <div style={{ display: 'inline-flex', background: 'rgba(255,255,255,0.1)', padding: '0.25rem', borderRadius: '10px', backdropFilter: 'blur(8px)', flexWrap: 'wrap', gap: '0.25rem' }}>
                   <button
                     type="button"
                     onClick={() => setLmsAnalysisMonth('أكتوبر')}
                     style={{
-                      padding: '0.45rem 1rem',
+                      padding: '0.45rem 0.9rem',
                       borderRadius: '8px',
-                      fontSize: '0.8rem',
+                      fontSize: '0.78rem',
                       fontWeight: 800,
                       border: 'none',
                       cursor: 'pointer',
@@ -1304,9 +1307,9 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
                     type="button"
                     onClick={() => setLmsAnalysisMonth('سبتمبر')}
                     style={{
-                      padding: '0.45rem 1rem',
+                      padding: '0.45rem 0.9rem',
                       borderRadius: '8px',
-                      fontSize: '0.8rem',
+                      fontSize: '0.78rem',
                       fontWeight: 800,
                       border: 'none',
                       cursor: 'pointer',
@@ -1318,31 +1321,81 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
                   >
                     سبتمبر 2026 (المعتمد)
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setLmsAnalysisMonth('مقارنة')}
+                    style={{
+                      padding: '0.45rem 0.9rem',
+                      borderRadius: '8px',
+                      fontSize: '0.78rem',
+                      fontWeight: 800,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: lmsAnalysisMonth === 'مقارنة' ? '#38BDF8' : 'transparent',
+                      color: lmsAnalysisMonth === 'مقارنة' ? '#0F2044' : '#E2E8F0',
+                      boxShadow: lmsAnalysisMonth === 'مقارنة' ? '0 2px 8px rgba(56,189,248,0.4)' : 'none',
+                    }}
+                  >
+                    🔄 مقارنة وصافي إنجاز أكتوبر
+                  </button>
                 </div>
               </div>
 
               {/* Quick Metrics KPI row */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>إجمالي الدروس</span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#38BDF8' }}>{activeMetrics.totalLessons.toLocaleString('ar-QA')}</span>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>التقييمات المسندة</span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#34D399' }}>{activeMetrics.assignedEvaluations.toLocaleString('ar-QA')}</span>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>متوسط حل الطلاب</span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FBBF24' }}>{activeMetrics.weightedSolveRate}%</span>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>نسبة تصحيح المعلمين</span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#A78BFA' }}>{activeMetrics.gradingRate}%</span>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>كادر المعلمين المشمول</span>
-                  <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#38BDF8' }}>{activeMetrics.teachersCount} معلماً</span>
-                </div>
+                {lmsAnalysisMonth === 'مقارنة' ? (
+                  <>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>صافي الدروس المضافة بأكتوبر</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#38BDF8' }}>+{LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.netTotalLessons.toLocaleString('ar-QA')}</span>
+                      <span style={{ fontSize: '0.62rem', color: '#BAE6FD', display: 'block', marginTop: '2px' }}>نمو +{LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.netTotalLessonsGrowthPercent}%</span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>دروس ظاهرة جديدة بأكتوبر</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#34D399' }}>+{LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.netVisibleLessons.toLocaleString('ar-QA')}</span>
+                      <span style={{ fontSize: '0.62rem', color: '#A7F3D0', display: 'block', marginTop: '2px' }}>زيادة +{LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.netVisibleLessonsGrowthPercent}%</span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>تقييمات منشأة جديدة</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FBBF24' }}>+{LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.netAssessmentsCreated} تقييماً</span>
+                      <span style={{ fontSize: '0.62rem', color: '#FDE68A', display: 'block', marginTop: '2px' }}>إجمالي 287 تراكمي</span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>تحسن نسبة التصحيح</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#A78BFA' }}>+{LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.gradingRateChange}%</span>
+                      <span style={{ fontSize: '0.62rem', color: '#DDD6FE', display: 'block', marginTop: '2px' }}>ارتفعت إلى 81.6%</span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>المعلق المنجز (انخفاض)</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#38BDF8' }}>{LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.pendingChange} معلقاً</span>
+                      <span style={{ fontSize: '0.62rem', color: '#BAE6FD', display: 'block', marginTop: '2px' }}>انخفض إلى 445 معلقاً</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>إجمالي الدروس</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#38BDF8' }}>{activeMetrics.totalLessons.toLocaleString('ar-QA')}</span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>التقييمات المسندة</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#34D399' }}>{activeMetrics.assignedEvaluations.toLocaleString('ar-QA')}</span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>متوسط حل الطلاب</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#FBBF24' }}>{activeMetrics.weightedSolveRate}%</span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>نسبة تصحيح المعلمين</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#A78BFA' }}>{activeMetrics.gradingRate}%</span>
+                    </div>
+                    <div style={{ background: 'rgba(255,255,255,0.06)', padding: '0.65rem 0.85rem', borderRadius: '8px' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>كادر المعلمين المشمول</span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#38BDF8' }}>{activeMetrics.teachersCount} معلماً</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1350,33 +1403,66 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
             <div style={cardStyle}>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span>📊 نشاط وتفاعل المراحل الدراسية على نظام قطر للتعليم (الصفوف 9 - 12)</span>
-                <span style={{ fontSize: '0.75rem', color: '#00B4D8', fontWeight: 800 }}>شهر {lmsAnalysisMonth} 2026</span>
+                <span style={{ fontSize: '0.75rem', color: '#00B4D8', fontWeight: 800 }}>
+                  {lmsAnalysisMonth === 'مقارنة' ? 'مقارنة وصافي إنجاز أكتوبر (الصافي = أكتوبر - سبتمبر)' : `شهر ${lmsAnalysisMonth} 2026`}
+                </span>
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-                {activeGradeStats.map((g, idx) => (
-                  <div key={idx} style={{ background: '#F8FAFC', padding: '1rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#0F2044' }}>{g.grade}</span>
-                      <span style={{ background: '#E0F2FE', color: '#0284C7', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
-                        {g.sectionsCount} شعب دراسية
-                      </span>
+                {lmsAnalysisMonth === 'مقارنة' ? (
+                  LMS_GRADES_MONTHLY_COMPARISON.map((g, idx) => (
+                    <div key={idx} style={{ background: '#F8FAFC', padding: '1rem', borderRadius: '10px', border: '1px solid #CBD5E1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#0F2044' }}>{g.grade}</span>
+                        <span style={{ background: '#E0F2FE', color: '#0284C7', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
+                          {g.sectionsCountOct} شعب دراسية
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#0284C7', fontWeight: 800 }}>صافي الدروس المضافة:</span>
+                          <span style={{ fontWeight: 900, color: '#0284C7' }}>+{g.netLessonsAdded} درساً</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#64748B' }}>الدروس (سبتمبر / أكتوبر):</span>
+                          <span style={{ fontWeight: 800, color: '#0F2044' }}>{g.sepTotalLessons} / {g.octTotalLessons}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#64748B' }}>نسبة حل التقييمات:</span>
+                          <span style={{ fontWeight: 800, color: '#10B981' }}>{g.octSolveRate}% ({g.solveRateDelta > 0 ? '+' : ''}{g.solveRateDelta}%)</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#64748B' }}>صافي التقييمات المضافة:</span>
+                          <span style={{ fontWeight: 800, color: '#8B5CF6' }}>+{g.netEvalAdded} تقييماً</span>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#64748B' }}>إجمالي التقييمات:</span>
-                        <span style={{ fontWeight: 800, color: '#0F2044' }}>{g.evalsCount} تقييم</span>
+                  ))
+                ) : (
+                  activeGradeStats.map((g, idx) => (
+                    <div key={idx} style={{ background: '#F8FAFC', padding: '1rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#0F2044' }}>{g.grade}</span>
+                        <span style={{ background: '#E0F2FE', color: '#0284C7', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
+                          {g.sectionsCount} شعب دراسية
+                        </span>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#64748B' }}>نسبة حل التقييمات:</span>
-                        <span style={{ fontWeight: 800, color: '#10B981' }}>{g.solveRate}%</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#64748B' }}>إجمالي الدروس المرفوعة:</span>
-                        <span style={{ fontWeight: 800, color: '#0284C7' }}>{g.totalLessons} درساً</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.75rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#64748B' }}>إجمالي التقييمات:</span>
+                          <span style={{ fontWeight: 800, color: '#0F2044' }}>{g.evalsCount} تقييم</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#64748B' }}>نسبة حل التقييمات:</span>
+                          <span style={{ fontWeight: 800, color: '#10B981' }}>{g.solveRate}%</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#64748B' }}>إجمالي الدروس المرفوعة:</span>
+                          <span style={{ fontWeight: 800, color: '#0284C7' }}>{g.totalLessons} درساً</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -1384,7 +1470,9 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
             <div style={cardStyle}>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0F2044', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span>🏆 أفضل 10 شعب دراسية في حل التقييمات وتفاعل الدروس</span>
-                <span style={{ fontSize: '0.75rem', color: '#00B4D8', fontWeight: 800 }}>شهر {lmsAnalysisMonth} 2026</span>
+                <span style={{ fontSize: '0.75rem', color: '#00B4D8', fontWeight: 800 }}>
+                  {lmsAnalysisMonth === 'مقارنة' ? 'مقارنة وصافي إنجاز أكتوبر' : `شهر ${lmsAnalysisMonth} 2026`}
+                </span>
               </h3>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
@@ -1394,31 +1482,63 @@ export default function AnalyticsPage({ currentUser, selectedYear: propYear, onN
                       <th style={{ padding: '0.65rem 0.8rem' }}>الشعبة الدراسية</th>
                       <th style={{ padding: '0.65rem 0.8rem' }}>الصف</th>
                       <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>الطلاب</th>
-                      <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>نسبة الحل (%)</th>
-                      <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>نسبة التصحيح (%)</th>
-                      <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center', borderRadius: '8px 0 0 0' }}>متوسط الدرجات</th>
+                      {lmsAnalysisMonth === 'مقارنة' ? (
+                        <>
+                          <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center', background: '#0284C7' }}>صافي دروس أكتوبر (أكتوبر - سبتمبر)</th>
+                          <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>نسبة الحل (أكتوبر / الفارق)</th>
+                          <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center', borderRadius: '8px 0 0 0' }}>نسبة التصحيح (أكتوبر / الفارق)</th>
+                        </>
+                      ) : (
+                        <>
+                          <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>نسبة الحل (%)</th>
+                          <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>نسبة التصحيح (%)</th>
+                          <th style={{ padding: '0.65rem 0.8rem', textAlign: 'center', borderRadius: '8px 0 0 0' }}>متوسط الدرجات</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
-                    {activeSectionsStats.slice(0, 10).map((sec, idx) => (
-                      <tr key={idx} style={{ background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                        <td style={{ padding: '0.65rem 0.8rem', fontWeight: 800, color: '#64748B' }}>{sec.rank}</td>
-                        <td style={{ padding: '0.65rem 0.8rem', fontWeight: 900, color: '#0F2044' }}>{sec.section}</td>
-                        <td style={{ padding: '0.65rem 0.8rem', color: '#475569' }}>{sec.grade}</td>
-                        <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 700 }}>{sec.studentsCount}</td>
-                        <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>
-                          <span style={{ background: '#ECFDF5', color: '#047857', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>
-                            {sec.solveRate}%
-                          </span>
-                        </td>
-                        <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 800, color: '#0284C7' }}>
-                          {sec.gradingRate}%
-                        </td>
-                        <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 900, color: '#0F2044' }}>
-                          {sec.evalAvg}
-                        </td>
-                      </tr>
-                    ))}
+                    {lmsAnalysisMonth === 'مقارنة' ? (
+                      LMS_SECTIONS_MONTHLY_COMPARISON.slice(0, 10).map((sec, idx) => (
+                        <tr key={idx} style={{ background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                          <td style={{ padding: '0.65rem 0.8rem', fontWeight: 800, color: '#64748B' }}>{idx + 1}</td>
+                          <td style={{ padding: '0.65rem 0.8rem', fontWeight: 900, color: '#0F2044' }}>شعبة {sec.section}</td>
+                          <td style={{ padding: '0.65rem 0.8rem', color: '#475569' }}>{sec.grade}</td>
+                          <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 700 }}>{sec.studentsCount}</td>
+                          <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 900, color: '#0284C7', background: 'rgba(2,132,199,0.06)' }}>
+                            +{sec.netLessonsAdded} درساً
+                          </td>
+                          <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>
+                            <span style={{ background: '#ECFDF5', color: '#047857', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>
+                              {sec.octSolveRate}% ({sec.solveRateDelta > 0 ? '+' : ''}{sec.solveRateDelta}%)
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 800, color: '#0284C7' }}>
+                            {sec.octGradingRate}% ({sec.gradingRateDelta > 0 ? '+' : ''}{sec.gradingRateDelta}%)
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      activeSectionsStats.slice(0, 10).map((sec, idx) => (
+                        <tr key={idx} style={{ background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                          <td style={{ padding: '0.65rem 0.8rem', fontWeight: 800, color: '#64748B' }}>{sec.rank}</td>
+                          <td style={{ padding: '0.65rem 0.8rem', fontWeight: 900, color: '#0F2044' }}>{sec.section}</td>
+                          <td style={{ padding: '0.65rem 0.8rem', color: '#475569' }}>{sec.grade}</td>
+                          <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 700 }}>{sec.studentsCount}</td>
+                          <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center' }}>
+                            <span style={{ background: '#ECFDF5', color: '#047857', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 800 }}>
+                              {sec.solveRate}%
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 800, color: '#0284C7' }}>
+                            {sec.gradingRate}%
+                          </td>
+                          <td style={{ padding: '0.65rem 0.8rem', textAlign: 'center', fontWeight: 900, color: '#0F2044' }}>
+                            {sec.evalAvg}
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

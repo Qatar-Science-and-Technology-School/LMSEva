@@ -4,6 +4,7 @@ import { generateSeptember2026Evaluations } from './lmsReportSeptember2026';
 import { generateOctober2026Evaluations } from './lmsReportOctober2026';
 export * from './lmsReportSeptember2026';
 export * from './lmsReportOctober2026';
+export * from './lmsMonthlyComparison';
 
 // مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين
 export const SCHOOL_NAME = 'مدرسة قطر للعلوم والتكنولوجيا الاعدادية الثانوية للبنين - أم السنيم';

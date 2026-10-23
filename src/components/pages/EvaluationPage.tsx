@@ -21,6 +21,8 @@ import {
   UNASSIGNED_EVAL_TEACHERS,
   ZERO_LESSON_TEACHERS,
   generateSeptember2026Evaluations,
+  generateOctober2026Evaluations,
+  OCTOBER_2026_LMS_TEACHERS,
   isExcludedTeacher,
   isSuperAdmin,
   type LmsReportTeacherRecord
@@ -418,7 +420,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
 
   // Form State
   const [teacherId, setTeacherId] = useState('');
-  const [month, setMonth] = useState(MONTHS[0]);
+  const [month, setMonth] = useState('أكتوبر');
   const [term, setTerm] = useState(TERMS[0]);
   const [year, setYear] = useState(propYear || currentYear);
   const [evalDate, setEvalDate] = useState(new Date().toISOString().split('T')[0]);
@@ -993,7 +995,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
 
   function printCurrentView() { window.print(); }
 
-  async function handleSyncSeptember2026Evals() {
+  async function handleSyncActiveMonthEvals() {
     if (!canManageEvaluations) {
       alert('عذراً، خاصية المزامنة وحفظ التقييمات متاحة فقط لمدير النظام.');
       return;
@@ -1001,11 +1003,15 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
     setIsSyncingEvals(true);
     setSyncSuccessMsg('');
     try {
-      const generated = generateSeptember2026Evaluations(teachers);
+      const activeMonthName = month || 'أكتوبر';
+      const generated = activeMonthName === 'أكتوبر'
+        ? generateOctober2026Evaluations(teachers)
+        : generateSeptember2026Evaluations(teachers);
+
       const generatedTeacherIds = new Set(generated.map(g => g.teacherId));
       // Keep evaluations of any teacher not mentioned in the official report as is
       const otherEvals = allEvaluations.filter(e => {
-        if (e.academicYear === '2026-2027' && e.month === 'سبتمبر') {
+        if (e.academicYear === '2026-2027' && e.month === activeMonthName) {
           return !generatedTeacherIds.has(e.teacherId);
         }
         return true;
@@ -1013,7 +1019,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
       const updatedEvals = [...otherEvals, ...generated];
       await db.saveEvaluations(updatedEvals);
       setAllEvaluations(updatedEvals);
-      setSyncSuccessMsg('✅ تم بنجاح تحديث تقييمات المعلمين لشهر سبتمبر 2026 بناءً على التقرير الرسمي المعتمد (مع الاحتفاظ بتقييم أي معلم لم يرد اسمه بالتقرير)!');
+      setSyncSuccessMsg(`✅ تم بنجاح تحديث وتوثيق تقييمات المعلمين لشهر ${activeMonthName} 2026 بناءً على التقرير الرسمي المعتمد (${generated.length} معلماً)!`);
       setTimeout(() => setSyncSuccessMsg(''), 6000);
     } catch (err: any) {
       console.error(err);
@@ -1023,8 +1029,11 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
     }
   }
 
-  function handleExportSeptemberReportToExcel() {
-    const rows = SEPTEMBER_2026_LMS_TEACHERS.map((t, idx) => ({
+  function handleExportActiveReportToExcel() {
+    const activeMonthName = month || 'أكتوبر';
+    const teacherRecords = activeMonthName === 'أكتوبر' ? OCTOBER_2026_LMS_TEACHERS : SEPTEMBER_2026_LMS_TEACHERS;
+
+    const rows = teacherRecords.map((t, idx) => ({
       'م': idx + 1,
       'اسم المعلم': t.name,
       'القسم': t.department,
@@ -1049,8 +1058,8 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
 
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'تقرير نشاط سبتمبر 2026');
-    XLSX.writeFile(wb, `تقرير_تقييم_المعلمين_نظام_قطر_للتعليم_سبتمبر_2026.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, `تقرير نشاط ${activeMonthName} 2026`);
+    XLSX.writeFile(wb, `تقرير_تقييم_المعلمين_نظام_قطر_للتعليم_${activeMonthName}_2026.xlsx`);
   }
 
   async function exportReportAsPdf() {
@@ -1442,7 +1451,7 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
         {/* Tab Buttons */}
         <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '2px solid #E2E8F0', paddingBottom: '0.5rem', overflowX: 'auto' }}>
           {[
-            { id: 'platform_report', label: `📊 تقرير نشاط المنصة (${month} ٢٠٢٦)`, badge: month === 'سبتمبر' ? 'موثق' : 'قيد الانتظار' },
+            { id: 'platform_report', label: `📊 تقرير نشاط المنصة (${month} ٢٠٢٦)`, badge: (month === 'سبتمبر' || month === 'أكتوبر') ? 'موثق ومعتمد' : 'قيد الانتظار' },
             { id: 'form', label: '📝 نموذج التقييم الشهري' },
             { id: 'history', label: `📋 سجل التقييمات (${allEvaluations.filter(e => e.academicYear === year).length})` },
             { id: 'reports', label: '📈 التقارير والإحصاءات العصرية' },
@@ -1502,10 +1511,10 @@ export default function EvaluationPage({ currentUser, selectedYear: propYear, on
                   setYear('2026-2027');
                   setMainTab('form');
                 }}
-                onSyncEvals={handleSyncSeptember2026Evals}
+                onSyncEvals={handleSyncActiveMonthEvals}
                 isSyncing={isSyncingEvals}
                 syncSuccessMsg={syncSuccessMsg}
-                onExportExcel={handleExportSeptemberReportToExcel}
+                onExportExcel={handleExportActiveReportToExcel}
                 onNavigateToTakreem={() => onNavigateToPage?.('takreem')}
                 canManageEvaluations={canManageEvaluations}
               />

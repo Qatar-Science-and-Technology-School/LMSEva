@@ -12,6 +12,11 @@ import {
   OCTOBER_SUBJECTS_LMS_STATS,
   OCTOBER_GRADE_LEVEL_LMS_STATS,
   OCTOBER_2026_LMS_METRICS,
+  LMS_MONTHLY_OVERVIEW_COMPARISON,
+  LMS_SECTIONS_MONTHLY_COMPARISON,
+  LMS_GRADES_MONTHLY_COMPARISON,
+  LMS_SUBJECTS_MONTHLY_COMPARISON,
+  LMS_TAKREEM_MONTHLY_EVOLUTION,
 } from '@/lib/data';
 import type { User } from '@/lib/data';
 import {
@@ -91,7 +96,11 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
   const activeGrades = isOct ? OCTOBER_GRADE_LEVEL_LMS_STATS : GRADE_LEVEL_LMS_STATS;
 
   // Active sub-tab
-  const [activeTab, setActiveTab] = useState<'report' | 'sections' | 'subjects' | 'grades' | 'matrix' | 'action_plan'>('report');
+  const [activeTab, setActiveTab] = useState<'report' | 'comparison' | 'sections' | 'subjects' | 'grades' | 'matrix' | 'action_plan'>('report');
+
+  // Filters for monthly comparison table
+  const [compGradeFilter, setCompGradeFilter] = useState<string>('all');
+  const [compSearch, setCompSearch] = useState<string>('');
 
   // Filters for sections table
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
@@ -251,6 +260,61 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
     XLSX.utils.book_append_sheet(wb, wsSummary, 'الملخص التنفيذي');
 
     XLSX.writeFile(wb, `تقرير_تحليل_الشعب_والمواد_نظام_قطر_للتعليم_${currentYear}.xlsx`);
+  };
+
+  const handleExportComparisonExcel = () => {
+    const summaryRows = [
+      { 'المؤشر المقارن': 'إجمالي الدروس (تراكمي سبتمبر)', 'القيمة': LMS_MONTHLY_OVERVIEW_COMPARISON.september.totalLessons },
+      { 'المؤشر المقارن': 'إجمالي الدروس (تراكمي أكتوبر)', 'القيمة': LMS_MONTHLY_OVERVIEW_COMPARISON.octoberCumulative.totalLessons },
+      { 'المؤشر المقارن': 'صافي الدروس المضافة في أكتوبر (أكتوبر - سبتمبر)', 'القيمة': `+${LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.netTotalLessons}` },
+      { 'المؤشر المقارن': 'نسبة نمو رفع الدروس في أكتوبر (%)', 'القيمة': `+${LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.netTotalLessonsGrowthPercent}%` },
+      { 'المؤشر المقارن': 'الدروس الظاهرة الجديدة في أكتوبر', 'القيمة': `+${LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.netVisibleLessons}` },
+      { 'المؤشر المقارن': 'نسبة تصحيح المعلمين سبتمبر (%)', 'القيمة': `${LMS_MONTHLY_OVERVIEW_COMPARISON.september.gradingRate}%` },
+      { 'المؤشر المقارن': 'نسبة تصحيح المعلمين أكتوبر (%)', 'القيمة': `${LMS_MONTHLY_OVERVIEW_COMPARISON.octoberCumulative.gradingRate}%` },
+      { 'المؤشر المقارن': 'فارق نسبة التصحيح (تحسن)', 'القيمة': `+${LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.gradingRateChange}%` },
+      { 'المؤشر المقارن': 'التسليمات المعلقة المنجزة (انخفاض المعلق)', 'القيمة': `${LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.pendingChange} تسليماً` },
+      { 'المؤشر المقارن': 'التقييمات المنشأة الجديدة في أكتوبر', 'القيمة': `+${LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet.netAssessmentsCreated}` },
+    ];
+
+    const sectionRows = LMS_SECTIONS_MONTHLY_COMPARISON.map((s, idx) => ({
+      'الترتيب': idx + 1,
+      'الشعبة': s.section,
+      'الصف': s.grade,
+      'عدد الطلاب': s.studentsCount,
+      'دروس سبتمبر': s.sepTotalLessons,
+      'دروس أكتوبر التراكمية': s.octTotalLessons,
+      'صافي الدروس المضافة بأكتوبر (أكتوبر - سبتمبر)': s.netLessonsAdded,
+      'دروس ظاهرة جديدة بأكتوبر': s.netVisibleAdded,
+      'نسبة حل سبتمبر (%)': `${s.sepSolveRate}%`,
+      'نسبة حل أكتوبر (%)': `${s.octSolveRate}%`,
+      'فارق نسبة الحل (%)': `${s.solveRateDelta > 0 ? '+' : ''}${s.solveRateDelta}%`,
+      'نسبة تصحيح سبتمبر (%)': `${s.sepGradingRate}%`,
+      'نسبة تصحيح أكتوبر (%)': `${s.octGradingRate}%`,
+      'فارق نسبة التصحيح (%)': `${s.gradingRateDelta > 0 ? '+' : ''}${s.gradingRateDelta}%`,
+      'تسليمات أكتوبر': s.octSubmissions,
+      'تقييم الأداء والنمو': s.performanceSummary,
+    }));
+
+    const gradeRows = LMS_GRADES_MONTHLY_COMPARISON.map((g) => ({
+      'المرحلة الدراسية': g.grade,
+      'شعب سبتمبر': g.sectionsCountSep,
+      'شعب أكتوبر': g.sectionsCountOct,
+      'دروس سبتمبر': g.sepTotalLessons,
+      'دروس أكتوبر': g.octTotalLessons,
+      'صافي الدروس المضافة بأكتوبر': g.netLessonsAdded,
+      'نسبة حل سبتمبر (%)': `${g.sepSolveRate}%`,
+      'نسبة حل أكتوبر (%)': `${g.octSolveRate}%`,
+      'فارق الحل (%)': `${g.solveRateDelta > 0 ? '+' : ''}${g.solveRateDelta}%`,
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const wsSum = XLSX.utils.json_to_sheet(summaryRows);
+    const wsSec = XLSX.utils.json_to_sheet(sectionRows);
+    const wsGrd = XLSX.utils.json_to_sheet(gradeRows);
+    XLSX.utils.book_append_sheet(wb, wsSum, 'صافي نمو أكتوبر والمؤشرات');
+    XLSX.utils.book_append_sheet(wb, wsSec, 'مقارنة الشعب الدراسية');
+    XLSX.utils.book_append_sheet(wb, wsGrd, 'مقارنة المراحل الدراسية');
+    XLSX.writeFile(wb, `مقارنة_الأشهر_وصافي_إنجاز_أكتوبر_2026.xlsx`);
   };
 
   // Helper for Sorting
@@ -706,16 +770,16 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
 
             <span
               style={{
-                background: selectedMonth === 'سبتمبر 2026' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)',
-                color: selectedMonth === 'سبتمبر 2026' ? '#A7F3D0' : '#FDE68A',
+                background: (selectedMonth === 'سبتمبر 2026' || selectedMonth === 'أكتوبر 2026') ? 'rgba(16, 185, 129, 0.25)' : 'rgba(245, 158, 11, 0.25)',
+                color: (selectedMonth === 'سبتمبر 2026' || selectedMonth === 'أكتوبر 2026') ? '#A7F3D0' : '#FDE68A',
                 padding: '0.25rem 0.65rem',
                 borderRadius: '6px',
-                border: `1px solid ${selectedMonth === 'سبتمبر 2026' ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                border: `1px solid ${(selectedMonth === 'سبتمبر 2026' || selectedMonth === 'أكتوبر 2026') ? 'rgba(16, 185, 129, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
                 fontSize: '0.75rem',
                 fontWeight: 800,
               }}
             >
-              {selectedMonth === 'سبتمبر 2026' ? '✓ البيانات معتمدة ومرفوعة' : '⏳ بانتظار رفع تقارير هذا الشهر'}
+              {(selectedMonth === 'سبتمبر 2026' || selectedMonth === 'أكتوبر 2026') ? '✓ البيانات معتمدة ومرفوعة ومطابقة للتقارير الرسمية' : '⏳ بانتظار رفع تقارير هذا الشهر'}
             </span>
           </div>
         </div>
@@ -790,8 +854,8 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
         </div>
       </div>
 
-      {/* Notice Banner for Future Months */}
-      {selectedMonth !== 'سبتمبر 2026' && (
+      {/* Notice Banner for Future Months Only (Months that truly do not have data yet) */}
+      {!['سبتمبر 2026', 'أكتوبر 2026'].includes(selectedMonth) && (
         <div
           className="no-print"
           style={{
@@ -812,15 +876,15 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
             <span style={{ fontSize: '2rem' }}>⏳</span>
             <div>
               <h4 style={{ fontSize: '0.98rem', fontWeight: 900, color: '#92400E', margin: '0 0 0.25rem' }}>
-                بيانات شهر {selectedMonth} للعام الأكاديمي {selectedAcademicYear} قيد الرفع والاعتماد
+                بيانات شهر {selectedMonth} للعام الأكاديمي {selectedAcademicYear} قيد الجدولة والاعتماد
               </h4>
               <p style={{ margin: 0, fontSize: '0.82rem', color: '#B45309', lineHeight: 1.5 }}>
-                بانتظار استخراج تقارير نظام قطر للتعليم (QES) الرسمية لهذا الشهر ورفعها للمنظومة. يمكنك حالياً استعراض تحليلات شهر سبتمبر 2026 المعتمدة.
+                سيتم استخراج تقارير نظام قطر للتعليم (QES) الرسمية لهذا الشهر فور انتهائه. يمكنك حالياً استعراض تحليلات شهري أكتوبر وسبتمبر 2026 المعتمدة.
               </p>
             </div>
           </div>
           <button
-            onClick={() => setSelectedMonth('سبتمبر 2026')}
+            onClick={() => setSelectedMonth('أكتوبر 2026')}
             style={{
               background: '#0F2044',
               color: '#fff',
@@ -833,7 +897,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
               whiteSpace: 'nowrap',
             }}
           >
-            العودة لبيانات شهر سبتمبر 2026 ✓
+            العودة لتحليلات أكتوبر 2026 (المعتمد)
           </button>
         </div>
       )}
@@ -939,6 +1003,7 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
       >
         {[
           { id: 'report', label: 'التقرير الشهري الشامل (الرسمي)', icon: '📑', badge: 'معتمد' },
+          { id: 'comparison', label: '🔄 مقارنة الأشهر وصافي إنجاز أكتوبر', icon: '📈', badge: 'صافي أكتوبر' },
           { id: 'sections', label: `تحليل الشعب (${activeSections.length} شعبة)`, icon: '🏫', badge: `${activeSections.length}` },
           { id: 'subjects', label: `تحليل المواد الدراسية (${activeSubjects.length} مادة)`, icon: '📚', badge: `${activeSubjects.length}` },
           { id: 'grades', label: 'مقارنة الصفوف الدراسية', icon: '📊', badge: `${activeGrades.length} صفوف` },
@@ -1052,6 +1117,360 @@ export default function ClassSubjectAnalysisPage({ currentUser, selectedYear: pr
           </div>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          TAB: 🔄 مقارنة الأشهر وصافي إنجاز أكتوبر (الصافي = أكتوبر - سبتمبر)
+      ══════════════════════════════════════════════════════════════ */}
+      {activeTab === 'comparison' && (() => {
+        const net = LMS_MONTHLY_OVERVIEW_COMPARISON.octoberNet;
+        const octCum = LMS_MONTHLY_OVERVIEW_COMPARISON.octoberCumulative;
+        const sep = LMS_MONTHLY_OVERVIEW_COMPARISON.september;
+
+        const filteredComparisonSections = LMS_SECTIONS_MONTHLY_COMPARISON.filter(s => {
+          if (compGradeFilter !== 'all' && s.grade !== compGradeFilter) return false;
+          if (compSearch.trim()) {
+            const q = compSearch.toLowerCase().trim();
+            return s.section.toLowerCase().includes(q) || s.grade.toLowerCase().includes(q) || s.performanceSummary.toLowerCase().includes(q);
+          }
+          return true;
+        });
+
+        return (
+          <div style={{ marginBottom: '2.5rem' }}>
+            {/* Header & Concept Explanation Banner */}
+            <div
+              style={{
+                background: 'linear-gradient(135deg, #0F2044 0%, #1E3A8A 100%)',
+                color: '#fff',
+                borderRadius: '16px',
+                padding: '1.75rem',
+                marginBottom: '1.5rem',
+                boxShadow: '0 8px 24px rgba(15,32,68,0.18)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', position: 'relative', zIndex: 1 }}>
+                <div style={{ maxWidth: '850px' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#38BDF8', padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 800, marginBottom: '0.6rem' }}>
+                    <Sparkles size={14} />
+                    <span>تحليل النمو الشهري واستخراج الصافي</span>
+                  </div>
+                  <h2 style={{ fontSize: '1.35rem', fontWeight: 900, margin: '0 0 0.5rem', color: '#fff' }}>
+                    🔄 تحليل مقارنة الأشهر وصافي إنجاز ونمو شهر أكتوبر 2026
+                  </h2>
+                  <p style={{ margin: '0 0 0.85rem', fontSize: '0.86rem', color: '#BAE6FD', lineHeight: 1.6 }}>
+                    معادلة التحليل المعتمدة: <strong>(التقرير التجميعي التراكمي لشهر أكتوبر - تقرير شهر سبتمبر = صافي الإنجاز والنمو الفعلي لشهر أكتوبر)</strong>
+                  </p>
+                  <div style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '10px', padding: '0.75rem 1rem', border: '1px solid rgba(255, 255, 255, 0.15)', fontSize: '0.78rem', color: '#E2E8F0', lineHeight: 1.6 }}>
+                    💡 <strong>توضيح تحليلي:</strong> نظراً لأن تقارير نظام قطر للتعليم (QES) تصدر بصيغة تجميعية تراكمية تراعي امتداد الفصل الدراسي، تم تصميم هذا التحليل لاحتساب الفارق الصافي الدقيق لكل مؤشر على حدة، بما يوضح القفزات الحقيقية للشعب والمواد الدراسية خلال شهر أكتوبر بصورة مستقلة.
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button
+                    onClick={handleExportComparisonExcel}
+                    style={{
+                      background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '0.65rem 1.25rem',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+                    }}
+                  >
+                    <Download size={16} />
+                    <span>تصدير إكسيل المقارنة والصافي</span>
+                  </button>
+                  <button
+                    onClick={() => printClassSubjectMonthlyReport({ monthName: 'أكتوبر 2026', academicYear: selectedAcademicYear })}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      color: '#fff',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      padding: '0.65rem 1.25rem',
+                      borderRadius: '10px',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <Printer size={16} />
+                    <span>طباعة التقرير الشهري</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* 6 Key Net Growth KPI Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.9rem', marginBottom: '1.75rem' }}>
+              <div style={{ background: '#fff', padding: '1.1rem', borderRadius: '12px', border: '1px solid #E2E8F0', borderTop: '4px solid #0284C7', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800, display: 'block', marginBottom: '0.25rem' }}>صافي الدروس المرفوعة بأكتوبر</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0284C7' }}>+{net.netTotalLessons.toLocaleString('ar-QA')}</div>
+                <div style={{ fontSize: '0.68rem', color: '#0369A1', marginTop: '0.25rem', fontWeight: 700 }}>
+                  من {sep.totalLessons.toLocaleString()} إلى {octCum.totalLessons.toLocaleString()} تراكمي (+{net.netTotalLessonsGrowthPercent}%)
+                </div>
+              </div>
+
+              <div style={{ background: '#fff', padding: '1.1rem', borderRadius: '12px', border: '1px solid #E2E8F0', borderTop: '4px solid #10B981', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800, display: 'block', marginBottom: '0.25rem' }}>الدروس الظاهرة الجديدة بأكتوبر</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#059669' }}>+{net.netVisibleLessons.toLocaleString('ar-QA')}</div>
+                <div style={{ fontSize: '0.68rem', color: '#047857', marginTop: '0.25rem', fontWeight: 700 }}>
+                  من {sep.visibleLessons.toLocaleString()} إلى {octCum.visibleLessons.toLocaleString()} ظاهراً (+{net.netVisibleLessonsGrowthPercent}%)
+                </div>
+              </div>
+
+              <div style={{ background: '#fff', padding: '1.1rem', borderRadius: '12px', border: '1px solid #E2E8F0', borderTop: '4px solid #8B5CF6', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800, display: 'block', marginBottom: '0.25rem' }}>التقييمات المنشأة الجديدة</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#7C3AED' }}>+{net.netAssessmentsCreated} تقييماً</div>
+                <div style={{ fontSize: '0.68rem', color: '#6D28D9', marginTop: '0.25rem', fontWeight: 700 }}>
+                  من {sep.assessmentsCreated} إلى {octCum.assessmentsCreated} تقييماً منشأ
+                </div>
+              </div>
+
+              <div style={{ background: '#fff', padding: '1.1rem', borderRadius: '12px', border: '1px solid #E2E8F0', borderTop: '4px solid #059669', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800, display: 'block', marginBottom: '0.25rem' }}>تحسن نسبة تصحيح المعلمين</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#059669' }}>+{net.gradingRateChange}%</div>
+                <div style={{ fontSize: '0.68rem', color: '#065F46', marginTop: '0.25rem', fontWeight: 700 }}>
+                  ارتفعت من {sep.gradingRate}% إلى {octCum.gradingRate}% بأكتوبر
+                </div>
+              </div>
+
+              <div style={{ background: '#fff', padding: '1.1rem', borderRadius: '12px', border: '1px solid #E2E8F0', borderTop: '4px solid #F59E0B', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800, display: 'block', marginBottom: '0.25rem' }}>إنجاز التسليمات المعلقة</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#D97706' }}>{net.pendingChange} معلقاً</div>
+                <div style={{ fontSize: '0.68rem', color: '#B45309', marginTop: '0.25rem', fontWeight: 700 }}>
+                  انخفضت من {sep.submissionsPending} إلى {octCum.submissionsPending} تسليماً معلقاً
+                </div>
+              </div>
+
+              <div style={{ background: '#fff', padding: '1.1rem', borderRadius: '12px', border: '1px solid #E2E8F0', borderTop: '4px solid #EC4899', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 800, display: 'block', marginBottom: '0.25rem' }}>معلمون أنجزوا 100% تصحيح</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#DB2777' }}>+{net.teachers100GradingChange} معلمين</div>
+                <div style={{ fontSize: '0.68rem', color: '#BE185D', marginTop: '0.25rem', fontWeight: 700 }}>
+                  ارتفع من {sep.teachers100Grading} إلى {octCum.teachers100Grading} معلماً أتموا التصحيح كاملاً
+                </div>
+              </div>
+            </div>
+
+            {/* Sections Detailed Month-over-Month Comparison Table */}
+            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '1.25rem', marginBottom: '1.75rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <Layers size={18} color="#00B4D8" />
+                    جدول مقارنة الشعب الدراسية: التراكمي vs الصافي لشهر أكتوبر (20 شعبة)
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0', fontSize: '0.74rem', color: '#64748B' }}>
+                    يوضح الجدول الدروس المضافة فعلياً لكل شعبة خلال شهر أكتوبر وفوارق نسب الحل والتصحيح
+                  </p>
+                </div>
+
+                {/* Filters */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <select
+                    value={compGradeFilter}
+                    onChange={(e) => setCompGradeFilter(e.target.value)}
+                    style={{
+                      background: '#F8FAFC',
+                      border: '1px solid #CBD5E1',
+                      borderRadius: '8px',
+                      padding: '0.4rem 0.65rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#0F2044',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="all">جميع الصفوف (9 - 12)</option>
+                    <option value="الصف 9">الصف 9</option>
+                    <option value="الصف 10">الصف 10</option>
+                    <option value="الصف 11">الصف 11</option>
+                    <option value="الصف 12">الصف 12</option>
+                  </select>
+
+                  <div style={{ position: 'relative' }}>
+                    <Search size={14} style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} />
+                    <input
+                      type="text"
+                      placeholder="بحث عن شعبة..."
+                      value={compSearch}
+                      onChange={(e) => setCompSearch(e.target.value)}
+                      style={{
+                        padding: '0.4rem 1.8rem 0.4rem 0.6rem',
+                        borderRadius: '8px',
+                        border: '1px solid #CBD5E1',
+                        fontSize: '0.75rem',
+                        background: '#F8FAFC',
+                        width: '140px',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', textAlign: 'right' }}>
+                  <thead>
+                    <tr style={{ background: '#0F2044', color: '#fff' }}>
+                      <th style={{ padding: '0.65rem 0.6rem', borderRadius: '0 8px 0 0' }}>م</th>
+                      <th style={{ padding: '0.65rem 0.6rem' }}>الشعبة</th>
+                      <th style={{ padding: '0.65rem 0.6rem' }}>الصف</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>دروس سبتمبر</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>دروس أكتوبر (تراكمي)</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center', background: '#0284C7' }}>صافي دروس أكتوبر (أكتوبر - سبتمبر)</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>دروس ظاهرة جديدة</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>حل سبتمبر</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>حل أكتوبر</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>فارق الحل (Δ)</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>تصحيح سبتمبر</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>تصحيح أكتوبر</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center' }}>فارق التصحيح (Δ)</th>
+                      <th style={{ padding: '0.65rem 0.6rem', textAlign: 'center', borderRadius: '8px 0 0 0' }}>تقييم الأداء والنمو</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredComparisonSections.map((s, idx) => (
+                      <tr key={s.section} style={{ background: idx % 2 === 0 ? '#fff' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                        <td style={{ padding: '0.55rem 0.6rem', fontWeight: 800, color: '#64748B' }}>{idx + 1}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', fontWeight: 900, color: '#0F2044' }}>
+                          شعبة {s.section}
+                          {s.isNewSection && (
+                            <span style={{ marginRight: '0.35rem', background: '#E0F2FE', color: '#0284C7', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800 }}>
+                              جديدة
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '0.55rem 0.6rem', color: '#475569' }}>{s.grade}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', color: '#64748B' }}>{s.sepTotalLessons || '—'}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: 800, color: '#0F2044' }}>{s.octTotalLessons}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: 900, color: '#0284C7', background: 'rgba(2,132,199,0.06)' }}>
+                          +{s.netLessonsAdded}
+                        </td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: 800, color: '#059669' }}>
+                          +{s.netVisibleAdded}
+                        </td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', color: '#64748B' }}>{s.sepSolveRate ? `${s.sepSolveRate}%` : '—'}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: 800, color: s.octSolveRate >= 75 ? '#059669' : '#0F2044' }}>
+                          {s.octSolveRate}%
+                        </td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: 800, color: s.solveRateDelta > 0 ? '#059669' : s.solveRateDelta < 0 ? '#DC2626' : '#64748B' }}>
+                          {s.isNewSection ? '—' : `${s.solveRateDelta > 0 ? '+' : ''}${s.solveRateDelta}%`}
+                        </td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', color: '#64748B' }}>{s.sepGradingRate ? `${s.sepGradingRate}%` : '—'}</td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: 800, color: s.octGradingRate >= 80 ? '#059669' : '#0F2044' }}>
+                          {s.octGradingRate}%
+                        </td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center', fontWeight: 800, color: s.gradingRateDelta > 0 ? '#059669' : s.gradingRateDelta < 0 ? '#DC2626' : '#64748B' }}>
+                          {s.isNewSection ? '—' : `${s.gradingRateDelta > 0 ? '+' : ''}${s.gradingRateDelta}%`}
+                        </td>
+                        <td style={{ padding: '0.55rem 0.6rem', textAlign: 'center' }}>
+                          <span style={{ background: s.isNewSection ? '#E0F2FE' : s.netLessonsAdded >= 90 ? '#DCFCE7' : '#F1F5F9', color: s.isNewSection ? '#0284C7' : s.netLessonsAdded >= 90 ? '#065F46' : '#475569', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 800 }}>
+                            {s.performanceSummary}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Grade Levels Comparison Grid */}
+            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '1.25rem', marginBottom: '1.75rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F2044', margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <GraduationCap size={18} color="#8B5CF6" />
+                مقارنة المراحل الدراسية: مؤشرات سبتمبر vs تراكمي أكتوبر وصافي الإضافة (الصفوف 9 - 12)
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                {LMS_GRADES_MONTHLY_COMPARISON.map((g) => (
+                  <div key={g.grade} style={{ background: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '10px', padding: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F2044' }}>{g.grade}</span>
+                      <span style={{ background: '#E0F2FE', color: '#0284C7', padding: '0.15rem 0.5rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
+                        {g.sectionsCountOct} شعب دراسية
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.35rem', borderBottom: '1px solid #E2E8F0' }}>
+                        <span style={{ color: '#64748B' }}>إجمالي الدروس (سبتمبر / أكتوبر):</span>
+                        <span style={{ fontWeight: 800, color: '#0F2044' }}>{g.sepTotalLessons} / {g.octTotalLessons}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.35rem', borderBottom: '1px solid #E2E8F0' }}>
+                        <span style={{ color: '#0284C7', fontWeight: 800 }}>صافي الدروس المضافة بأكتوبر:</span>
+                        <span style={{ fontWeight: 900, color: '#0284C7' }}>+{g.netLessonsAdded} درساً</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.35rem', borderBottom: '1px solid #E2E8F0' }}>
+                        <span style={{ color: '#64748B' }}>نسبة حل التقييمات:</span>
+                        <span style={{ fontWeight: 800, color: '#10B981' }}>{g.octSolveRate}% ({g.solveRateDelta > 0 ? '+' : ''}{g.solveRateDelta}%)</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748B' }}>صافي التقييمات المضافة:</span>
+                        <span style={{ fontWeight: 800, color: '#8B5CF6' }}>+{g.netEvalAdded} تقييماً</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Takreem Monthly Evolution Highlights */}
+            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F2044', margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                <Award size={18} color="#F59E0B" />
+                تطور لوحة التكريم والتميز بين شهري سبتمبر وأكتوبر 2026
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+                {/* Consistent Champions */}
+                <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '10px', padding: '1rem' }}>
+                  <h4 style={{ fontSize: '0.88rem', fontWeight: 900, color: '#166534', margin: '0 0 0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>⭐</span> فرسان حافظوا على صدارة التميز في كلا الشهرين
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.75rem' }}>
+                    {LMS_TAKREEM_MONTHLY_EVOLUTION.consistentChampions.map((c, i) => (
+                      <div key={i} style={{ padding: '0.4rem 0.6rem', background: '#fff', borderRadius: '6px', border: '1px solid #DCFCE7' }}>
+                        <div style={{ fontWeight: 800, color: '#166534' }}>{c.teacherName} ({c.department})</div>
+                        <div style={{ color: '#475569', fontSize: '0.7rem', marginTop: '0.15rem' }}>{c.status}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rising Champions */}
+                <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '10px', padding: '1rem' }}>
+                  <h4 style={{ fontSize: '0.88rem', fontWeight: 900, color: '#92400E', margin: '0 0 0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>🚀</span> فرسان صاعدون للتكريم لشهر أكتوبر لأول مرة
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.75rem' }}>
+                    {LMS_TAKREEM_MONTHLY_EVOLUTION.risingChampionsInOctober.map((c, i) => (
+                      <div key={i} style={{ padding: '0.4rem 0.6rem', background: '#fff', borderRadius: '6px', border: '1px solid #FEF3C7' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 800, color: '#92400E' }}>{c.teacherName}</span>
+                          <span style={{ background: '#FEF3C7', color: '#B45309', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800 }}>
+                            {c.score}
+                          </span>
+                        </div>
+                        <div style={{ color: '#475569', fontSize: '0.7rem', marginTop: '0.15rem' }}>{c.department} — {c.rank}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ══════════════════════════════════════════════════════════════
           TAB 1: 🏫 تحليل الشعب الدراسية (19 شعبة)
