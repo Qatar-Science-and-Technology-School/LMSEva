@@ -16,7 +16,6 @@ import {
   OCTOBER_DEPARTMENT_CHAMPIONS_10,
   OCTOBER_SECTIONS_LMS_STATS,
   OCTOBER_2026_LMS_TEACHERS,
-  LMS_TAKREEM_MONTHLY_EVOLUTION,
   isSuperAdmin,
   getRealCurrentMonthName,
   isMonthCertified,
@@ -1576,54 +1575,6 @@ export default function TakreemPage({ currentUser, selectedYear: propYear, onNav
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* ── Monthly Takreem Evolution Panel ── */}
-          <div style={{ ...cardStyle, background: '#fff', border: '1px solid #E2E8F0', marginTop: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 900, color: '#0F2044', margin: 0, display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <span style={{ fontSize: '1.2rem' }}>🏆</span>
-                🔄 تحليل تطور لوحة التكريم والتميز بين سبتمبر وأكتوبر 2026
-              </h3>
-              <span style={{ background: '#FEF3C7', color: '#92400E', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800 }}>
-                تحديث تراكمي رسمي
-              </span>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
-              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '10px', padding: '1rem' }}>
-                <h4 style={{ fontSize: '0.88rem', fontWeight: 900, color: '#166534', margin: '0 0 0.6rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <span>⭐</span> فرسان واصلوا الحفاظ على صدارة التميز في كلا الشهرين
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {LMS_TAKREEM_MONTHLY_EVOLUTION.consistentChampions.map((c, i) => (
-                    <div key={i} style={{ padding: '0.5rem 0.75rem', background: '#fff', borderRadius: '8px', border: '1px solid #DCFCE7' }}>
-                      <div style={{ fontWeight: 800, color: '#166534', fontSize: '0.82rem' }}>{c.teacherName} — قسم {c.department}</div>
-                      <div style={{ color: '#475569', fontSize: '0.74rem', marginTop: '0.2rem' }}>{c.status}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '10px', padding: '1rem' }}>
-                <h4 style={{ fontSize: '0.88rem', fontWeight: 900, color: '#92400E', margin: '0 0 0.6rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <span>🚀</span> فرسان صاعدون للتكريم لشهر أكتوبر لأول مرة
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {LMS_TAKREEM_MONTHLY_EVOLUTION.risingChampionsInOctober.map((c, i) => (
-                    <div key={i} style={{ padding: '0.5rem 0.75rem', background: '#fff', borderRadius: '8px', border: '1px solid #FEF3C7' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontWeight: 800, color: '#92400E', fontSize: '0.82rem' }}>{c.teacherName}</span>
-                        <span style={{ background: '#FEF3C7', color: '#B45309', padding: '0.1rem 0.45rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 800 }}>
-                          مؤشر {c.score}
-                        </span>
-                      </div>
-                      <div style={{ color: '#475569', fontSize: '0.74rem', marginTop: '0.2rem' }}>{c.department} — {c.rank}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
             </>
