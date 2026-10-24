@@ -18,21 +18,22 @@ export type SelfDevelopmentStatus = 'معتمدة وسارية' | 'مكتملة'
 
 export interface SelfDevelopmentRecord {
   id: string;
-  coordinatorName: string; // م. أحمد عادل طبيشات
-  role: string; // منسق المشاريع الإلكترونية والحلول الرقمية
-  title: string; // اسم الشهادة أو الدورة
+  coordinatorName: string; // م. أحمد عادل طبيشات / Ahmad Adel Tubaishat
+  role: string; // منسق مشروع التعلم الإلكتروني والحلول الرقمية
+  title: string; // اسم الشهادة أو الدورة أو الورشة
   titleEn?: string; // الاسم بالإنجليزية
-  issuer: string; // الجهة المانحة (Microsoft, Google, Ministry, Harvard, PMI...)
+  issuer: string; // الجهة المنظمة / المانحة (Microsoft, Canva, UNESCO, QSTSS, الوزارة...)
   category: SelfDevelopmentCategory; // المجال التخصصي
   hours: number; // عدد الساعات التدريبية
   issueDate: string; // تاريخ الإنجاز / الحصول عليها YYYY-MM-DD
   expiryDate?: string; // تاريخ الانتهاء أو "سارية المفعول"
   academicYear: string; // العام الأكاديمي مثل 2026-2027
   status: SelfDevelopmentStatus; // معتمدة وسارية / مكتملة / قيد التدريب
+  pdType?: 'داخلي' | 'خارجي'; // نوع التطوير المهني: داخلي (مدرسي QSTSS) / خارجي (وزاري ودولي)
   credentialId?: string; // رقم الاعتماد / كود التحقق
   credentialUrl?: string; // رابط الشهادة الرقمية أو التحقق
   skillsAcquired: string[]; // المهارات التخصصية المكتسبة
-  impactOnWork: string; // الأثر والتطبيق العملي في المدرسة والمشاريع
+  impactOnWork: string; // ملخص التعلم والأثر / الأثر والتطبيق العملي
   notes?: string; // ملاحظات إضافية
   createdAt: string;
   updatedAt: string;
@@ -117,9 +118,519 @@ export const SELF_DEV_STATUS_CONFIG: Record<
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// البيانات الأولية المعتمدة لمنسق المشاريع م. أحمد عادل طبيشات
+// دوال التحقق من التكرار وتطبيع العناوين (Deduplication & Title Normalization)
 // ─────────────────────────────────────────────────────────────────────────────
-export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
+export function normalizeRecordTitle(text?: string): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .replace(/^(workshop\s*:\s*|ورشة\s*(عمل)?\s*:\s*|دورة\s*:\s*|برنامج\s*:\s*|محاضرة\s*:\s*)/i, '')
+    .replace(/[^\p{L}\p{N}]/gu, '')
+    .trim();
+}
+
+/**
+ * يتحقق مما إذا كان السجل موجوداً مسبقاً في القائمة لتجنب أي تكرار
+ */
+export function isDuplicateSelfDevRecord(
+  candidate: Partial<SelfDevelopmentRecord>,
+  existingList: SelfDevelopmentRecord[]
+): boolean {
+  if (!candidate) return false;
+  const cId = candidate.id;
+  const cTitle = normalizeRecordTitle(candidate.title);
+  const cTitleEn = normalizeRecordTitle(candidate.titleEn);
+
+  return existingList.some(r => {
+    // تطابق المعرف المباشر
+    if (cId && r.id === cId) return true;
+
+    const rTitle = normalizeRecordTitle(r.title);
+    const rTitleEn = normalizeRecordTitle(r.titleEn);
+
+    // تطابق العنوان العربي أو الإنجليزي
+    if (cTitle && (rTitle === cTitle || rTitleEn === cTitle)) return true;
+    if (cTitleEn && (rTitle === cTitleEn || rTitleEn === cTitleEn)) return true;
+
+    return false;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// سجل التطوير المهني الرسمي المعتمد (PD Log - 2026/2027)
+// مدرسة قطر للعلوم والتكنولوجيا الإعدادية الثانوية للبنين — أم السنيم
+// منسق مشروع التعلم الإلكتروني: Ahmad Adel Tubaishat (م. أحمد عادل طبيشات)
+// إجمالي السجلات: 22 سجلاً | إجمالي الساعات: 65 ساعة مكتملة
+// ─────────────────────────────────────────────────────────────────────────────
+export const OFFICIAL_PD_LOG_2026_RECORDS: SelfDevelopmentRecord[] = [
+  {
+    id: 'sdev-log-01',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Microsoft Elevate Educator Expert',
+    titleEn: 'Microsoft Elevate Educator Expert',
+    issuer: 'Microsoft',
+    category: 'تكنولوجيا التعليم ومنصات LMS',
+    hours: 2,
+    issueDate: '2026-09-08',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'MS-EEE-2026-01',
+    skillsAcquired: ['Microsoft Showcase School', 'برامج مايكروسوفت التعليمية المتقدمة', 'استراتيجيات المعلم الخبير'],
+    impactOnWork: 'Microsoft Showcase School - تطبيق وتطوير معايير مدارس مايكروسوفت النموذجية وتفعيل البرامج التعليمية المتقدمة بالمدرسة.',
+    notes: 'السجل 1 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (2 ساعة).',
+    createdAt: '2026-09-08T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-02',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Global MOOC on the Ethics of AI',
+    titleEn: 'Global MOOC on the Ethics of AI',
+    issuer: 'UNESCO',
+    category: 'الذكاء الاصطناعي والحلول الرقمية',
+    hours: 2,
+    issueDate: '2026-09-11',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'UNESCO-AI-ETHICS-2026',
+    skillsAcquired: ['AI Unisco Certificate', 'أخلاقيات الذكاء الاصطناعي في التعليم', 'المواطنة الرقمية العالمية'],
+    impactOnWork: 'AI Unisco Certificate - توظيف المبادئ الأخلاقية المعتمدة من منظمة اليونسكو في استخدام وتوجيه أدوات الذكاء الاصطناعي في البيئة المدرسية.',
+    notes: 'السجل 2 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (2 ساعة).',
+    createdAt: '2026-09-11T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-03',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Ai Essentials 2026',
+    titleEn: 'Ai Essentials 2026',
+    issuer: 'Canva',
+    category: 'الذكاء الاصطناعي والحلول الرقمية',
+    hours: 2,
+    issueDate: '2026-09-14',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'CANVA-AIE-2026-03',
+    skillsAcquired: ['Certificate', 'Canva Magic Studio', 'تصميم الوسائط التعليمية بالذكاء الاصطناعي'],
+    impactOnWork: 'Certificate - تمكين المعلمين والطلاب من استخدام أدوات الذكاء الاصطناعي في منصة كانفا لإنتاج ملصقات وعروض تعليمية مبتكرة.',
+    notes: 'السجل 3 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (2 ساعة).',
+    createdAt: '2026-09-14T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-04',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Ai in The Classroom',
+    titleEn: 'Ai in The Classroom',
+    issuer: 'Canva',
+    category: 'الذكاء الاصطناعي والحلول الرقمية',
+    hours: 2,
+    issueDate: '2026-09-16',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'CANVA-AIC-2026-04',
+    skillsAcquired: ['Certificate', 'تطبيقات الذكاء الاصطناعي الصفية', 'إشراك الطلاب التفاعلي'],
+    impactOnWork: 'Certificate - تطبيق استراتيجيات الدمج الصفي للذكاء الاصطناعي لرفع دافعية الطلاب وتطوير الممارسات التدريسية.',
+    notes: 'السجل 4 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (2 ساعة).',
+    createdAt: '2026-09-16T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-05',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'دورة إدارة وحماية البيانات الشخصية',
+    titleEn: 'Personal Data Management and Protection Course',
+    issuer: 'الوكالة الوطنية للأمن السيبراني',
+    category: 'الأمن السيبراني وحماية البيانات',
+    hours: 6,
+    issueDate: '2026-09-18',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'NCSA-PDP-2026-05',
+    skillsAcquired: ['نشر وتوعية أطراف العملية التعليمية بالمواطنة الرقمية', 'حماية الخصوصية المدرسية', 'إدارة البيانات الشخصية'],
+    impactOnWork: 'نشر وتوعية اطراف العملية التعليمية بالمواطنة الرقمية وحماية البيانات الشخصية للطلبة والكادر المدرسي.',
+    notes: 'السجل 5 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (6 ساعات).',
+    createdAt: '2026-09-18T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-06',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'مجتمع التعلم المهني الأول لمنسقي المشاريع الإلكترونية للعام 2026-2027م',
+    titleEn: 'First Professional Learning Community for E-Learning Coordinators 2026-2027',
+    issuer: 'ادارة التعليم الالكتروني والحلول الرقمية',
+    category: 'تكنولوجيا التعليم ومنصات LMS',
+    hours: 8,
+    issueDate: '2026-09-21',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'MOEHE-PLC1-2026-06',
+    skillsAcquired: ['استراتيجيات التدريس', 'قيادة المشاريع الإلكترونية المدرسية', 'متابعة مؤشرات التفعيل'],
+    impactOnWork: 'استراتيجيات التدريس - مواءمة خطط التعليم الإلكتروني بالمدرسة مع موجهات الوزارة ومشاركة أفضل الممارسات التدريسية.',
+    notes: 'السجل 6 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (8 ساعات).',
+    createdAt: '2026-09-21T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-07',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'حضور ورشة برنامج الذكاء الاصطناعي في التعليم والتعلم لمنسقي المشاريع الإلكترونية',
+    titleEn: 'AI in Teaching and Learning Workshop for E-Learning Project Coordinators',
+    issuer: 'ادارة التعليم الالكتروني والحلول الرقمية',
+    category: 'الذكاء الاصطناعي والحلول الرقمية',
+    hours: 8,
+    issueDate: '2026-09-23',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'MOEHE-AI-COORD-2026-07',
+    skillsAcquired: ['سياسة الذكاء الاصطناعي في التعليم', 'أدوات التعليم الذكية التوليدية', 'ضوابط الاستخدام والحوكمة'],
+    impactOnWork: 'سياسة الذكاء الاصطناعي في التعليم - صياغة التوجيهات المدرسية للاستخدام الرشيد لأدوات AI وتطبيق السياسات الوزارية.',
+    notes: 'السجل 7 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (8 ساعات).',
+    createdAt: '2026-09-23T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-08',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Edpuzzle training',
+    titleEn: 'Edpuzzle training',
+    issuer: 'Edpuzzle',
+    category: 'تكنولوجيا التعليم ومنصات LMS',
+    hours: 2,
+    issueDate: '2026-09-26',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'EDPUZZLE-CERT-2026-08',
+    skillsAcquired: ['Edpuzzle', 'إنتاج الفيديوهات التعليمية التفاعلية', 'التقييم البنائي الذكي'],
+    impactOnWork: 'Edpuzzle - تمكين كادر المدرسة من دمج الفيديوهات التفاعلية ونقاط التقييم الذاتي ضمن دروس نظام قطر للتعليم والفرق الصفية.',
+    notes: 'السجل 8 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (2 ساعة).',
+    createdAt: '2026-09-26T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-09',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'شبكة الشباب العالمية للجودة والتميز في التعليم',
+    titleEn: 'Global Youth Network for Quality and Excellence in Education',
+    issuer: 'UNESCO',
+    category: 'القيادة والتحول الرقمي المدرسي',
+    hours: 8,
+    issueDate: '2026-09-29',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'UNESCO-GYN-2026-09',
+    skillsAcquired: ['الانظمام الى الشبكة', 'معايير الجودة والتميز في التعليم', 'الشبكات الشبابية الدولية'],
+    impactOnWork: 'الانظمام الى الشبكة - تعزيز حضور المدرسة في الفعاليات الدولية للجودة والتميز ونقل التجارب الرائدة للطلاب.',
+    notes: 'السجل 9 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (8 ساعات).',
+    createdAt: '2026-09-29T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-10',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Workshop: Installing & Programming Solar Charge Controllers',
+    titleEn: 'Workshop: Installing & Programming Solar Charge Controllers',
+    issuer: 'QSTSS',
+    category: 'إدارة المشاريع التعليمية والابتكار',
+    hours: 2,
+    issueDate: '2026-10-02',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-SOLAR-2026-10',
+    skillsAcquired: ['PROJECT RESEARCH', 'تركيب منظمات الشحن الشمسية', 'برمجة أنظمة الطاقة المتجددة'],
+    impactOnWork: 'PROJECT RESEARCH - توظيف المفاهيم الهندسية والبرمجية في الإشراف على بحوث ومشاريع الطلاب في مختبرات الطاقة والاستدامة.',
+    notes: 'السجل 10 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-02T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-11',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Workshop: Introduction to 3D Design Modeling with Onshape for Teachers',
+    titleEn: 'Workshop: Introduction to 3D Design Modeling with Onshape for Teachers',
+    issuer: 'QSTSS',
+    category: 'إدارة المشاريع التعليمية والابتكار',
+    hours: 2,
+    issueDate: '2026-10-04',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-ONSHAPE-2026-11',
+    skillsAcquired: ['PROJECT RESEARCH', 'التصميم ثلاثي الأبعاد Onshape', 'النمذجة السحابية والتصنيع الرقمي'],
+    impactOnWork: 'PROJECT RESEARCH - إسناد المعلمين في استخدام منصة Onshape وتطوير نماذج المشاريع الابتكارية للطلاب بالمختبرات.',
+    notes: 'السجل 11 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-04T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-12',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Introduction to the School Scientific Research & Innovation Program (Grades 10–11)',
+    titleEn: 'Introduction to the School Scientific Research & Innovation Program (Grades 10–11)',
+    issuer: 'QSTSS',
+    category: 'إدارة المشاريع التعليمية والابتكار',
+    hours: 2,
+    issueDate: '2026-10-06',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-SRIP-G1011-2026-12',
+    skillsAcquired: ['PROJECT RESEARCH', 'منهجية البحث العلمي للصفين 10 و 11', 'الابتكار العلمي والتقني'],
+    impactOnWork: 'PROJECT RESEARCH - تأطير برنامج البحث العلمي والابتكار لطلاب الصفين العاشر والحادي عشر وتحكيم المخرجات البحثية.',
+    notes: 'السجل 12 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-06T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-13',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Arduino Projects & Applications in Integrated STEM Education',
+    titleEn: 'Arduino Projects & Applications in Integrated STEM Education',
+    issuer: 'QSTSS',
+    category: 'إدارة المشاريع التعليمية والابتكار',
+    hours: 2,
+    issueDate: '2026-10-08',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-ARDUINO-2026-13',
+    skillsAcquired: ['PROJECT RESEARCH', 'برمجة الأردوينو في التعليم التكاملي STEM', 'تطبيقات المستشعرات والمتحكمات'],
+    impactOnWork: 'PROJECT RESEARCH - دمج تطبيقات الأردوينو العملية في مناهج ومشاريع STEM المدرسية ودعم الفرق المشاركة بالمسابقات.',
+    notes: 'السجل 13 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-08T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-14',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Introduction to ESP32 Microcontroller Programming',
+    titleEn: 'Introduction to ESP32 Microcontroller Programming',
+    issuer: 'QSTSS',
+    category: 'إدارة المشاريع التعليمية والابتكار',
+    hours: 2,
+    issueDate: '2026-10-10',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-ESP32-2026-14',
+    skillsAcquired: ['PROJECT RESEARCH', 'برمجة متحكم ESP32', 'تطبيقات الاتصال اللاسلكي وإنترنت الأشياء'],
+    impactOnWork: 'PROJECT RESEARCH - توجيه الطلاب في بناء نماذج أجهزة متصلة بالإنترنت وإنترنت الأشياء لمشاريع المعارض والمسابقات العلمية.',
+    notes: 'السجل 14 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-10T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-15',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'إطار الكفايات الرقمية للمعلمين',
+    titleEn: 'Digital Competency Framework for Teachers',
+    issuer: 'ادارة التعليم الالكتروني والحلول الرقمية',
+    category: 'القيادة والتحول الرقمي المدرسي',
+    hours: 2,
+    issueDate: '2026-10-12',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'خارجي',
+    credentialId: 'MOEHE-DCF-2026-15',
+    skillsAcquired: ['الكفايات الرقمية للمعلمين', 'معايير التمكين الرقمي الصفي', 'تقييم الممارسات التدريسية التكنولوجية'],
+    impactOnWork: 'الكفايات الرقمية للمعلمين - تطبيق إطار المعايير الوزارية في تقييم احتياجات المعلمين وبناء خطط الدعم الفردي والورش التخصصية.',
+    notes: 'السجل 15 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: خارجي (2 ساعة).',
+    createdAt: '2026-10-12T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-16',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'PD Workshop Invitation: Creating Interactive Digital Walkthroughs with LLM',
+    titleEn: 'PD Workshop Invitation: Creating Interactive Digital Walkthroughs with LLM',
+    issuer: 'QSTSS',
+    category: 'الذكاء الاصطناعي والحلول الرقمية',
+    hours: 2,
+    issueDate: '2026-10-14',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-LLM-WALK-2026-16',
+    skillsAcquired: ['PROJECT RESEARCH', 'النماذج اللغوية الكبيرة LLM', 'بناء الجولات التفاعلية الرقمية'],
+    impactOnWork: 'PROJECT RESEARCH - تطوير أدلة ومسارات تفاعلية للمناهج الرقمية والأنظمة التعليمية بالمدرسة بالاعتماد على أدوات LLM.',
+    notes: 'السجل 16 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-14T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-17',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Workshop: Introduction to the Grade 7 Research and Innovation Program',
+    titleEn: 'Workshop: Introduction to the Grade 7 Research and Innovation Program',
+    issuer: 'QSTSS',
+    category: 'إدارة المشاريع التعليمية والابتكار',
+    hours: 2,
+    issueDate: '2026-10-15',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-G7-RIP-2026-17',
+    skillsAcquired: ['PROJECT RESEARCH', 'منهجية البحث العلمي لطلاب الصف السابع', 'التفكير التصميمي والابتكاري'],
+    impactOnWork: 'PROJECT RESEARCH - إعداد وتهيئة طلبة الصف السابع للمهارات البحثية الأساسية ومشاريع STEM المتقدمة.',
+    notes: 'السجل 17 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-15T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-18',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Workshop: Introduction to the Shell NXplorers 2026 Program',
+    titleEn: 'Workshop: Introduction to the Shell NXplorers 2026 Program',
+    issuer: 'QSTSS',
+    category: 'إدارة المشاريع التعليمية والابتكار',
+    hours: 2,
+    issueDate: '2026-10-16',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-NXPLORERS-2026-18',
+    skillsAcquired: ['PROJECT RESEARCH', 'برنامج Shell NXplorers', 'أدوات التفكير المعقد واستشراف الحلول المستدامة'],
+    impactOnWork: 'PROJECT RESEARCH - تدريب وتأهيل الفرق الطلابية على منهجية Shell NXplorers لحل مشكلات الطاقة والمياه والغذاء.',
+    notes: 'السجل 18 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-16T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-19',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Workshop: Introduction to the School Scientific Research & Innovation Program',
+    titleEn: 'Workshop: Introduction to the School Scientific Research & Innovation Program',
+    issuer: 'QSTSS',
+    category: 'إدارة المشاريع التعليمية والابتكار',
+    hours: 2,
+    issueDate: '2026-10-18',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-SRIP-GEN-2026-19',
+    skillsAcquired: ['PROJECT RESEARCH', 'البرنامج العام للبحث والابتكار المدرسي', 'معايير جودة الأبحاث التنافسية'],
+    impactOnWork: 'PROJECT RESEARCH - توحيد معايير وأطر البحث العلمي والابتكار عبر كافة الأقسام الأكاديمية بالمدرسة.',
+    notes: 'السجل 19 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-18T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-20',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'Workshop: Arduino Projects & Applications in Integrated STEM Education (Advanced)',
+    titleEn: 'Workshop: Arduino Projects & Applications in Integrated STEM Education',
+    issuer: 'QSTSS',
+    category: 'إدارة المشاريع التعليمية والابتكار',
+    hours: 1,
+    issueDate: '2026-10-19',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-ARDUINO-ADV-2026-20',
+    skillsAcquired: ['PROJECT RESEARCH', 'التطبيقات العملية والمحاكاة التفاعلية', 'معالجة الأعطال البرمجية والكهربائية'],
+    impactOnWork: 'PROJECT RESEARCH - جلسة تدريبية مكثفة لحل المشكلات البرمجية ومتابعة الدوائر الإلكترونية التنافسية لفرق الروبوت.',
+    notes: 'السجل 20 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (1 ساعة).',
+    createdAt: '2026-10-19T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-21',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'الإسعافات الأولية والإصابات الشائعة في المدارس First Aid and Common Injuries in Schools',
+    titleEn: 'First Aid and Common Injuries in Schools',
+    issuer: 'QSTSS',
+    category: 'القيادة والتحول الرقمي المدرسي',
+    hours: 2,
+    issueDate: '2026-10-20',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-FIRSTAID-2026-21',
+    skillsAcquired: ['الاسعافات الاولية', 'التعامل مع الطوارئ المخبرية والصفية', 'إجراءات السلامة المدرسية'],
+    impactOnWork: 'الاسعافات الاولية - رفع مستوى الجاهزية للسلامة المهنية والصحية بمختبرات التكنولوجيا والمشاغل الهندسية.',
+    notes: 'السجل 21 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-20T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+  {
+    id: 'sdev-log-22',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
+    title: 'محاضرة لغة الجسد ومهارات التواصل (Body Language Lecture)',
+    titleEn: 'Body Language Lecture',
+    issuer: 'QSTSS',
+    category: 'القيادة والتحول الرقمي المدرسي',
+    hours: 2,
+    issueDate: '2026-10-22',
+    expiryDate: 'سارية المفعول',
+    academicYear: '2026-2027',
+    status: 'معتمدة وسارية',
+    pdType: 'داخلي',
+    credentialId: 'QSTSS-BODYLANG-2026-22',
+    skillsAcquired: ['مهارات التواصل', 'لغة الجسد والعرض الإلقائي', 'التفاعل الإيجابي مع المعلمين والطلاب'],
+    impactOnWork: 'مهارات التواصل - تعزيز مهارات الإلقاء والتأثير أثناء تقديم الورش وإدارة الاجتماعات التقنية والتربوية.',
+    notes: 'السجل 22 في سجل التطوير المهني الرسمي (PD Log) - نوع التطوير: داخلي (2 ساعة).',
+    createdAt: '2026-10-22T08:00:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// الشهادات التخصصية القيادية والدولية السابقة المعتمدة
+// ─────────────────────────────────────────────────────────────────────────────
+export const PREVIOUS_MAJOR_CERTIFICATIONS: SelfDevelopmentRecord[] = [
   {
     id: 'sdev-01',
     coordinatorName: 'م. أحمد عادل طبيشات',
@@ -133,6 +644,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: '2027-08-31',
     academicYear: '2026-2027',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'MS-MIEE-2026-QSTSS-0982',
     credentialUrl: 'https://learn.microsoft.com/en-us/credentials/',
     skillsAcquired: [
@@ -158,6 +670,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: 'سارية المفعول',
     academicYear: '2026-2027',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'MOEHE-AI-COORD-2026-044',
     credentialUrl: 'https://qstssschools.web.app',
     skillsAcquired: [
@@ -183,6 +696,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: 'سارية المفعول',
     academicYear: '2026-2027',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'HVD-EDX-LDTS-88712',
     credentialUrl: 'https://credentials.edx.org',
     skillsAcquired: [
@@ -208,6 +722,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: 'سارية المفعول',
     academicYear: '2025-2026',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'MS-AZ900-7762145',
     credentialUrl: 'https://learn.microsoft.com/credentials/',
     skillsAcquired: [
@@ -233,6 +748,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: '2028-09-12',
     academicYear: '2026-2027',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'NCSA-EDU-QATAR-2026-118',
     credentialUrl: 'https://ncsa.gov.qa/ar/training',
     skillsAcquired: [
@@ -258,6 +774,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: '2029-07-28',
     academicYear: '2025-2026',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'PMI-PMP-ED-554190',
     credentialUrl: 'https://www.pmi.org/certifications',
     skillsAcquired: [
@@ -283,6 +800,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: 'سارية المفعول',
     academicYear: '2026-2027',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'MOEHE-DL-SPEC-2026-319',
     credentialUrl: 'https://qstssschools.web.app',
     skillsAcquired: [
@@ -308,6 +826,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: 'سارية المفعول',
     academicYear: '2026-2027',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'GC-PBI-EDU-88129',
     credentialUrl: 'https://coursera.org/verify/GC-PBI-88129',
     skillsAcquired: [
@@ -333,6 +852,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: 'سارية المفعول',
     academicYear: '2026-2027',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'QSC-STEM-VR-2026-091',
     credentialUrl: 'https://qsc.org.qa/workshops',
     skillsAcquired: [
@@ -358,6 +878,7 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     expiryDate: '2029-06-10',
     academicYear: '2025-2026',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: 'TEDC-CMT-QATAR-2026-015',
     credentialUrl: 'https://www.edu.gov.qa',
     skillsAcquired: [
@@ -371,6 +892,17 @@ export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = [
     updatedAt: '2026-09-15T10:00:00.000Z',
   },
 ];
+
+// دمج السجلات الرسمية مع الشهادات السابقة بدون أي تكرار
+export const INITIAL_SELF_DEVELOPMENT_RECORDS: SelfDevelopmentRecord[] = (() => {
+  const list: SelfDevelopmentRecord[] = [...OFFICIAL_PD_LOG_2026_RECORDS];
+  for (const prev of PREVIOUS_MAJOR_CERTIFICATIONS) {
+    if (!isDuplicateSelfDevRecord(prev, list)) {
+      list.push(prev);
+    }
+  }
+  return list;
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // التخزين واسترجاع البيانات (Local Persistence + Firebase Firestore Cloud Sync)
@@ -406,6 +938,21 @@ export function loadSelfDevelopmentRecords(academicYear: string = '2026-2027'): 
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // فحص السجلات وتضمين أي ورشة جديدة من القائمة المعتمدة دون أي تكرار
+        let isUpdated = false;
+        const mergedList = [...parsed];
+        for (const candidate of INITIAL_SELF_DEVELOPMENT_RECORDS) {
+          if (!isDuplicateSelfDevRecord(candidate, mergedList)) {
+            mergedList.push(candidate);
+            isUpdated = true;
+          }
+        }
+        if (isUpdated) {
+          try {
+            localStorage.setItem(key, JSON.stringify(mergedList));
+          } catch (e) {}
+          return mergedList;
+        }
         return parsed;
       }
     }
@@ -466,6 +1013,13 @@ export function calculateSelfDevelopmentStats(records: SelfDevelopmentRecord[]) 
   const completedCount = records.filter(r => r.status === 'مكتملة').length;
   const inProgressCount = records.filter(r => r.status === 'قيد التدريب').length;
 
+  const internalRecords = records.filter(r => r.pdType === 'داخلي');
+  const externalRecords = records.filter(r => r.pdType !== 'داخلي');
+  const internalCount = internalRecords.length;
+  const externalCount = externalRecords.length;
+  const internalHours = internalRecords.reduce((sum, r) => sum + (Number(r.hours) || 0), 0);
+  const externalHours = externalRecords.reduce((sum, r) => sum + (Number(r.hours) || 0), 0);
+
   const uniqueIssuers = Array.from(new Set(records.map(r => r.issuer).filter(Boolean)));
   const uniqueCategories = Array.from(new Set(records.map(r => r.category).filter(Boolean)));
 
@@ -499,6 +1053,10 @@ export function calculateSelfDevelopmentStats(records: SelfDevelopmentRecord[]) 
   return {
     totalCertificates,
     totalHours,
+    internalCount,
+    externalCount,
+    internalHours,
+    externalHours,
     activeCount,
     completedCount,
     inProgressCount,

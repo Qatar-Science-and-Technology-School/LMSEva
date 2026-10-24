@@ -63,6 +63,8 @@ import {
   resetSelfDevelopmentRecords,
   calculateSelfDevelopmentStats,
   INITIAL_SELF_DEVELOPMENT_RECORDS,
+  isDuplicateSelfDevRecord,
+  normalizeRecordTitle,
 } from '@/lib/selfDevelopmentData';
 import {
   printComprehensiveSelfDevelopmentReport,
@@ -87,6 +89,7 @@ export default function SelfDevelopmentTab({
   const [selectedYear, setSelectedYear] = useState<string>(academicYear);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedPdType, setSelectedPdType] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
 
   // Modal State
@@ -96,17 +99,18 @@ export default function SelfDevelopmentTab({
 
   // Form State
   const [formData, setFormData] = useState<Partial<SelfDevelopmentRecord>>({
-    coordinatorName: 'م. أحمد عادل طبيشات',
-    role: 'منسق المشاريع الإلكترونية والحلول الرقمية',
+    coordinatorName: 'Ahmad Adel Tubaishat',
+    role: 'منسق مشروع التعلم الإلكتروني',
     title: '',
     titleEn: '',
     issuer: '',
     category: 'الذكاء الاصطناعي والحلول الرقمية',
-    hours: 20,
+    hours: 2,
     issueDate: new Date().toISOString().split('T')[0],
     expiryDate: 'سارية المفعول',
     academicYear: '2026-2027',
     status: 'معتمدة وسارية',
+    pdType: 'خارجي',
     credentialId: '',
     credentialUrl: '',
     skillsAcquired: [],
@@ -148,10 +152,11 @@ export default function SelfDevelopmentTab({
       const matchesYear = selectedYear === 'all' || rec.academicYear === selectedYear;
       const matchesCategory = selectedCategory === 'all' || rec.category === selectedCategory;
       const matchesStatus = selectedStatus === 'all' || rec.status === selectedStatus;
+      const matchesPdType = selectedPdType === 'all' || (rec.pdType || 'خارجي') === selectedPdType;
 
-      return matchesSearch && matchesYear && matchesCategory && matchesStatus;
+      return matchesSearch && matchesYear && matchesCategory && matchesStatus && matchesPdType;
     });
-  }, [records, searchTerm, selectedYear, selectedCategory, selectedStatus]);
+  }, [records, searchTerm, selectedYear, selectedCategory, selectedStatus, selectedPdType]);
 
   // الإحصاءات العامة
   const stats = useMemo(() => calculateSelfDevelopmentStats(filteredRecords), [filteredRecords]);
@@ -178,17 +183,18 @@ export default function SelfDevelopmentTab({
   const handleOpenAddModal = () => {
     setEditingRecord(null);
     setFormData({
-      coordinatorName: 'م. أحمد عادل طبيشات',
-      role: 'منسق المشاريع الإلكترونية والحلول الرقمية',
+      coordinatorName: 'Ahmad Adel Tubaishat',
+      role: 'منسق مشروع التعلم الإلكتروني',
       title: '',
       titleEn: '',
       issuer: '',
       category: 'الذكاء الاصطناعي والحلول الرقمية',
-      hours: 25,
+      hours: 2,
       issueDate: new Date().toISOString().split('T')[0],
       expiryDate: 'سارية المفعول',
       academicYear: selectedYear === 'all' ? '2026-2027' : selectedYear,
       status: 'معتمدة وسارية',
+      pdType: 'خارجي',
       credentialId: '',
       credentialUrl: '',
       skillsAcquired: [],
@@ -202,7 +208,7 @@ export default function SelfDevelopmentTab({
   // فتح نموذج التعديل
   const handleOpenEditModal = (rec: SelfDevelopmentRecord) => {
     setEditingRecord(rec);
-    setFormData({ ...rec });
+    setFormData({ ...rec, pdType: rec.pdType || 'خارجي' });
     setSkillsText(Array.isArray(rec.skillsAcquired) ? rec.skillsAcquired.join('\n') : '');
     setIsModalOpen(true);
   };
@@ -214,6 +220,14 @@ export default function SelfDevelopmentTab({
     if (!formData.title || !formData.issuer) {
       alert('يرجى إدخال اسم الشهادة/الدورة والجهة المانحة.');
       return;
+    }
+
+    // التحقق من عدم التكرار عند إضافة ورشة جديدة
+    if (!editingRecord) {
+      if (isDuplicateSelfDevRecord(formData, records)) {
+        alert(`تنبيه النظام: توجد ورشة أو شهادة بنفس الاسم مسجلة مسبقاً ("${formData.title}").\nتم تطبيق قاعدة منع التكرار وفق التعليمات.`);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -234,6 +248,7 @@ export default function SelfDevelopmentTab({
               ...formData,
               skillsAcquired: parsedSkills,
               hours: Number(formData.hours) || 1,
+              pdType: formData.pdType || r.pdType || 'خارجي',
               updatedAt: now,
             } as SelfDevelopmentRecord
           : r
@@ -242,8 +257,8 @@ export default function SelfDevelopmentTab({
       // إضافة جديدة
       const newRec: SelfDevelopmentRecord = {
         id: `sdev_${Date.now()}`,
-        coordinatorName: 'م. أحمد عادل طبيشات',
-        role: 'منسق المشاريع الإلكترونية والحلول الرقمية',
+        coordinatorName: formData.coordinatorName || 'Ahmad Adel Tubaishat',
+        role: formData.role || 'منسق مشروع التعلم الإلكتروني',
         title: formData.title || '',
         titleEn: formData.titleEn || '',
         issuer: formData.issuer || '',
@@ -253,6 +268,7 @@ export default function SelfDevelopmentTab({
         expiryDate: formData.expiryDate || 'سارية المفعول',
         academicYear: formData.academicYear || selectedYear || '2026-2027',
         status: (formData.status as SelfDevelopmentStatus) || 'معتمدة وسارية',
+        pdType: formData.pdType || 'خارجي',
         credentialId: formData.credentialId || '',
         credentialUrl: formData.credentialUrl || '',
         skillsAcquired: parsedSkills,
@@ -478,7 +494,7 @@ export default function SelfDevelopmentTab({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '1.25rem',
           marginBottom: '2rem',
         }}
@@ -494,7 +510,7 @@ export default function SelfDevelopmentTab({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748B' }}>إجمالي الشهادات والدورات</span>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748B' }}>إجمالي الورش والشهادات</span>
             <span style={{ color: '#0284C7', background: '#E0F2FE', padding: '0.4rem', borderRadius: '10px' }}>
               <Award size={20} />
             </span>
@@ -503,7 +519,7 @@ export default function SelfDevelopmentTab({
             {stats.totalCertificates}
           </div>
           <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700 }}>
-            ✓ {stats.activeCount} معتمدة وسارية المفعول
+            ✓ {stats.activeCount} معتمدة وموثقة رسمياً
           </div>
         </div>
 
@@ -518,7 +534,7 @@ export default function SelfDevelopmentTab({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748B' }}>إجمالي ساعات التطوير الذاتي</span>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748B' }}>إجمالي الساعات المكتملة</span>
             <span style={{ color: '#059669', background: '#D1FAE5', padding: '0.4rem', borderRadius: '10px' }}>
               <Clock size={20} />
             </span>
@@ -527,7 +543,55 @@ export default function SelfDevelopmentTab({
             {stats.totalHours} <span style={{ fontSize: '1rem', fontWeight: 700 }}>ساعة</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>
-            معدل {stats.averageHoursPerCert} ساعة لكل اعتماد
+            معدل {stats.averageHoursPerCert} ساعة لكل سجل تدريبي
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: '18px',
+            padding: '1.25rem',
+            border: '1px solid #E2E8F0',
+            borderRight: '5px solid #6366F1',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748B' }}>تطوير مهني خارجي (وزاري ودولي)</span>
+            <span style={{ color: '#6366F1', background: '#EEF2FF', padding: '0.4rem', borderRadius: '10px' }}>
+              <Globe size={20} />
+            </span>
+          </div>
+          <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#6366F1', margin: '0.4rem 0 0' }}>
+            {stats.externalCount} <span style={{ fontSize: '0.9rem', color: '#64748B', fontWeight: 700 }}>سجل</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#6366F1', fontWeight: 800 }}>
+            ⏱️ {stats.externalHours} ساعة (مايكروسوفت، كانفا، اليونسكو...)
+          </div>
+        </div>
+
+        <div
+          style={{
+            background: '#fff',
+            borderRadius: '18px',
+            padding: '1.25rem',
+            border: '1px solid #E2E8F0',
+            borderRight: '5px solid #F59E0B',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748B' }}>تطوير مهني داخلي (QSTSS)</span>
+            <span style={{ color: '#F59E0B', background: '#FEF3C7', padding: '0.4rem', borderRadius: '10px' }}>
+              <Briefcase size={20} />
+            </span>
+          </div>
+          <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#B45309', margin: '0.4rem 0 0' }}>
+            {stats.internalCount} <span style={{ fontSize: '0.9rem', color: '#64748B', fontWeight: 700 }}>ورشة</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: 800 }}>
+            ⏱️ {stats.internalHours} ساعة (أردوينو، Onshape، بحث علمي)
           </div>
         </div>
 
@@ -542,40 +606,16 @@ export default function SelfDevelopmentTab({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748B' }}>مجالات التخصص الدقيقة</span>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748B' }}>جهات الاعتماد والتنظيم</span>
             <span style={{ color: '#7C3AED', background: '#EDE9FE', padding: '0.4rem', borderRadius: '10px' }}>
               <Sparkles size={20} />
             </span>
           </div>
           <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#7C3AED', margin: '0.4rem 0 0' }}>
-            {stats.uniqueCategoriesCount}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>
-            ذكاء اصطناعي، سحابة، أمن سيبراني...
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: '#fff',
-            borderRadius: '18px',
-            padding: '1.25rem',
-            border: '1px solid #E2E8F0',
-            borderRight: '5px solid #D97706',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.02)',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748B' }}>جهات الاعتماد والمنظمات</span>
-            <span style={{ color: '#D97706', background: '#FEF3C7', padding: '0.4rem', borderRadius: '10px' }}>
-              <Globe size={20} />
-            </span>
-          </div>
-          <div style={{ fontSize: '2.1rem', fontWeight: 900, color: '#D97706', margin: '0.4rem 0 0' }}>
             {stats.uniqueIssuersCount}
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 700 }}>
-            مايكروسوفت، هارفارد، الوزارة، PMI...
+            {stats.uniqueCategoriesCount} مجالات تخصصية دقيقة
           </div>
         </div>
       </div>
@@ -825,6 +865,29 @@ export default function SelfDevelopmentTab({
           </select>
         </div>
 
+        {/* Filter PD Type (داخلي / خارجي) */}
+        <div style={{ minWidth: '160px' }}>
+          <select
+            value={selectedPdType}
+            onChange={e => setSelectedPdType(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '0.65rem 1rem',
+              borderRadius: '10px',
+              border: '1px solid #CBD5E1',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              color: '#0F2044',
+              outline: 'none',
+              background: '#F8FAFC',
+            }}
+          >
+            <option value="all">كافة الأنواع (داخلي وخارجي)</option>
+            <option value="خارجي">🌐 تطوير خارجي (وزاري ودولي)</option>
+            <option value="داخلي">🏢 تطوير داخلي (مدرسي QSTSS)</option>
+          </select>
+        </div>
+
         {/* View Mode Toggle */}
         <div style={{ display: 'flex', gap: '0.25rem', background: '#F1F5F9', padding: '0.25rem', borderRadius: '10px' }}>
           <button
@@ -925,19 +988,34 @@ export default function SelfDevelopmentTab({
               >
                 <div>
                   {/* Top Badges */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '0.5rem' }}>
-                    <span
-                      style={{
-                        background: catCfg.bgColor,
-                        color: catCfg.color,
-                        padding: '0.2rem 0.65rem',
-                        borderRadius: '6px',
-                        fontSize: '0.72rem',
-                        fontWeight: 800,
-                      }}
-                    >
-                      {rec.category}
-                    </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                      <span
+                        style={{
+                          background: catCfg.bgColor,
+                          color: catCfg.color,
+                          padding: '0.2rem 0.65rem',
+                          borderRadius: '6px',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                        }}
+                      >
+                        {rec.category}
+                      </span>
+                      <span
+                        style={{
+                          background: rec.pdType === 'داخلي' ? '#FEF3C7' : '#EEF2FF',
+                          color: rec.pdType === 'داخلي' ? '#B45309' : '#4338CA',
+                          border: `1px solid ${rec.pdType === 'داخلي' ? '#FDE68A' : '#C7D2FE'}`,
+                          padding: '0.2rem 0.55rem',
+                          borderRadius: '6px',
+                          fontSize: '0.72rem',
+                          fontWeight: 800,
+                        }}
+                      >
+                        {rec.pdType === 'داخلي' ? '🏢 داخلي' : '🌐 خارجي'}
+                      </span>
+                    </div>
                     <span
                       style={{
                         background: statusCfg.bgColor,
@@ -1157,9 +1235,10 @@ export default function SelfDevelopmentTab({
               <thead>
                 <tr style={{ background: '#0F2044', color: '#fff', textAlign: 'right' }}>
                   <th style={{ padding: '0.85rem 1rem', width: '40px' }}>#</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>اسم الشهادة / الدورة</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>الجهة المانحة</th>
-                  <th style={{ padding: '0.85rem 1rem' }}>المجال</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>اسم الشهادة / الدورة التدريبية</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>الجهة المنظمة / المانحة</th>
+                  <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>النوع</th>
+                  <th style={{ padding: '0.85rem 1rem' }}>المجال التخصصي</th>
                   <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>الساعات</th>
                   <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>تاريخ الإنجاز</th>
                   <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>الحالة</th>
@@ -1201,6 +1280,21 @@ export default function SelfDevelopmentTab({
                         )}
                       </td>
                       <td style={{ padding: '0.85rem 1rem', fontWeight: 700, color: '#334155' }}>{rec.issuer}</td>
+                      <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
+                        <span
+                          style={{
+                            background: rec.pdType === 'داخلي' ? '#FEF3C7' : '#EEF2FF',
+                            color: rec.pdType === 'داخلي' ? '#B45309' : '#4338CA',
+                            border: `1px solid ${rec.pdType === 'داخلي' ? '#FDE68A' : '#C7D2FE'}`,
+                            padding: '0.2rem 0.55rem',
+                            borderRadius: '6px',
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                          }}
+                        >
+                          {rec.pdType === 'داخلي' ? '🏢 داخلي' : '🌐 خارجي'}
+                        </span>
+                      </td>
                       <td style={{ padding: '0.85rem 1rem' }}>
                         <span
                           style={{
@@ -1559,6 +1653,30 @@ export default function SelfDevelopmentTab({
                     <option value="معتمدة وسارية">معتمدة وسارية</option>
                     <option value="مكتملة">مكتملة</option>
                     <option value="قيد التدريب">قيد التدريب</option>
+                  </select>
+                </div>
+
+                {/* PD Type: داخلي / خارجي */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 800, color: '#0F2044', marginBottom: '0.4rem' }}>
+                    نوع التطوير المهني <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <select
+                    value={formData.pdType || 'خارجي'}
+                    onChange={e => setFormData({ ...formData, pdType: e.target.value as 'داخلي' | 'خارجي' })}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '10px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box',
+                      background: '#fff',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="خارجي">🌐 تطوير مهني خارجي (وزاري ودولي)</option>
+                    <option value="داخلي">🏢 تطوير مهني داخلي (مدرسي QSTSS)</option>
                   </select>
                 </div>
 

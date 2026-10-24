@@ -63,6 +63,11 @@ export function printComprehensiveSelfDevelopmentReport(
         <td>
           <div class="issuer-badge">${rec.issuer}</div>
         </td>
+        <td class="text-center">
+          <span class="type-chip" style="color: ${rec.pdType === 'داخلي' ? '#B45309' : '#1D4ED8'}; background-color: ${rec.pdType === 'داخلي' ? '#FEF3C7' : '#EFF6FF'}; border: 1px solid ${rec.pdType === 'داخلي' ? '#FDE68A' : '#BFDBFE'}; padding: 2px 7px; border-radius: 4px; font-weight: 800; font-size: 10px;">
+            ${rec.pdType === 'داخلي' ? '🏢 داخلي' : '🌐 خارجي'}
+          </span>
+        </td>
         <td>
           <span class="category-chip" style="color: ${categoryCfg.color}; background-color: ${categoryCfg.bgColor};">
             ${rec.category}
@@ -436,23 +441,23 @@ export function printComprehensiveSelfDevelopmentReport(
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-val" style="color: #0284C7;">${stats.totalCertificates}</div>
-              <div class="stat-lbl">إجمالي الشهادات والدورات</div>
+              <div class="stat-lbl">إجمالي الورش والشهادات</div>
             </div>
             <div class="stat-card">
-              <div class="stat-val" style="color: #059669;">${stats.totalHours}</div>
-              <div class="stat-lbl">ساعة تدريب وتطوير ذاتي</div>
+              <div class="stat-val" style="color: #059669;">${stats.totalHours} س</div>
+              <div class="stat-lbl">ساعة تدريب وتطوير مكتملة</div>
             </div>
             <div class="stat-card">
-              <div class="stat-val" style="color: #7C3AED;">${stats.uniqueCategoriesCount}</div>
-              <div class="stat-lbl">مجالات تخصصية دقيقة</div>
+              <div class="stat-val" style="color: #6366F1;">${stats.externalCount} <span style="font-size: 11px; font-weight: 700;">(${stats.externalHours} س)</span></div>
+              <div class="stat-lbl">تطوير خارجي (وزاري ودولي)</div>
             </div>
             <div class="stat-card">
-              <div class="stat-val" style="color: #D97706;">${stats.uniqueIssuersCount}</div>
-              <div class="stat-lbl">جهات اعتماد دولية ووطنية</div>
+              <div class="stat-val" style="color: #D97706;">${stats.internalCount} <span style="font-size: 11px; font-weight: 700;">(${stats.internalHours} س)</span></div>
+              <div class="stat-lbl">تطوير داخلي (مدرسي QSTSS)</div>
             </div>
             <div class="stat-card">
-              <div class="stat-val" style="color: #0F2044;">${stats.averageHoursPerCert} س</div>
-              <div class="stat-lbl">متوسط ساعات الاعتماد الواحد</div>
+              <div class="stat-val" style="color: #0F2044;">${stats.uniqueIssuersCount}</div>
+              <div class="stat-lbl">جهات الاعتماد والمنظمات</div>
             </div>
           </div>
 
@@ -462,7 +467,8 @@ export function printComprehensiveSelfDevelopmentReport(
               <tr>
                 <th style="width: 28px;" class="text-center">#</th>
                 <th>اسم الشهادة / البرنامج التدريبي التخصصي</th>
-                <th style="width: 140px;">الجهة المانحة</th>
+                <th style="width: 140px;">الجهة المنظمة / المانحة</th>
+                <th style="width: 65px;" class="text-center">النوع</th>
                 <th style="width: 130px;">المجال التخصصي</th>
                 <th style="width: 50px;" class="text-center">الساعات</th>
                 <th style="width: 80px;" class="text-center">تاريخ الإنجاز</th>
@@ -481,9 +487,18 @@ export function printComprehensiveSelfDevelopmentReport(
             <div class="sig-box">
               <div class="sig-title">إعداد واعتماد</div>
               <div class="sig-name">م. أحمد عادل طبيشات</div>
-              <div style="font-size: 10px; color: #475569; font-weight: 700;">منسق المشاريع والحلول الرقمية</div>
+              <div style="font-size: 10px; color: #475569; font-weight: 700;">منسق مشروع التعلم الإلكتروني</div>
               <div class="sig-img-container">
                 <img src="/signature-ahmad.png" alt="توقيع م. أحمد عادل طبيشات" class="sig-img" />
+              </div>
+            </div>
+
+            <div class="sig-box">
+              <div class="sig-title">اعتماد النائب الأكاديمي</div>
+              <div class="sig-name">د. راني التوم</div>
+              <div style="font-size: 10px; color: #475569; font-weight: 700;">نائب مدير المدرسة للشؤون الأكاديمية</div>
+              <div class="sig-img-container">
+                <img src="/signature-rani.png" alt="توقيع النائب الأكاديمي" class="sig-img" />
               </div>
             </div>
 
@@ -495,7 +510,7 @@ export function printComprehensiveSelfDevelopmentReport(
             </div>
 
             <div class="sig-box">
-              <div class="sig-title">يعتمد، مدير المدرسة</div>
+              <div class="sig-title">تصديق مدير المدرسة</div>
               <div class="sig-name">محمد علي مندني العمادي</div>
               <div style="font-size: 10px; color: #475569; font-weight: 700;">مدير مدرسة قطر للعلوم والتكنولوجيا</div>
               <div class="sig-img-container">
