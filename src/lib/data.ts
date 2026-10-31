@@ -405,11 +405,12 @@ export function getPerformanceLevel(score:number):{label:string;color:string;bg:
 }
 export const SUBJECT_TO_DEPT:Record<string,string> = {
   'Arabic':'d_arabic','Islamic':'d_islamic','CS':'d_cs','Computer Science':'d_cs',
-  'Math':'d_math','Mathematics':'d_math','Chemistry':'d_stem','Physics':'d_stem',
-  'Biology':'d_stem','English':'d_english','STEM':'d_stem','Energy Lab':'d_energylab',
-  'Fab Lab':'d_fablab','Robotic Lab':'d_robotlab','Social Studies':'d_social',
+  'Math':'d_math','MATH':'d_math','Mathematics':'d_math','Chemistry':'d_stem','Physics':'d_stem',
+  'Biology':'d_stem','English':'d_english','STEM':'d_stem','STEM-Physics':'d_stem',
+  'STEM-Bio':'d_stem','Stem-Chemistry':'d_stem','STEM-Chemistry':'d_stem','Energy Lab':'d_energylab',
+  'Fab Lab':'d_fablab','Fabrication Lab':'d_fablab','Robotic Lab':'d_robotlab','Social Studies':'d_social',
   'Administrative':'d_admin','Admin':'d_admin','PE':'d_pe','Physical Education':'d_pe',
-  'Technology Design':'d_techdesign','Tech Design':'d_techdesign','Scientific Research':'d_research','Research':'d_research',
+  'DT':'d_techdesign','Technology Design':'d_techdesign','Tech Design':'d_techdesign','Scientific Research':'d_research','Research':'d_research',
   'E-Learning':'d_elearning','ELearning':'d_elearning','التعليم الإلكتروني':'d_elearning','التعليم الالكتروني':'d_elearning',
   'التربية البدنية':'d_pe','التصميم التكنولوجي':'d_techdesign','البحث العلمي':'d_research','الإدارة':'d_admin',
 };
@@ -431,15 +432,15 @@ export const initialDepartments:Department[] = [
   {id:'d_elearning',  nameAr:'التعليم الإلكتروني',      nameEn:'E-Learning'},
 ];
 
-// ── Official School Department Staff Counts & Canonical Mapping ───────────────
+// ── Official School Department Staff Counts & Canonical Mapping (62 Teachers) ──
 export const OFFICIAL_DEPARTMENT_STAFF: Record<string, { id: string; count: number; nameAr: string }> = {
   'التربية الإسلامية': { id: 'd_islamic', count: 5, nameAr: 'التربية الإسلامية' },
   'البحث العلمي': { id: 'd_research', count: 2, nameAr: 'البحث العلمي' },
   'مختبر الطاقة': { id: 'd_energylab', count: 2, nameAr: 'مختبر الطاقة' },
   'الرياضيات': { id: 'd_math', count: 7, nameAr: 'الرياضيات' },
-  'اللغة الإنجليزية': { id: 'd_english', count: 5, nameAr: 'اللغة الإنجليزية' },
-  'اللغة العربية': { id: 'd_arabic', count: 7, nameAr: 'اللغة العربية' },
-  'STEM': { id: 'd_stem', count: 20, nameAr: 'STEM' },
+  'اللغة الإنجليزية': { id: 'd_english', count: 7, nameAr: 'اللغة الإنجليزية' },
+  'اللغة العربية': { id: 'd_arabic', count: 6, nameAr: 'اللغة العربية' },
+  'STEM': { id: 'd_stem', count: 18, nameAr: 'STEM' },
   'الحاسوب': { id: 'd_cs', count: 5, nameAr: 'الحاسوب' },
   'مختبر التصنيع الرقمي': { id: 'd_fablab', count: 2, nameAr: 'مختبر التصنيع الرقمي' },
   'مختبر الروبوت': { id: 'd_robotlab', count: 2, nameAr: 'مختبر الروبوت' },
@@ -646,10 +647,36 @@ export const TASK_CATEGORIES: TaskCategory[] = [
 export const HIGH_PERF_DEPTS = new Set(['d_arabic','d_islamic','d_cs','d_math']);
 export function getDeptName(id:string,depts:Department[]):string { return depts.find(d=>d.id===id)?.nameAr||id; }
 
-// ── Centralized Leader Exclusion & Recognition Logic ───────────────────────
+// ── Centralized Leader & Removed Teacher Exclusion Logic ──────────────────
+const REMOVED_TEACHER_IDS = new Set(['t3','t7','t16','t18','t25','t31','t42','t45','t55']);
+const REMOVED_EMPLOYEE_IDS = new Set([
+  '29382600766','28484000736','29082600879','28942201555','28812400217',
+  '28440001988','27882601227','27684000920','27158601882'
+]);
+const REMOVED_TEACHER_NAMES_AR = [
+  'محمد عبدالمنعم حليمه',
+  'محمد حليمة',
+  'جوستون شيرود لويس',
+  'عبدالله كارش',
+  'طارق يوسف رزق',
+  'طارق رزق',
+  'ديريك جوستين جاردنر',
+  'احمد صلاح رمضان حموده',
+  'انس احمد',
+  'أنس أحمد',
+  'جايمز انتوني مكيند',
+  'عمران الله معروفي',
+  'عمران معروفي',
+];
+
 export function isExcludedTeacher(t: any): boolean {
   if (!t) return false;
-  const nameAr = (t.nameAr || t.name || t.teacherName || t.teacherNameAr || '').trim();
+  const tid = String(t.id || t.teacherId || '').trim();
+  const empId = String(t.employeeId || '').trim();
+  if (tid && REMOVED_TEACHER_IDS.has(tid)) return true;
+  if (empId && REMOVED_EMPLOYEE_IDS.has(empId)) return true;
+
+  const nameAr = (t.nameAr || t.name || t.teacherName || t.teacherNameAr || t.traineeNameAr || '').trim();
   const nameEn = (t.nameEn || t.teacherNameEn || '').trim().toLowerCase();
   const email = (t.email || '').trim().toLowerCase();
   const role = (t.role || '').trim().toLowerCase();
@@ -660,6 +687,9 @@ export function isExcludedTeacher(t: any): boolean {
   if (nameEn.includes('rani') && (nameEn.includes('toum') || nameEn.includes('al-toum'))) return true;
   if (email.includes('r.altoum') || email.includes('altoum1512')) return true;
   if (role === 'leader' || job.includes('نائب') || job.includes('مدير')) return true;
+
+  // Exclude removed teachers not in the official 62-teacher list
+  if (nameAr && REMOVED_TEACHER_NAMES_AR.some(rn => nameAr === rn || nameAr.includes(rn))) return true;
 
   return false;
 }
@@ -871,116 +901,108 @@ export function getUserDeptLabel(user:User, depts:Department[]):string {
   return ids.map(id => getDeptName(id, depts)).join('، ');
 }
 
-const RAW:string[][] = [
-  ['28881800075','الحسن علي محمد علي','ALHASSAN ALI MOHAMED ALI','Islamic','a.ali02011@education.qa'],
-  ['29382600819','محمد ورسامي عمر','MOHAMED WARSAME OMAR','English','m.omar1011@education.qa'],
-  ['29382600766','محمد عبدالمنعم حليمه','MUHAMMED ABDULMONEM HALIMAH','STEM','m.halimah1509@education.qa'],
-  ['29040002523','انس عبدالكريم موسى جرادات','ANAS ABEDALKAREEM MOUSA JARADAT','Energy Lab','a.jaradat0402@education.qa'],
-  ['29082600735','راجي ترابي','RAGEE TARABI','STEM','r.tarabi2103@education.qa'],
-  ['28612400247','عبدالعزيز محمد','ABDIAZIZ MOHAMED','STEM','a.mohamed14101@education.qa'],
-  ['28484000736','جوستون شيرود لويس','JUSTIN SHERROD LEWIS','STEM','j.lewis2406@education.qa'],
-  ['28482600709','سليمان ميا','SULEMAN MIAH','STEM','s.miah2103@education.qa'],
-  ['27782601147','امجد سهيل عزيز','AMJAD SUHAIL AZIZ','STEM','a.aziz2805@education.qa'],
-  ['27412400337','زايد كاظم','ZAID J KADHEM','STEM','z.kadhem2511@education.qa'],
-  ['29482600750','ايلفيس ايلوم تيتي','ELVIS ELOM TETTEY','English','e.tettey2711@education.qa'],
-  ['29603100050','حجيبالله خاسييف','HAJIBALA KHASIYEV','Chemistry','h.khasiyev1802@education.qa'],
-  ['28782601010','محمد عماد ازكول','MOHAMMED EMAD AZKOUL','Math','m.azkoul3006@education.qa'],
-  ['29582600586','محمد سيد ميردادي','MOHAMED SAID MARDADI','English','m.mardadi0504@education.qa'],
-  ['29188600078','على سالم على سالمين الصيعري','ALI SALEM ALI SALMEEN ALSEARI','Fab Lab','a.alsaari1611@education.qa'],
-  ['29082600879','عبدالله كارش','ABDULLAHI KARSHE','English','a.karshe0101@education.qa'],
-  ['29051200038','فيصل محمد مسلم الحضري','FAISAL MOHAMMED M ALHADHRI','Social Studies','f.alhadhri0611@education.qa'],
-  ['28942201555','طارق يوسف رزق','TAREK YOUSSEF RIZK','Math','t.rizk2310@education.qa'],
-  ['28940000290','اياد محمود علي سلامه','IYAD M ALI SALAMEH','Robotic Lab','i.salameh2107@education.qa'],
-  ['28882600706','امداد علي','AMDAD ALI','CS','a.ali04022@education.qa'],
-  ['28876200012','زوكير عبدالرحمانوف','ZOKIR ABDURAKHMANOV','Physics','z.abdurakhmanov1912@education.qa'],
-  ['28852800073','يوسف دحمان','YOUSSEF DAHMAN','English','y.dahman0209@education.qa'],
-  ['28840001589','ضرار حسن صادق ملاح','DERAR HASAN SADEQ MALLAH','Physics','d.mallah2206@education.qa'],
-  ['28836800074','ابراهيم عونى عمر حسن النعيمى','IBRAHIM A O ALNUAIMI','Energy Lab','i.alnuaimi2109@education.qa'],
-  ['28812400217','ديريك جوستين جاردنر','DEREK JUSTIN GARDNER','English','d.gardner0506@education.qa'],
-  ['28799900308','اياد أحمد سلمان عبدالقادر','IYAD A S ABDALQADER','Fab Lab','i.abdalqader0211@education.qa'],
-  ['28635628457','محمود علم اقبال احمد','MAHAMOOD ALAM IQBAL AHMED','Robotic Lab','m.ahmed30082@education.qa'],
-  ['28582600990','زكي أحمد خالد','ZAKI AHMED KHALID','English','z.khalid0902@education.qa'],
-  ['28482600419','سيد علي هايدور','SYED ALI HAYDOR','Biology','s.haydor1106@education.qa'],
-  ['28442201873','فوزي عصام بو فخرالدين','FAWZI ESSAM BOUFAKHER','Chemistry','f.boufakher0312@education.qa'],
-  ['28440001988','احمد صلاح رمضان حموده','AHMED SALAH RAMMADAN HAMMOUDEH','Math','a.hammoudeh2212@education.qa'],
-  ['28382601047','شاكيل احمد رفيق','SHAKEEL AHMED RAFIQ','Chemistry','s.rafiq2406@education.qa'],
-  ['28381809358','هشام محمد امام سليمان','HESHAM SOLIMAN','Arabic','h.soliman2507@education.qa'],
-  ['28340002151','محمد سامي ابراهيم عبدالقادر الكفرى','MOHAMMAD SAMI IAQ ALKAFRI','CS','m.alkafri2702@education.qa'],
-  ['28340001287','علاء حسني محمد موسى','ALA HUSNI MOHAMMAD MOUSA','Islamic','a.mousa1106@education.qa'],
-  ['28258605547','عمران كاشف محمد حسين اسد','IMRAN KASHIF MUHAMMAD HUSSAIN ASAD','Chemistry','i.asad22071@education.qa'],
-  ['28210000046','محمد كمال محمد زيد','MOHAMED KAMAL MOHAMED ZEID','Math','m.zeid2605@education.qa'],
-  ['28140001682','نبيل صلاح الدين عطيه ايوب','NABEEL SALAHALDEEN ATIEH AYOUB','Chemistry','n.ayoub1410@education.qa'],
-  ['28140001202','حسام حامد علي البنوي','HUSAM HAMID ALI AL BANWI','Islamic','h.banwi2903@education.qa'],
-  ['28078800165','نزار بن عبدالله حاجي','NIZAR HAJJI','Physics','n.hajji1603@education.qa'],
-  ['27976002886','يامن فرح فرح','YAMEN FARAH FARAH','Math','y.farah2507@education.qa'],
-  ['27882601227','انس احمد','ANAS AHMED','CS','a.ahmed09123@education.qa'],
-  ['27842201563','خالد عصام بارودي','KHALED ISSAM BAROUDI','CS','k.baroudi0206@education.qa'],
-  ['27840001272','اشرف صالح محمد فدعوس','ASHRAF SALEH MOHAMMAD FADOUS','Physics','a.fadous0608@education.qa'],
-  ['27684000920','جايمز انتوني مكيند','JAYMZ ANTHONY MCKIND','English','j.mckind0105@education.qa'],
-  ['27642201189','روي جورج مخول','ROY GEORGES MAKHOUL','CS','r.makhoul0812@education.qa'],
-  ['27581801911','ابراهيم حلمى ابراهيم جمعه','IBRAHIM GOMAA','Arabic','i.gomaa0511@education.qa'],
-  ['27550400480','سمير بلفقي','SAMIR BELLAFQI','Arabic','s.bellafqi1101@education.qa'],
-  ['27482600941','محمد قاسم','MUHAMMAD BIN QASIM','Math','m.qasim2808@education.qa'],
-  ['27440001203','ماهر عيسى حسن علوان','MAHER ISSA HASAN ELWAN','Islamic','m.elwan2704@education.qa'],
-  ['27384000793','عبدالغني عبيده','ABDELGHANI ABIDA','Math','a.abida3001@education.qa'],
-  ['27382601243','كليفرد جورج بايلي','CLIFFORD GEORGE BAILEY','Math','c.bailey0810@education.qa'],
-  ['27376001799','اسعد محمود ناعس','ASAAD MAHMOUD NAIS','Arabic','n.asaad0108@education.qa'],
-  ['27281804414','سيد مصطفى السيد سليمان','SAYED MOSTAFA SOLIMAN','Arabic','s.soliman1509@education.qa'],
-  ['27158601882','عمران الله معروفي','IMRAN ULLAH MARUFI','STEM','i.marufi1204@education.qa'],
-  ['27040000493','ناصر احمد حسن حلوة','NASER AHMAD HASAN HULWEH','Islamic','n.hulweh2501@education.qa'],
-  ['26979200995','اوزدن اوزغور','OZDEN OZGUR','Physics','o.ozgur2906@education.qa'],
-  ['28981800101','محمد عادل عبدالعزيز الطاهر','MOHAMED ADEL ABDELAZIZ','Arabic','m.eltaher@education.qa'],
-  ['28582600999','كريم ولجي','KARIM WALJI','CS','k.walji@education.qa'],
-  ['28779200022','جعفر ياشلي','CAFER YASLI','Math','c.yasli@education.qa'],
-  ['28940000991','احمد اسامه صقر المعاني','AHMAD OSAMA MAANI','Tech Design','a.al-maani@education.qa'],
-  ['28882600988','محمد شفاتا احمد','MUHAMMAD SHAFATA AHMED','Tech Design','m.ahmed11@education.qa'],
-  ['29082600977','محمد عيسي دادي','MOHAMED ISSA DADI','STEM','m.dadi@education.qa'],
-  ['27540000966','طاهر كمال عبدالله الحلو','TAHER KAMAL ALHELOU','PE','t.alhelou@education.qa'],
-  ['27478800955','فتحي المنجي بلحاج صالح','FATHI MANJI BELHADJ','PE','f.belhadj@education.qa'],
-  ['28681800944','محمد علاءالدين محمد عوض الله','MOHAMED ALAAELDIN AWADALLAH','PE','m.awadallah@education.qa'],
+const CANONICAL_TEACHERS_RAW: string[][] = [
+  ['t47', '27581801911', 'ابراهيم حلمى ابراهيم جمعه', 'IBRAHIM GOMAA', 'Arabic', 'i.gomaa0511@education.qa'],
+  ['t24', '28836800074', 'ابراهيم عونى عمر حسن النعيمى', 'IBRAHIM A O ALNUAIMI', 'Energy Lab', 'i.alnuaimi2109@education.qa'],
+  ['t61', '28140001305', 'احمد اسامه صقر المعاني', 'AHMAD OSAMA SAQER MAANI', 'DT', 'a.maani1211@education.qa'],
+  ['t53', '27376001799', 'اسعد محمود ناعس', 'ASAAD MAHMOUD NAIS', 'Arabic', 'n.asaad0108@education.qa'],
+  ['t44', '27840001272', 'اشرف صالح محمد فدعوس', 'ASHRAF SALEH MOHAMMAD FADOUS', 'STEM-Physics', 'a.fadous0608@education.qa'],
+  ['t1', '28881800075', 'الحسن علي محمد علي', 'ALHASSAN ALI MOHAMED ALI', 'Islamic', 'a.ali02011@education.qa'],
+  ['t9', '27782601147', 'امجد سهيل عزيز', 'AMJAD SUHAIL AZIZ', 'STEM-Bio', 'a.aziz2805@education.qa'],
+  ['t20', '28882600706', 'امداد علي', 'AMDAD ALI', 'CS', 'a.ali04022@education.qa'],
+  ['t4', '29040002523', 'انس عبدالكريم موسى جرادات', 'ANAS ABEDALKAREEM MOUSA JARADAT', 'Energy Lab', 'a.jaradat0402@education.qa'],
+  ['t57', '26979200995', 'اوزدن اوزغور', 'OZDEN OZGUR', 'STEM-Physics', 'o.ozgur2906@education.qa'],
+  ['t26', '28799900308', 'اياد أحمد سلمان عبدالقادر', 'IYAD A S ABDALQADER', 'Fabrication Lab', 'i.abdalqader0211@education.qa'],
+  ['t19', '28940000290', 'اياد محمود علي سلامه', 'IYAD M ALI SALAMEH', 'Robotic Lab', 'i.salameh2107@education.qa'],
+  ['t11', '29482600750', 'ايلفيس ايلوم تيتي', 'ELVIS ELOM TETTEY', 'English', 'e.tettey2711@education.qa'],
+  ['t67', '28942201741', 'جاد مصطفى العيتاني', 'JAD MUSTAPHA ELITANI', 'Research', 'j.elitani2010@education.qa'],
+  ['t60', '28279202206', 'جعفر ياشلي', 'CAFER YASLI', 'Math', 'c.yasli1211@education.qa'],
+  ['t12', '29603100050', 'حجيبالله خاسييف', 'HAJIBALA KHASIYEV', 'Stem-Chemistry', 'h.khasiyev1802@education.qa'],
+  ['t39', '28140001202', 'حسام حامد علي البنوي', 'HUSAM HAMID ALI AL BANWI', 'Islamic', 'h.banwi2903@education.qa'],
+  ['t43', '27842201563', 'خالد عصام بارودي', 'KHALED ISSAM BAROUDI', 'CS', 'k.baroudi0206@education.qa'],
+  ['t5', '29082600735', 'راجي ترابي', 'RAGEE TARABI', 'STEM', 'r.tarabi2103@education.qa'],
+  ['t68', '27512400442', 'روبورت انطوني جيفري', 'ROBERT ANTHONY JEFFREY', 'English', 'r.jeffrey0509@education.qa'],
+  ['t46', '27642201189', 'روي جورج مخول', 'ROY GEORGES MAKHOUL', 'CS', 'r.makhoul0812@education.qa'],
+  ['t10', '27412400337', 'زايد كاظم', 'ZAID J KADHEM', 'STEM', 'z.kadhem2511@education.qa'],
+  ['t28', '28582600990', 'زكي أحمد خالد', 'ZAKI AHMED KHALID', 'English', 'z.khalid0902@education.qa'],
+  ['t21', '28876200012', 'زوكير عبدالرحمانوف', 'ZOKIR ABDURAKHMANOV', 'STEM-Physics', 'z.abdurakhmanov1912@education.qa'],
+  ['t8', '28482600709', 'سليمان ميا', 'SULEMAN MIAH', 'STEM', 's.miah2103@education.qa'],
+  ['t48', '27550400480', 'سمير بلفقي', 'SAMIR BELLAFQI', 'Arabic', 's.bellafqi1101@education.qa'],
+  ['t29', '28482600419', 'سيد علي هايدور', 'SYED ALI HAYDOR', 'STEM-Bio', 's.haydor1106@education.qa'],
+  ['t54', '27281804414', 'سيد مصطفى السيد سليمان', 'SAYED MOSTAFA SOLIMAN', 'Arabic', 's.soliman1509@education.qa'],
+  ['t32', '28382601047', 'شاكيل احمد رفيق', 'SHAKEEL AHMED RAFIQ', 'Stem-Chemistry', 's.rafiq2406@education.qa'],
+  ['t23', '28840001589', 'ضرار حسن صادق ملاح', 'DERAR HASAN SADEQ MALLAH', 'STEM-Physics', 'd.mallah2206@education.qa'],
+  ['t64', '27381804998', 'طاهر كمال عبدالله الحلو', 'TAHER KAMAL ABDALLA ELHELW', 'PE', 't.elhelw0102@education.qa'],
+  ['t6', '28612400247', 'عبدالعزيز محمد', 'ABDIAZIZ MOHAMED', 'STEM', 'a.mohamed14101@education.qa'],
+  ['t51', '27384000793', 'عبدالغني عبيده', 'ABDELGHANI ABIDA', 'Math', 'a.abida3001@education.qa'],
+  ['t35', '28340001287', 'علاء حسني محمد موسى', 'ALA HUSNI MOHAMMAD MOUSA', 'Islamic', 'a.mousa1106@education.qa'],
+  ['t15', '29188600078', 'على سالم على سالمين الصيعري', 'ALI SALEM ALI SALMEEN ALSEARI', 'Fabrication Lab', 'a.alsaari1611@education.qa'],
+  ['t69', '28412400374', 'عمر عبدالرحمن عبدالله', 'OMAR ABDURRAHMAN ABDULLAHI', 'English', 'o.abdullahi1708@education.qa'],
+  ['t36', '28258605547', 'عمران كاشف محمد حسين اسد', 'IMRAN KASHIF MUHAMMAD HUSSAIN ASAD', 'Stem-Chemistry', 'i.asad22071@education.qa'],
+  ['t65', '28278801037', 'فتحي المنجي بلحاج صالح', 'FETHI BELHADJ SALAH', 'PE', 'f.salah1011@education.qa'],
+  ['t30', '28442201873', 'فوزي عصام بو فخرالدين', 'FAWZI ESSAM BOUFAKHER', 'Stem-Chemistry', 'f.boufakher0312@education.qa'],
+  ['t17', '29051200038', 'فيصل محمد مسلم الحضري', 'FAISAL MOHAMMED M ALHADHRI', 'Social Studies', 'f.alhadhri0611@education.qa'],
+  ['t59', '28112400412', 'كريم ولجي', 'KARIM WALJEE', 'CS', 'k.waljee1911@education.qa'],
+  ['t52', '27382601243', 'كليفرد جورج بايلي', 'CLIFFORD GEORGE BAILEY', 'Math', 'c.bailey0810@education.qa'],
+  ['t50', '27440001203', 'ماهر عيسى حسن علوان', 'MAHER ISSA HASAN ELWAN', 'Islamic', 'm.elwan2704@education.qa'],
+  ['t34', '28340002151', 'محمد سامي ابراهيم عبدالقادر الكفرى', 'MOHAMMAD SAMI IAQ ALKAFRI', 'CS', 'm.alkafri2702@education.qa'],
+  ['t14', '29582600586', 'محمد سيد ميردادي', 'MOHAMED SAID MARDADI', 'English', 'm.mardadi0504@education.qa'],
+  ['t70', '29082600542', 'محمد شازيدور رحمن', 'MOHAMMED SHAZIDUR RAHMAN', 'STEM', 'm.rahman0310@education.qa'],
+  ['t62', '28335663245', 'محمد شفاتا احمد', 'MOHAMMED SHAFAATH AHMED', 'DT', 'm.ahmed16064@education.qa'],
+  ['t58', '28581802811', 'محمد عادل عبدالعزيز الطاهر', 'MOHAMMED ADEL', 'PE', 'm.adel2504@education.qa'],
+  ['t66', '28481805089', 'محمد علاءالدين محمد عوض الله', 'MOHAMMED AWADALLA', 'Arabic', 'm.awadalla0911@education.qa'],
+  ['t13', '28782601010', 'محمد عماد ازكول', 'MOHAMMED EMAD AZKOUL', 'MATH', 'm.azkoul3006@education.qa'],
+  ['t71', '28240001674', 'محمد عمر محمد سلامه', 'MOHAMMED OMAR MOHD SALAMEH', 'Research', 'm.salameh1301@education.qa'],
+  ['t63', '29482600662', 'محمد عيسي دادي', 'MOHAMED ESSA DADEY', 'STEM', 'm.dadey0201@education.qa'],
+  ['t49', '27482600941', 'محمد قاسم', 'MUHAMMAD BIN QASIM', 'Math', 'm.qasim2808@education.qa'],
+  ['t37', '28210000046', 'محمد كمال محمد زيد', 'MOHAMED KAMAL MOHAMED ZEID', 'Math', 'm.zeid2605@education.qa'],
+  ['t2', '29382600819', 'محمد ورسامي عمر', 'MOHAMED WARSAME OMAR', 'English', 'm.omar1011@education.qa'],
+  ['t27', '28635628457', 'محمود علم اقبال احمد', 'MAHAMOOD ALAM IQBAL AHMED', 'Robotic Lab', 'm.ahmed30082@education.qa'],
+  ['t56', '27040000493', 'ناصر احمد حسن حلوة', 'NASER AHMAD HASAN HULWEH', 'Islamic', 'n.hulweh2501@education.qa'],
+  ['t38', '28140001682', 'نبيل صلاح الدين عطيه ايوب', 'NABEEL SALAHALDEEN ATIEH AYOUB', 'Stem-Chemistry', 'n.ayoub1410@education.qa'],
+  ['t40', '28078800165', 'نزار بن عبدالله حاجي', 'NIZAR HAJJI', 'STEM-Physics', 'n.hajji1603@education.qa'],
+  ['t33', '28381809358', 'هشام محمد امام سليمان', 'HESHAM SOLIMAN', 'Arabic', 'h.soliman2507@education.qa'],
+  ['t41', '27976002886', 'يامن فرح فرح', 'YAMEN FARAH FARAH', 'Math', 'y.farah2507@education.qa'],
+  ['t22', '28852800073', 'يوسف دحمان', 'YOUSSEF DAHMAN', 'English', 'y.dahman0209@education.qa'],
 ];
 
 // ── Scoring configuration ──────────────────────────────────────────────────
 
 // Teachers excluded from 2023-2024 and 2024-2025 (only in 2025-2026)
-const EARLY_EXCLUDED = new Set(['t1','t2','t3','t4','t12','t36']);
+const EARLY_EXCLUDED = new Set(['t1','t2','t4','t12','t36']);
 // Teachers added for 2026-2027 LMS reports (excluded from 2021-2026)
-const LATE_2627_TEACHERS = new Set(['t58','t59','t60','t61','t62','t63','t64','t65','t66']);
+const LATE_2627_TEACHERS = new Set(['t58','t59','t60','t61','t62','t63','t64','t65','t66','t67','t68','t69','t70','t71']);
 
 // TARGET HIGH performers for 2023-2024 and 2024-2025 (scores 92-100)
-// Arabic teachers: t33,t47,t48,t55,t54
-// Islamic teachers: t1,t35,t39,t50,t56
-// Additional selected: t57(Physics→best), t46(CS→Roy), t17(Social→Faisal), t16(English→Karshe), t41(Math→Yamen)
 const TOP_EARLY_TEACHERS = new Set([
-  't4','t12','t13','t16','t17','t18','t22','t24','t27','t29','t31','t33','t34','t35','t36','t39','t41','t43','t46','t47','t48','t49','t50','t53','t54','t55','t56','t57'
+  't4','t12','t13','t17','t22','t24','t27','t29','t33','t34','t35','t36','t39','t41','t43','t46','t47','t48','t49','t50','t53','t54','t56','t57'
 ]);
 
 // ── STEM Specific 2025-2026 ────────────────────────────────────────────────
-const STEM_TOP_2526 = ['t58','t36','t55','t12','t8','t32','t30'];
+const STEM_TOP_2526 = ['t57','t36','t12','t8','t32','t30'];
 const STEM_FOLLOWUP_2526 = new Set(['t21','t10','t30','t19']);
-// ── Follow-up Distribution 2025-2026 (10 per month) ────────────────────────
+// ── Follow-up Distribution 2025-2026 ───────────────────────────────────────
 const FOLLOWUP_DIST_2526: Record<string, string[]> = {
-  'سبتمبر': ['t51','t2','t3','t10','t25','t21','t27','t31','t37','t52'],
-  'أكتوبر': ['t2','t3','t10','t25','t30','t31','t37','t38','t40','t52'],
-  'نوفمبر': ['t51','t2','t10','t21','t27','t30','t31','t38','t40','t52'],
-  'يناير':  ['t51','t3','t10','t25','t21','t27','t30','t37','t38','t40'],
-  'فبراير': ['t51','t2','t3','t25','t21','t31','t37','t38','t40','t52'],
-  'مارس':   ['t2','t3','t10','t25','t27','t30','t31','t37','t38','t52'],
-  'أبريل':  ['t51','t2','t10','t21','t27','t30','t31','t37','t40','t52'],
-  'مايو':    ['t51','t3','t10','t25','t21','t27','t30','t37','t38','t40'],
+  'سبتمبر': ['t51','t2','t10','t21','t27','t37','t52','t30'],
+  'أكتوبر': ['t2','t10','t30','t37','t38','t40','t52','t51'],
+  'نوفمبر': ['t51','t2','t10','t21','t27','t30','t38','t40','t52'],
+  'يناير':  ['t51','t10','t21','t27','t30','t37','t38','t40'],
+  'فبراير': ['t51','t2','t21','t37','t38','t40','t52','t10'],
+  'مارس':   ['t2','t10','t27','t30','t37','t38','t52','t40'],
+  'أبريل':  ['t51','t2','t10','t21','t27','t30','t37','t40','t52'],
+  'مايو':    ['t51','t10','t21','t27','t30','t37','t38','t40'],
 };
-const FOLLOWUP_TARGET_TEACHERS = new Set(['t51','t2','t3','t10','t25','t21','t27','t30','t31','t37','t38','t40','t52']);
+const FOLLOWUP_TARGET_TEACHERS = new Set(['t51','t2','t10','t21','t27','t30','t37','t38','t40','t52']);
 
-const ARABIC_TEACHERS = ['t33','t47','t48','t54','t55'];
-const ISLAMIC_TEACHERS = ['t35','t39','t50','t56','t1','t12','t36']; // Removed t2, t3, t4 as they are target follow-up or early excluded
+const ARABIC_TEACHERS = ['t33','t47','t48','t54','t53'];
+const ISLAMIC_TEACHERS = ['t35','t39','t50','t56','t1','t12','t36'];
 
-export const initialTeachers:Teacher[] = RAW.map(([empId,nameAr,nameEn,subj,email],i)=>{
-  const id = `t${i+1}`;
+export const initialTeachers:Teacher[] = CANONICAL_TEACHERS_RAW.map(([id,empId,nameAr,nameEn,subj,email])=>{
   const isLate = LATE_2627_TEACHERS.has(id);
   return {
     id, employeeId:empId, nameAr, nameEn,
     departmentId:SUBJECT_TO_DEPT[subj]||'d_stem',
-    subject:subj, email, jobCategory:'معلم', status:'active' as const, createdAt: isLate ? '2026-09-01' : '2023-09-01',
+    subject:subj, email, jobCategory:subj, status:'active' as const, createdAt: isLate ? '2026-09-01' : '2023-09-01',
     activeFromYear: isLate ? '2026-2027' : (EARLY_EXCLUDED.has(id) ? '2025-2026' : '2023-2024'),
     excludedYears: isLate ? ['2021-2022','2022-2023','2023-2024','2024-2025','2025-2026'] : (EARLY_EXCLUDED.has(id) ? ['2023-2024','2024-2025'] : []),
   };
@@ -996,7 +1018,6 @@ const TOP_TEACHERS: Record<string,{base:number; bonus?:Record<string,number>}> =
   't48': {base:97},  // سمير بلفقي - Arabic
   't53': {base:96},  // اسعد ناعس - Arabic
   't54': {base:98},  // سيد مصطفى - Arabic
-  't55': {base:97},  // عمران معروفي - STEM
   't1':  {base:94},  // الحسن علي - Islamic
   't35': {base:96},  // علاء حسني - Islamic
   't39': {base:98},  // حسام البنوي - Islamic
@@ -1008,17 +1029,14 @@ const TOP_TEACHERS: Record<string,{base:number; bonus?:Record<string,number>}> =
   't29': {base:100}, // سيد هيدور - Biology
   't46': {base:95},  // روي مخول - CS
   't17': {base:99},  // فيصل الحضري - Social
-  't16': {base:98},  // عبدالله كارش - English
   't41': {base:97},  // يامن فرح - Math
   't30': {base:95},  // فوزي عصام - Chemistry
   't13': {base:99},  // محمد عماد - Math
   't34': {base:98},  // محمد الكفري - CS
   't4':  {base:99},  // انس جرادات - Energy Lab
   't24': {base:97},  // ابراهيم النعيمي - Energy Lab
-  't18': {base:95},  // طارق رزق - Math
   't22': {base:94},  // يوسف دحمان - English
   't27': {base:94},  // محمود علم - Robot
-  't31': {base:94},  // احمد صلاح - Math
   't43': {base:95},  // خالد بارودي - CS
   't49': {base:94},  // محمد قاسم - Math
 };
@@ -1026,21 +1044,21 @@ const TOP_TEACHERS: Record<string,{base:number; bonus?:Record<string,number>}> =
 // ── 2024-2025 Winners Rotation Mapping ─────────────────────────────────────
 
 const WINNERS_2425: Record<string, Record<string, string>> = {
-  'سبتمبر': { 'd_math':'t13', 'd_cs':'t34', 'd_english':'t16', 'd_stem':'t57', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
-  'أكتوبر': { 'd_math':'t13', 'd_cs':'t34', 'd_english':'t16', 'd_stem':'t57', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
-  'نوفمبر': { 'd_math':'t41', 'd_cs':'t46', 'd_english':'t22', 'd_stem':'t55', 'd_energylab':'t24', 'd_social':'t17', 'd_robotlab':'t27' },
-  'يناير':  { 'd_math':'t18', 'd_cs':'t43', 'd_english':'t16', 'd_stem':'t36', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
-  'فبراير': { 'd_math':'t18', 'd_cs':'t43', 'd_english':'t16', 'd_stem':'t36', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
-  'مارس':   { 'd_math':'t31', 'd_cs':'t34', 'd_english':'t22', 'd_stem':'t57', 'd_energylab':'t24', 'd_social':'t17', 'd_robotlab':'t27' },
-  'أبريل':  { 'd_math':'t49', 'd_cs':'t46', 'd_english':'t16', 'd_stem':'t55', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'سبتمبر': { 'd_math':'t13', 'd_cs':'t34', 'd_english':'t22', 'd_stem':'t57', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'أكتوبر': { 'd_math':'t13', 'd_cs':'t34', 'd_english':'t22', 'd_stem':'t57', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'نوفمبر': { 'd_math':'t41', 'd_cs':'t46', 'd_english':'t11', 'd_stem':'t12', 'd_energylab':'t24', 'd_social':'t17', 'd_robotlab':'t27' },
+  'يناير':  { 'd_math':'t49', 'd_cs':'t43', 'd_english':'t22', 'd_stem':'t36', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'فبراير': { 'd_math':'t49', 'd_cs':'t43', 'd_english':'t22', 'd_stem':'t36', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
+  'مارس':   { 'd_math':'t41', 'd_cs':'t34', 'd_english':'t11', 'd_stem':'t57', 'd_energylab':'t24', 'd_social':'t17', 'd_robotlab':'t27' },
+  'أبريل':  { 'd_math':'t49', 'd_cs':'t46', 'd_english':'t22', 'd_stem':'t12', 'd_energylab':'t4',  'd_social':'t17', 'd_robotlab':'t27' },
   'مايو':    { 'd_math':'t13', 'd_cs':'t43', 'd_english':'t22', 'd_stem':'t36', 'd_energylab':'t24', 'd_social':'t17', 'd_robotlab':'t27' },
 };
 
 // Low-dept exceptions (good despite being in STEM/Physics/English)
-const LOW_EXCEPTIONS = new Set(['t16','t40','t44']); // كارش, نزار, اشرف فدعوس
+const LOW_EXCEPTIONS = new Set(['t40','t44']); // نزار, اشرف فدعوس
 
 // Teachers needing follow-up (scores < 70)
-const FOLLOWUP_TEACHERS = new Set(['t2','t3','t5','t7','t9','t11','t14','t15']);
+const FOLLOWUP_TEACHERS = new Set(['t2','t5','t9','t11','t14','t15']);
 
 // Dept base scores (target total out of 100)
 function deptBase(deptId:string, tid:string):number {
@@ -1985,13 +2003,13 @@ const SEED_MEEE_RECORDS = [
   {
     id: 'MEEE-cert-salameh-008',
     teacherId: '',
-    teacherName: 'محمد عمر سلامة',
-    department: 'مختبر الروبوت',
+    teacherName: 'محمد عمر محمد سلامه',
+    department: 'البحث العلمي',
     status: 'حصل على الشهادة',
     applicationDate: '2025-10-15',
     certificationDate: '2025-12-15',
     academicYear: '2025-2026',
-    notes: 'مسؤول المختبرات التخصصية - معتمد خبير مايكروسوفت MIEE',
+    notes: 'مسؤول المختبرات التخصصية والبحث العلمي - معتمد خبير مايكروسوفت MIEE',
     updatedAt: new Date().toISOString(),
   },
   {
@@ -2182,7 +2200,7 @@ export const SEED_MEEE_2627_RECORDS = [
     id: 'MEEE-2627-13',
     teacherId: '',
     teacherName: 'فيصل محمد مسلم الحضري',
-    department: 'اللغة العربية',
+    department: 'الدراسات الاجتماعية',
     role: 'معلم الدراسات الاجتماعية',
     status: 'حصل على الشهادة',
     applicationDate: '2026-09-01',
@@ -2498,7 +2516,15 @@ export function normalizeTeacherName(name: string): string {
   return name
     .trim()
     .replace(/[\u064B-\u065F\u0670]/g, '') // strip Arabic diacritics / tashkeel
-    .replace(/^(الأستاذ|الاستاذ|دكتور|الدكتور|أ\.|د\.)\s+/g, '') // strip honorific prefixes
+    .replace(/ـ/g, '') // strip tatweel
+    .replace(/هللا/g, 'الله')
+    .replace(/اهلل/g, 'الله')
+    .replace(/عبدهللا/g, 'عبدالله')
+    .replace(/عالء/g, 'علاء')
+    .replace(/مالح/g, 'ملاح')
+    .replace(/سالمه/g, 'سلامه')
+    .replace(/نبيل صالح/g, 'نبيل صلاح')
+    .replace(/^(الأستاذ|الاستاذ|دكتور|الدكتور|أ\.|د\.|م\.)\s+/g, '') // strip honorific prefixes
     .replace(/[أإآ]/g, 'ا')
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')
@@ -2509,20 +2535,27 @@ export function normalizeTeacherName(name: string): string {
 export function deduplicateTeachersList(rawTeachers: Teacher[]): {
   cleanTeachers: Teacher[];
   idRemap: Record<string, string>;
+  removedIds: string[];
   hasDuplicates: boolean;
 } {
-  const validTeachers = (rawTeachers || []).filter(t => !isExcludedTeacher(t));
   const cleanTeachers: Teacher[] = [];
   const idRemap: Record<string, string> = {};
+  const removedIds: string[] = [];
   let hasDuplicates = false;
 
-  for (const t of validTeachers) {
+  for (const t of rawTeachers || []) {
     if (!t) continue;
+    if (isExcludedTeacher(t)) {
+      if (t.id) removedIds.push(t.id);
+      hasDuplicates = true;
+      continue;
+    }
+
     const tNormName = normalizeTeacherName(t.nameAr);
     const tEmpId = (t.employeeId || '').trim();
     const tEmail = (t.email || '').trim().toLowerCase();
 
-    // Check if matches a teacher in initialTeachers
+    // Match against the canonical 62-teacher list (initialTeachers)
     const matchedInit = initialTeachers.find(it => {
       const itNormName = normalizeTeacherName(it.nameAr);
       const itEmpId = (it.employeeId || '').trim();
@@ -2534,80 +2567,70 @@ export function deduplicateTeachersList(rawTeachers: Teacher[]): {
       return false;
     });
 
-    // Check if we already have this teacher in cleanTeachers
-    const existingIndex = cleanTeachers.findIndex(ct => {
-      if (matchedInit && ct.id === matchedInit.id) return true;
-      const ctNormName = normalizeTeacherName(ct.nameAr);
-      const ctEmpId = (ct.employeeId || '').trim();
-      const ctEmail = (ct.email || '').trim().toLowerCase();
-      if (tNormName && ctNormName && tNormName === ctNormName) return true;
-      if (tEmpId && ctEmpId && tEmpId === ctEmpId) return true;
-      if (tEmail && ctEmail && tEmail === ctEmail) return true;
-      return false;
-    });
+    // Drop any teacher not in the official 62-teacher list
+    if (!matchedInit) {
+      if (t.id) removedIds.push(t.id);
+      hasDuplicates = true;
+      continue;
+    }
+
+    const existingIndex = cleanTeachers.findIndex(ct => ct.id === matchedInit.id);
 
     if (existingIndex >= 0) {
       hasDuplicates = true;
       const canonical = cleanTeachers[existingIndex];
-      // Map this duplicate ID to canonical ID
-      idRemap[t.id] = canonical.id;
-
-      // Retain the best non-empty values
+      if (t.id && t.id !== canonical.id) {
+        idRemap[t.id] = canonical.id;
+        removedIds.push(t.id);
+      }
       cleanTeachers[existingIndex] = {
         ...canonical,
-        employeeId: canonical.employeeId || t.employeeId,
-        nameEn: canonical.nameEn || t.nameEn,
-        email: canonical.email || t.email,
-        subject: canonical.subject || t.subject,
-        departmentId: canonical.departmentId || t.departmentId,
         status: (canonical.status === 'active' || t.status === 'active') ? 'active' : canonical.status,
       };
     } else {
-      const canonicalId = matchedInit ? matchedInit.id : t.id;
-      idRemap[t.id] = canonicalId;
+      const canonicalId = matchedInit.id;
+      if (t.id && t.id !== canonicalId) {
+        idRemap[t.id] = canonicalId;
+        removedIds.push(t.id);
+        hasDuplicates = true;
+      }
       idRemap[canonicalId] = canonicalId;
 
+      // Check if stored fields differ from canonical Excel list
+      if (
+        t.employeeId !== matchedInit.employeeId ||
+        t.nameAr !== matchedInit.nameAr ||
+        t.nameEn !== matchedInit.nameEn ||
+        t.departmentId !== matchedInit.departmentId ||
+        t.subject !== matchedInit.subject ||
+        t.jobCategory !== matchedInit.jobCategory ||
+        t.email !== matchedInit.email
+      ) {
+        hasDuplicates = true;
+      }
+
       const canonicalTeacher: Teacher = {
-        ...(matchedInit || {}),
         ...t,
+        ...matchedInit,
         id: canonicalId,
-        nameAr: matchedInit ? matchedInit.nameAr : t.nameAr,
-        nameEn: t.nameEn || (matchedInit ? matchedInit.nameEn : ''),
-        employeeId: t.employeeId || (matchedInit ? matchedInit.employeeId : ''),
-        departmentId: t.departmentId || (matchedInit ? matchedInit.departmentId : 'd_stem'),
-        subject: t.subject || (matchedInit ? matchedInit.subject : ''),
-        email: t.email || (matchedInit ? matchedInit.email : ''),
         status: t.status || 'active',
       };
       cleanTeachers.push(canonicalTeacher);
     }
   }
 
-  // Ensure all initialTeachers exist in cleanTeachers without duplication
+  // Ensure all 62 canonical teachers exist in cleanTeachers
   for (const it of initialTeachers) {
     if (isExcludedTeacher(it)) continue;
-    const itNormName = normalizeTeacherName(it.nameAr);
-    const itEmpId = (it.employeeId || '').trim();
-    const itEmail = (it.email || '').trim().toLowerCase();
-
-    const alreadyPresent = cleanTeachers.some(ct => {
-      if (ct.id === it.id) return true;
-      const ctNorm = normalizeTeacherName(ct.nameAr);
-      const ctEmp = (ct.employeeId || '').trim();
-      const ctMail = (ct.email || '').trim().toLowerCase();
-      if (itNormName && ctNorm && itNormName === ctNorm) return true;
-      if (itEmpId && ctEmp && itEmpId === ctEmp) return true;
-      if (itEmail && ctMail && itEmail === ctMail) return true;
-      return false;
-    });
-
+    const alreadyPresent = cleanTeachers.some(ct => ct.id === it.id);
     if (!alreadyPresent) {
       cleanTeachers.push(it);
       idRemap[it.id] = it.id;
+      hasDuplicates = true;
     }
   }
 
-  return { cleanTeachers, idRemap, hasDuplicates };
+  return { cleanTeachers, idRemap, removedIds, hasDuplicates };
 }
 
 export const db = {
@@ -2662,14 +2685,15 @@ export const db = {
   },
   getTeachers: async (): Promise<Teacher[]> => {
     const list = await seedIfEmpty<Teacher>(COLLECTIONS.teachers, initialTeachers);
-    const { cleanTeachers, idRemap, hasDuplicates } = deduplicateTeachersList(list);
+    const { cleanTeachers, idRemap, removedIds, hasDuplicates } = deduplicateTeachersList(list);
 
-    if (hasDuplicates || list.length !== cleanTeachers.length) {
+    if (hasDuplicates || list.length !== cleanTeachers.length || removedIds.length > 0) {
       try {
         await saveCollection(COLLECTIONS.teachers, cleanTeachers);
         const duplicateIds = Object.keys(idRemap).filter(id => idRemap[id] !== id);
-        for (const dupId of duplicateIds) {
-          await deleteDocument(COLLECTIONS.teachers, dupId).catch(() => {});
+        const idsToDelete = Array.from(new Set([...duplicateIds, ...removedIds]));
+        for (const delId of idsToDelete) {
+          await deleteDocument(COLLECTIONS.teachers, delId).catch(() => {});
         }
       } catch (e) {
         console.error("Failed to auto-save deduplicated teachers:", e);
@@ -2678,8 +2702,11 @@ export const db = {
     return cleanTeachers;
   },
   saveTeachers: async (t: Teacher[]): Promise<void> => {
-    const { cleanTeachers } = deduplicateTeachersList(t);
+    const { cleanTeachers, removedIds } = deduplicateTeachersList(t);
     await saveCollection(COLLECTIONS.teachers, cleanTeachers);
+    for (const delId of removedIds) {
+      await deleteDocument(COLLECTIONS.teachers, delId).catch(() => {});
+    }
   },
   deleteTeacher: async (id: string): Promise<void> => {
     await deleteDocument(COLLECTIONS.teachers, id);
@@ -2690,15 +2717,16 @@ export const db = {
     duplicatesRemoved: number;
   }> => {
     const rawTeachers = await getCollection<Teacher>(COLLECTIONS.teachers);
-    const { cleanTeachers, idRemap, hasDuplicates } = deduplicateTeachersList(rawTeachers);
+    const { cleanTeachers, idRemap, removedIds, hasDuplicates } = deduplicateTeachersList(rawTeachers);
 
     const duplicateIds = Object.keys(idRemap).filter(id => idRemap[id] !== id);
-    const duplicatesRemoved = duplicateIds.length;
+    const idsToDelete = Array.from(new Set([...duplicateIds, ...removedIds]));
+    const duplicatesRemoved = idsToDelete.length;
 
     if (hasDuplicates || rawTeachers.length !== cleanTeachers.length || duplicatesRemoved > 0) {
       await saveCollection(COLLECTIONS.teachers, cleanTeachers);
-      for (const dupId of duplicateIds) {
-        await deleteDocument(COLLECTIONS.teachers, dupId).catch(() => {});
+      for (const delId of idsToDelete) {
+        await deleteDocument(COLLECTIONS.teachers, delId).catch(() => {});
       }
     }
 
@@ -2715,9 +2743,14 @@ export const db = {
 
     const grouped = new Map<string, Evaluation>();
     const deletedEvalIds: string[] = [];
+    const validTeacherIds = new Set(cleanTeachers.map(ct => ct.id));
 
     for (const ev of remappedEvals) {
-      if (isExcludedTeacher({ teacherId: ev.teacherId, id: ev.teacherId })) continue;
+      if (isExcludedTeacher({ teacherId: ev.teacherId, id: ev.teacherId }) || !validTeacherIds.has(ev.teacherId)) {
+        deletedEvalIds.push(ev.id);
+        evalsChanged = true;
+        continue;
+      }
       const key = `${ev.teacherId}_${ev.academicYear}_${ev.month}_${ev.term || ''}`;
       if (!grouped.has(key)) {
         grouped.set(key, ev);
@@ -2760,44 +2793,52 @@ export const db = {
         ]);
 
         let mEvalsChanged = false;
-        const cleanMEvals = mEvals.map(m => {
-          if (m.teacherId && idRemap[m.teacherId] && idRemap[m.teacherId] !== m.teacherId) {
-            mEvalsChanged = true;
-            return { ...m, teacherId: idRemap[m.teacherId] };
-          }
-          return m;
-        });
-        if (mEvalsChanged) await saveCollection(COLLECTIONS.modelLessonEvaluations, cleanMEvals);
+        const cleanMEvals = mEvals
+          .filter(m => !isExcludedTeacher(m))
+          .map(m => {
+            if (m.teacherId && idRemap[m.teacherId] && idRemap[m.teacherId] !== m.teacherId) {
+              mEvalsChanged = true;
+              return { ...m, teacherId: idRemap[m.teacherId] };
+            }
+            return m;
+          });
+        if (mEvalsChanged || cleanMEvals.length !== mEvals.length) await saveCollection(COLLECTIONS.modelLessonEvaluations, cleanMEvals);
 
         let mSchedsChanged = false;
-        const cleanMScheds = mScheds.map(s => {
-          if (s.teacherId && idRemap[s.teacherId] && idRemap[s.teacherId] !== s.teacherId) {
-            mSchedsChanged = true;
-            return { ...s, teacherId: idRemap[s.teacherId] };
-          }
-          return s;
-        });
-        if (mSchedsChanged) await saveCollection(COLLECTIONS.modelLessonSchedules, cleanMScheds);
+        const cleanMScheds = mScheds
+          .filter(s => !isExcludedTeacher(s))
+          .map(s => {
+            if (s.teacherId && idRemap[s.teacherId] && idRemap[s.teacherId] !== s.teacherId) {
+              mSchedsChanged = true;
+              return { ...s, teacherId: idRemap[s.teacherId] };
+            }
+            return s;
+          });
+        if (mSchedsChanged || cleanMScheds.length !== mScheds.length) await saveCollection(COLLECTIONS.modelLessonSchedules, cleanMScheds);
 
         let pdChanged = false;
-        const cleanPD = pdRecs.map(r => {
-          if (r.teacherId && idRemap[r.teacherId] && idRemap[r.teacherId] !== r.teacherId) {
-            pdChanged = true;
-            return { ...r, teacherId: idRemap[r.teacherId] };
-          }
-          return r;
-        });
-        if (pdChanged) await saveCollection(COLLECTIONS.individualPDRecords, cleanPD);
+        const cleanPD = pdRecs
+          .filter(r => !isExcludedTeacher(r))
+          .map(r => {
+            if (r.teacherId && idRemap[r.teacherId] && idRemap[r.teacherId] !== r.teacherId) {
+              pdChanged = true;
+              return { ...r, teacherId: idRemap[r.teacherId] };
+            }
+            return r;
+          });
+        if (pdChanged || cleanPD.length !== pdRecs.length) await saveCollection(COLLECTIONS.individualPDRecords, cleanPD);
 
         let meeeChanged = false;
-        const cleanMeee = meeeRecs.map(m => {
-          if (m.teacherId && idRemap[m.teacherId] && idRemap[m.teacherId] !== m.teacherId) {
-            meeeChanged = true;
-            return { ...m, teacherId: idRemap[m.teacherId] };
-          }
-          return m;
-        });
-        if (meeeChanged) await saveCollection(COLLECTIONS.meeeRecords, cleanMeee);
+        const cleanMeee = meeeRecs
+          .filter(m => !isExcludedTeacher(m))
+          .map(m => {
+            if (m.teacherId && idRemap[m.teacherId] && idRemap[m.teacherId] !== m.teacherId) {
+              meeeChanged = true;
+              return { ...m, teacherId: idRemap[m.teacherId] };
+            }
+            return m;
+          });
+        if (meeeChanged || cleanMeee.length !== meeeRecs.length) await saveCollection(COLLECTIONS.meeeRecords, cleanMeee);
       } catch (subErr) {
         console.warn('Error remapping subsidiary collections:', subErr);
       }
@@ -3011,13 +3052,25 @@ export const db = {
     return deleteDocument(COLLECTIONS.workshops, id);
   },
   getIndividualPDRecords: async (): Promise<any[]> => {
-    const existing = await getCollection(COLLECTIONS.individualPDRecords) as any[];
+    const existing = (await getCollection(COLLECTIONS.individualPDRecords) as any[]).filter((r: any) => !isExcludedTeacher(r));
     const deletedIds = getDeletedIds(COLLECTIONS.individualPDRecords);
     const existingIds = new Set(existing.map((r: any) => r.id));
-    const allSeeds = [...SEED_INDIVIDUAL_2627_RECORDS, ...(typeof PD_INDIVIDUAL_RECORDS !== 'undefined' ? PD_INDIVIDUAL_RECORDS : [])];
+    const allSeeds = [...SEED_INDIVIDUAL_2627_RECORDS, ...(typeof PD_INDIVIDUAL_RECORDS !== 'undefined' ? PD_INDIVIDUAL_RECORDS : [])].filter((r: any) => !isExcludedTeacher(r));
     const missing = allSeeds.filter((r: any) => !existingIds.has(r.id) && !deletedIds.has(String(r.id)));
+    const syncDept = (recs: any[]) => recs.map(r => {
+      const tName = normalizeTeacherName(r.teacherName || '');
+      const matched = initialTeachers.find(it =>
+        (r.teacherId && it.id === r.teacherId) ||
+        (tName && normalizeTeacherName(it.nameAr) === tName)
+      );
+      if (matched) {
+        const deptName = initialDepartments.find(d => d.id === matched.departmentId)?.nameAr || r.department;
+        return { ...r, teacherId: matched.id, teacherName: matched.nameAr, department: deptName };
+      }
+      return r;
+    });
     if (missing.length > 0) {
-      const merged: any[] = [...existing, ...missing];
+      const merged: any[] = syncDept([...existing, ...missing]);
       try {
         await saveCollection(COLLECTIONS.individualPDRecords, merged);
       } catch (e) {
@@ -3025,10 +3078,10 @@ export const db = {
       }
       return merged;
     }
-    return existing.length > 0 ? existing : allSeeds.filter((r: any) => !deletedIds.has(String(r.id)));
+    return syncDept(existing.length > 0 ? existing : allSeeds.filter((r: any) => !deletedIds.has(String(r.id))));
   },
   saveIndividualPDRecords: async (r: any[]): Promise<void> => {
-    await saveCollection(COLLECTIONS.individualPDRecords, r);
+    await saveCollection(COLLECTIONS.individualPDRecords, r.filter(x => !isExcludedTeacher(x)));
   },
   saveIndividualPDRecord: async (r: any): Promise<string> => {
     return saveDocument(COLLECTIONS.individualPDRecords, r);
@@ -3037,7 +3090,7 @@ export const db = {
     return deleteDocument(COLLECTIONS.individualPDRecords, id);
   },
   getMeeeRecords: async (): Promise<any[]> => {
-    const existing = await getCollection(COLLECTIONS.meeeRecords) as any[];
+    const existing = (await getCollection(COLLECTIONS.meeeRecords) as any[]).filter((r: any) => !isExcludedTeacher(r));
     const deletedIds = getDeletedIds(COLLECTIONS.meeeRecords);
     const non2627 = existing.filter((r: any) => r.academicYear !== '2026-2027');
     const existing2627 = existing.filter((r: any) => r.academicYear === '2026-2027');
@@ -3046,19 +3099,32 @@ export const db = {
     let hasChanged = false;
 
     const existing2627Ids = new Set(existing2627.map((r: any) => r.id));
-    const missingSeed2627 = SEED_MEEE_2627_RECORDS.filter((r: any) => !existing2627Ids.has(r.id) && !deletedIds.has(String(r.id)));
+    const missingSeed2627 = SEED_MEEE_2627_RECORDS.filter((r: any) => !existing2627Ids.has(r.id) && !deletedIds.has(String(r.id)) && !isExcludedTeacher(r));
     if (missingSeed2627.length > 0) {
       updated2627.push(...missingSeed2627);
       hasChanged = true;
     }
 
-    const missingOriginal = SEED_MEEE_RECORDS.filter((r: any) => !non2627.some((e: any) => e.id === r.id) && !deletedIds.has(String(r.id)));
+    const missingOriginal = SEED_MEEE_RECORDS.filter((r: any) => !non2627.some((e: any) => e.id === r.id) && !deletedIds.has(String(r.id)) && !isExcludedTeacher(r));
     if (missingOriginal.length > 0) {
       non2627.push(...missingOriginal);
       hasChanged = true;
     }
 
-    const merged = [...non2627, ...updated2627];
+    const syncDept = (recs: any[]) => recs.map(r => {
+      const tName = normalizeTeacherName(r.teacherName || '');
+      const matched = initialTeachers.find(it =>
+        (r.teacherId && it.id === r.teacherId) ||
+        (tName && normalizeTeacherName(it.nameAr) === tName)
+      );
+      if (matched) {
+        const deptName = initialDepartments.find(d => d.id === matched.departmentId)?.nameAr || r.department;
+        return { ...r, teacherId: matched.id, teacherName: matched.nameAr, department: deptName };
+      }
+      return r;
+    });
+
+    const merged = syncDept([...non2627, ...updated2627]);
     if (hasChanged) {
       try {
         await saveCollection(COLLECTIONS.meeeRecords, merged);
@@ -3066,7 +3132,7 @@ export const db = {
         console.error("Failed to sync meeeRecords in Firestore:", e);
       }
     }
-    return merged.length > 0 ? merged : [...SEED_MEEE_RECORDS, ...SEED_MEEE_2627_RECORDS].filter((r: any) => !deletedIds.has(String(r.id)));
+    return merged.length > 0 ? merged : syncDept([...SEED_MEEE_RECORDS, ...SEED_MEEE_2627_RECORDS].filter((r: any) => !deletedIds.has(String(r.id)) && !isExcludedTeacher(r)));
   },
   saveMeeeRecords: async (r: any[]): Promise<void> => {
     await saveCollection(COLLECTIONS.meeeRecords, r);

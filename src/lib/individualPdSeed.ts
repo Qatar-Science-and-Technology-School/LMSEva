@@ -39,19 +39,16 @@ export const ACTUAL_2526_RECORDS: Partial<IndividualPDRecord>[] = [
 
   // November 2025
   { trainingDate: '2025-11-02', traineeNameAr: 'محمد الكفري', department: 'الحاسوب', skillProvided: 'تطبيق التيمز', month: 'نوفمبر', sourceFileName: 'Nov.pdf' },
-  { trainingDate: '2025-11-02', traineeNameAr: 'أنس أحمد', department: 'الحاسوب', skillProvided: 'تطبيق التيمز', month: 'نوفمبر', sourceFileName: 'Nov.pdf' },
-  { trainingDate: '2025-11-05', traineeNameAr: 'م. جهاد عناني', department: 'Research', skillProvided: 'Canva Design', month: 'نوفمبر', sourceFileName: 'Nov.pdf' },
+  { trainingDate: '2025-11-05', traineeNameAr: 'م. جهاد عناني', department: 'البحث العلمي', skillProvided: 'Canva Design', month: 'نوفمبر', sourceFileName: 'Nov.pdf' },
   { trainingDate: '2025-11-09', traineeNameAr: 'د. محمد حلمي', department: 'Library', skillProvided: 'Calameo.com', month: 'نوفمبر', sourceFileName: 'Nov.pdf' },
   { trainingDate: '2025-11-11', traineeNameAr: 'محمد الكفري', department: 'الحاسوب', skillProvided: 'Edpuzzle', month: 'نوفمبر', sourceFileName: 'Nov.pdf' },
-  { trainingDate: '2025-11-12', traineeNameAr: 'م. جهاد عناني', department: 'Research', skillProvided: 'Napkin.ai', month: 'نوفمبر', sourceFileName: 'Nov.pdf' },
-  { trainingDate: '2025-11-12', traineeNameAr: 'م. طارق رزق', department: 'Research', skillProvided: 'Canva', month: 'نوفمبر', sourceFileName: 'Nov.pdf' },
+  { trainingDate: '2025-11-12', traineeNameAr: 'م. جهاد عناني', department: 'البحث العلمي', skillProvided: 'Napkin.ai', month: 'نوفمبر', sourceFileName: 'Nov.pdf' },
 
   // January 2026
-  { trainingDate: '2026-01-01', traineeNameAr: 'م. أنس جرادات', department: 'المختبرات التخصصية', originalDepartment: 'المختبرات', skillProvided: 'ML NoteBook', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
-  { trainingDate: '2026-01-05', traineeNameAr: 'محمد حليمة', department: 'STEM', skillProvided: 'LMS', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
-  { trainingDate: '2026-01-08', traineeNameAr: 'إياد سلامة', department: 'المختبرات التخصصية', originalDepartment: 'المختبرات', skillProvided: 'ML NoteBook', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
-  { trainingDate: '2026-01-12', traineeNameAr: 'محمد سلامة', department: 'Research', originalDepartment: 'البحث العلمي', skillProvided: 'ML NoteBook', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
-  { trainingDate: '2026-01-15', traineeNameAr: 'محمد عمر', department: 'اللغة الإنجليزية', skillProvided: 'LMS', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
+  { trainingDate: '2026-01-01', traineeNameAr: 'م. أنس جرادات', department: 'مختبر الطاقة', originalDepartment: 'المختبرات', skillProvided: 'ML NoteBook', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
+  { trainingDate: '2026-01-08', traineeNameAr: 'إياد سلامة', department: 'مختبر الروبوت', originalDepartment: 'المختبرات', skillProvided: 'ML NoteBook', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
+  { trainingDate: '2026-01-12', traineeNameAr: 'محمد عمر محمد سلامه', department: 'البحث العلمي', originalDepartment: 'البحث العلمي', skillProvided: 'ML NoteBook', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
+  { trainingDate: '2026-01-15', traineeNameAr: 'محمد ورسامي عمر', department: 'اللغة الإنجليزية', skillProvided: 'LMS', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
   { trainingDate: '2026-01-22', traineeNameAr: 'علي الصيعري', department: 'مختبر التصنيع الرقمي', originalDepartment: 'التصنيع', skillProvided: 'ML NoteBook', month: 'يناير', sourceFileName: 'Jan2026.pdf' },
 
   // MIT / WISE AI Program
@@ -88,27 +85,27 @@ export const MAPPED_2526_RECORDS: IndividualPDRecord[] = ACTUAL_2526_RECORDS.map
 }));
 
 const PRIORITY_TEACHERS = [
-  { name: 'يامن فرح', dept: 'الرياضيات' },
+  { name: 'يامن فايز فرح', dept: 'الرياضيات' },
   { name: 'محمد عماد ازكول', dept: 'الرياضيات' },
-  { name: 'طارق رزق', dept: 'الرياضيات' },
-  { name: 'روي مخول', dept: 'الحاسوب' },
-  { name: 'محمد الكفري', dept: 'الحاسوب' },
-  { name: 'خالد بارودي', dept: 'الحاسوب' },
+  { name: 'عبدالغني عبيده', dept: 'الرياضيات' },
+  { name: 'روي جورج مخول', dept: 'الحاسوب' },
+  { name: 'محمد سامي ابراهيم عبدالقادر الكفرى', dept: 'الحاسوب' },
+  { name: 'خالد عصام بارودي', dept: 'الحاسوب' },
   { name: 'سمير بلفقي', dept: 'اللغة العربية' },
-  { name: 'أسعد ناعس', dept: 'اللغة العربية' },
-  { name: 'سيد مصطفى', dept: 'اللغة العربية' },
-  { name: 'حسام البنوي', dept: 'التربية الإسلامية' },
-  { name: 'ماهر علوان', dept: 'التربية الإسلامية' },
-  { name: 'ناصر حلوة', dept: 'التربية الإسلامية' },
-  { name: 'عبدالله كارش', dept: 'اللغة الإنجليزية' },
+  { name: 'اسعد محمود ناعس', dept: 'اللغة العربية' },
+  { name: 'سيد مصطفى السيد سليمان', dept: 'اللغة العربية' },
+  { name: 'حسام حامد علي البنوي', dept: 'التربية الإسلامية' },
+  { name: 'ماهر عيسى حسن علوان', dept: 'التربية الإسلامية' },
+  { name: 'ناصر احمد حسن حلوة', dept: 'التربية الإسلامية' },
+  { name: 'محمد ورسامي عمر', dept: 'اللغة الإنجليزية' },
   { name: 'يوسف دحمان', dept: 'اللغة الإنجليزية' },
-  { name: 'أوزدن أوزغور', dept: 'STEM' },
-  { name: 'عمران كاشف', dept: 'STEM' },
-  { name: 'عمران معروفي', dept: 'STEM' },
-  { name: 'فوزي بوفخر الدين', dept: 'STEM' },
-  { name: 'أنس جرادات', dept: 'مختبر الطاقة' },
-  { name: 'علي الصيعري', dept: 'مختبر التصنيع الرقمي' },
-  { name: 'إياد سلامة', dept: 'مختبر الروبوت' }
+  { name: 'اوزدن اوزغور', dept: 'STEM' },
+  { name: 'امران كاشف محمد شافعي', dept: 'STEM' },
+  { name: 'ضرار حسن صادق ملاح', dept: 'STEM' },
+  { name: 'فوزي عصام بو فخرالدين', dept: 'STEM' },
+  { name: 'انس عبدالكريم موسى جرادات', dept: 'مختبر الطاقة' },
+  { name: 'على سالم على سالمين الصيعري', dept: 'مختبر التصنيع الرقمي' },
+  { name: 'اياد محمود علي سلامه', dept: 'مختبر الروبوت' }
 ];
 
 const MONTHS_GEN = ['سبتمبر', 'أكتوبر', 'نوفمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو'];

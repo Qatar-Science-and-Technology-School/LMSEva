@@ -12,7 +12,7 @@ export const OCTOBER_2026_LMS_METRICS = {
   date: '23 أكتوبر 2026',
   period: '1–23 أكتوبر 2026',
   academicYear: '2026-2027',
-  totalStaffCount: 63,
+  totalStaffCount: 62,
   teachersCount: 47, // في تقرير الدروس (زيادة 5 معلمين عن سبتمبر)
   teachersInAssessments: 27, // في تقرير التقييمات
   teachersWithActivity: 47,
@@ -1107,7 +1107,7 @@ export const OCTOBER_TOP_10_INDEX_TEACHERS = [
   {
     rank: 7,
     name: 'محمد عادل عبدالعزيز الطاهر',
-    department: 'اللغة العربية',
+    department: 'التربية البدنية',
     generalIndex: 89.3,
     evalIndex: 92.6,
     lessonsIndex: 86.0,
@@ -1148,7 +1148,7 @@ export const OCTOBER_TOP_10_INDEX_TEACHERS = [
 
 export const OCTOBER_TOP_10_ASSESSMENTS_TEACHERS = [
   { rank: 1, name: 'ماهر عيسى حسن علوان', department: 'التربية الإسلامية', evalIndex: 97.5, assigned: 10, solveRate: 91.7, gradingRate: 100.0 },
-  { rank: 2, name: 'محمد عادل عبدالعزيز الطاهر', department: 'اللغة العربية', evalIndex: 92.6, assigned: 27, solveRate: 84.6, gradingRate: 92.0 },
+  { rank: 2, name: 'محمد عادل عبدالعزيز الطاهر', department: 'التربية البدنية', evalIndex: 92.6, assigned: 27, solveRate: 84.6, gradingRate: 92.0 },
   { rank: 3, name: 'فيصل محمد مسلم الحضري', department: 'الدراسات الاجتماعية', evalIndex: 91.2, assigned: 24, solveRate: 82.8, gradingRate: 89.6 },
   { rank: 4, name: 'سيد مصطفى السيد سليمان', department: 'اللغة العربية', evalIndex: 89.6, assigned: 7, solveRate: 93.4, gradingRate: 98.1 },
   { rank: 5, name: 'سمير بلفقي', department: 'اللغة العربية', evalIndex: 88.3, assigned: 6, solveRate: 100.0, gradingRate: 100.0 },
@@ -1156,7 +1156,7 @@ export const OCTOBER_TOP_10_ASSESSMENTS_TEACHERS = [
   { rank: 7, name: 'حسام حامد علي البنوي', department: 'التربية الإسلامية', evalIndex: 84.3, assigned: 2, solveRate: 86.7, gradingRate: 100.0 },
   { rank: 8, name: 'محمد ورسامي عمر', department: 'اللغة الإنجليزية', evalIndex: 82.8, assigned: 15, solveRate: 49.6, gradingRate: 94.1 },
   { rank: 9, name: 'ابراهيم حلمى ابراهيم جمعه', department: 'اللغة العربية', evalIndex: 81.8, assigned: 6, solveRate: 78.1, gradingRate: 100.0 },
-  { rank: 10, name: 'محمد سامي ابراهيم عبدالقادر الكفرى', department: 'علم الحاسوب', evalIndex: 80.8, assigned: 4, solveRate: 78.1, gradingRate: 64.0 },
+  { rank: 10, name: 'محمد سامي ابراهيم عبدالقادر الكفرى', department: 'الحاسوب', evalIndex: 80.8, assigned: 4, solveRate: 78.1, gradingRate: 64.0 },
 ];
 
 export const OCTOBER_TOP_LESSONS_100_TEACHERS = [
@@ -1228,7 +1228,7 @@ export const OCTOBER_DEPARTMENT_CHAMPIONS_10 = [
   },
   {
     rank: 6,
-    department: 'علم الحاسوب',
+    department: 'الحاسوب',
     teacherName: 'محمد سامي ابراهيم عبدالقادر الكفرى',
     score: 58.25,
     evalScore: 80.8,
@@ -1239,7 +1239,7 @@ export const OCTOBER_DEPARTMENT_CHAMPIONS_10 = [
   },
   {
     rank: 7,
-    department: 'STEM والعلوم',
+    department: 'STEM',
     teacherName: 'امجد سهيل عزيز',
     score: 64.9,
     evalScore: 76.9,
@@ -1261,7 +1261,7 @@ export const OCTOBER_DEPARTMENT_CHAMPIONS_10 = [
   },
   {
     rank: 9,
-    department: 'تكنولوجيا التصميم والروبوت',
+    department: 'التصميم التكنولوجي',
     teacherName: 'محمد شفاتا احمد',
     score: 85.0,
     evalScore: 0.0,
@@ -1272,8 +1272,8 @@ export const OCTOBER_DEPARTMENT_CHAMPIONS_10 = [
   },
   {
     rank: 10,
-    department: 'مختبر الطاقة والبيئة',
-    teacherName: 'انس عبدالكريم موسى جرادات',
+    department: 'مختبر الطاقة',
+    teacherName: 'انس عبدالكريم موسى  جرادات',
     score: 44.9,
     evalScore: 28.4,
     lessonsScore: 61.4,
@@ -1440,23 +1440,23 @@ export const OCTOBER_ADMINISTRATIVE_RATINGS_LIST = [
   { name: 'محمد قاسم', department: 'الرياضيات', rating: 'ممتاز', basis: '100% استيفاء مؤشر الدروس الإلكترونية', hasActivity: true },
   { name: 'كليفرد جورج بايلي', department: 'الرياضيات', rating: 'ممتاز', basis: '99.5% مؤشر الدروس الإلكترونية', hasActivity: true },
   { name: 'راجي ترابي', department: 'STEM', rating: 'ممتاز', basis: '98.1% مؤشر الدروس الإلكترونية', hasActivity: true },
-  { name: 'محمد شفاتا احمد', department: 'تكنولوجيا التصميم', rating: 'ممتاز', basis: '97.3% مؤشر الدروس الإلكترونية', hasActivity: true },
+  { name: 'محمد شفاتا احمد', department: 'التصميم التكنولوجي', rating: 'ممتاز', basis: '97.3% مؤشر الدروس الإلكترونية', hasActivity: true },
   { name: 'محمد عيسي دادي', department: 'STEM', rating: 'ممتاز', basis: '94.3% مؤشر الدروس الإلكترونية', hasActivity: true },
-  { name: 'ضرار حسن صادق ملاح', department: 'الفيزياء', rating: 'جيد جداً', basis: '80.8% مؤشر الدروس الإلكترونية', hasActivity: true },
-  { name: 'اشرف صالح محمد فدعوس', department: 'الفيزياء', rating: 'جيد جداً', basis: '78.6% مؤشر الدروس الإلكترونية', hasActivity: true },
+  { name: 'ضرار حسن صادق ملاح', department: 'STEM', rating: 'جيد جداً', basis: '80.8% مؤشر الدروس الإلكترونية', hasActivity: true },
+  { name: 'اشرف صالح محمد فدعوس', department: 'STEM', rating: 'جيد جداً', basis: '78.6% مؤشر الدروس الإلكترونية', hasActivity: true },
   { name: 'يامن فرح فرح', department: 'الرياضيات', rating: 'جيد جداً', basis: '78.6% مؤشر الدروس الإلكترونية', hasActivity: true },
   { name: 'عبدالغني عبيده', department: 'الرياضيات', rating: 'جيد جداً', basis: '78.2% مؤشر الدروس الإلكترونية', hasActivity: true },
-  { name: 'شاكيل احمد رفيق', department: 'الكيمياء', rating: 'جيد جداً', basis: '68.8% مؤشر الدروس الإلكترونية', hasActivity: true },
+  { name: 'شاكيل احمد رفيق', department: 'STEM', rating: 'جيد جداً', basis: '68.8% مؤشر الدروس الإلكترونية', hasActivity: true },
   { name: 'زكي أحمد خالد', department: 'اللغة الإنجليزية', rating: 'جيد جداً', basis: '67.1% مؤشر الدروس الإلكترونية', hasActivity: true },
-  { name: 'نزار بن عبدالله حاجي', department: 'الفيزياء', rating: 'جيد جداً', basis: '63.8% مؤشر الدروس الإلكترونية', hasActivity: true },
-  { name: 'زوكير عبدالرحمانوف', department: 'الفيزياء', rating: 'جيد جداً', basis: '57.1% مؤشر الدروس الإلكترونية', hasActivity: true },
-  { name: 'سيد علي هايدور', department: 'الأحياء', rating: 'جيد جداً', basis: 'مقررات AP والأحياء التخصصية', hasActivity: true },
+  { name: 'نزار بن عبدالله  حاجي', department: 'STEM', rating: 'جيد جداً', basis: '63.8% مؤشر الدروس الإلكترونية', hasActivity: true },
+  { name: 'زوكير عبدالرحمانوف', department: 'STEM', rating: 'جيد جداً', basis: '57.1% مؤشر الدروس الإلكترونية', hasActivity: true },
+  { name: 'سيد علي هايدور', department: 'STEM', rating: 'جيد جداً', basis: 'مقررات AP والأحياء التخصصية', hasActivity: true },
   { name: 'ايلفيس ايلوم تيتي', department: 'اللغة الإنجليزية', rating: 'جيد جداً', basis: 'استخدام منصات تخصصية باللغة الإنجليزية', hasActivity: true },
-  { name: 'سليمان ميا', department: 'الكيمياء', rating: 'جيد جداً', basis: 'مختبرات الكيمياء المتقدمة', hasActivity: true },
-  { name: 'ابراهيم عونى عمر حسن النعيمى', department: 'المختبرات التخصصية', rating: 'ممتاز', basis: 'تقدير إداري لمهندسي المختبرات التخصصية', hasActivity: false },
+  { name: 'سليمان ميا', department: 'STEM', rating: 'جيد جداً', basis: 'مختبرات الكيمياء المتقدمة', hasActivity: true },
+  { name: 'ابراهيم عونى عمر حسن النعيمى', department: 'مختبر الطاقة', rating: 'ممتاز', basis: 'تقدير إداري لمهندسي المختبرات التخصصية', hasActivity: false },
   { name: 'طاهر كمال عبدالله الحلو', department: 'التربية البدنية', rating: 'جيد جداً', basis: 'تقدير إداري لمعلمي التربية البدنية', hasActivity: false },
   { name: 'فتحي المنجي بلحاج صالح', department: 'التربية البدنية', rating: 'جيد جداً', basis: 'تقدير إداري لمعلمي التربية البدنية', hasActivity: false },
-  { name: 'محمد علاءالدين محمد عوض الله', department: 'التربية البدنية', rating: 'جيد جداً', basis: 'تقدير إداري لمعلمي التربية البدنية', hasActivity: false },
+  { name: 'محمد علاءالدين محمد عوض  الله', department: 'اللغة العربية', rating: 'جيد جداً', basis: 'تقدير إداري لمعلمي التربية البدنية', hasActivity: false },
 ];
 
 export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
@@ -1495,7 +1495,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t2',
     name: 'محمد عادل عبدالعزيز الطاهر',
-    department: 'اللغة العربية',
+    department: 'التربية البدنية',
     sectionsCount: 5,
     subjectsAndSections: 'اللغة العربية: 10/1، 10/2، 10/3، 10/4، 12/4',
     evalCoverageRatio: '4/4',
@@ -1751,7 +1751,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t10',
     name: 'محمد سامي ابراهيم عبدالقادر الكفرى',
-    department: 'علم الحاسوب',
+    department: 'الحاسوب',
     sectionsCount: 5,
     subjectsAndSections: 'علم الحاسوب: 9/1، 9/2، 9/3، 10/1، 10/2',
     evalCoverageRatio: '1/1',
@@ -1879,7 +1879,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t14',
     name: 'كريم ولجي',
-    department: 'علم الحاسوب',
+    department: 'الحاسوب',
     sectionsCount: 9,
     subjectsAndSections: 'علم الحاسوب و AP: 10/1، 10/2، 10/3، 10/4، 11/1، 11/2، 11/3، 11/4',
     evalCoverageRatio: '8/8',
@@ -1911,7 +1911,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t15',
     name: 'على سالم على سالمين الصيعري',
-    department: 'المختبرات التخصصية',
+    department: 'مختبر التصنيع الرقمي',
     sectionsCount: 9,
     subjectsAndSections: 'Fab Lab: 7/1، 7/2، 7/3، 10/1، 10/2، 10/3، 10/4',
     evalCoverageRatio: '5/5',
@@ -1975,7 +1975,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t17',
     name: 'حجيبالله خاسييف',
-    department: 'الكيمياء',
+    department: 'STEM',
     sectionsCount: 5,
     subjectsAndSections: 'الكيمياء: 10/1، 10/2، 10/3، 10/4',
     evalCoverageRatio: '4/4',
@@ -2007,7 +2007,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t18',
     name: 'امداد علي',
-    department: 'علم الحاسوب',
+    department: 'الحاسوب',
     sectionsCount: 2,
     subjectsAndSections: 'علم الحاسوب: 7/1، 7/2',
     evalCoverageRatio: '2/2',
@@ -2039,7 +2039,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t19',
     name: 'عبدالعزيز محمد',
-    department: 'المختبرات التخصصية',
+    department: 'STEM',
     sectionsCount: 3,
     subjectsAndSections: 'المختبرات التخصصية: 7/2',
     evalCoverageRatio: '1/1',
@@ -2135,7 +2135,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t22',
     name: 'خالد عصام بارودي',
-    department: 'علم الحاسوب',
+    department: 'الحاسوب',
     sectionsCount: 2,
     subjectsAndSections: 'علم الحاسوب: 10/3، 10/4',
     evalCoverageRatio: '2/2',
@@ -2198,8 +2198,8 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     id: 'oct_t24',
-    name: 'انس عبدالكريم موسى جرادات',
-    department: 'المختبرات التخصصية',
+    name: 'انس عبدالكريم موسى  جرادات',
+    department: 'مختبر الطاقة',
     sectionsCount: 4,
     subjectsAndSections: 'مختبر الطاقة: 7/1، 7/2، 7/3، 10/4',
     evalCoverageRatio: '4/4',
@@ -2231,7 +2231,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t25',
     name: 'اياد أحمد سلمان عبدالقادر',
-    department: 'المختبرات التخصصية',
+    department: 'مختبر التصنيع الرقمي',
     sectionsCount: 3,
     subjectsAndSections: 'Fab Lab: 7/1، 7/2',
     evalCoverageRatio: '2/2',
@@ -2263,7 +2263,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t26',
     name: 'احمد اسامه صقر المعاني',
-    department: 'تكنولوجيا التصميم',
+    department: 'التصميم التكنولوجي',
     sectionsCount: 22,
     subjectsAndSections: 'البحث والابتكار وتكنولوجيا التصميم: 14 شعبة بحث + 8 شعب تصميم',
     evalCoverageRatio: '8/22',
@@ -2428,7 +2428,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t31',
     name: 'محمد شفاتا احمد',
-    department: 'تكنولوجيا التصميم',
+    department: 'التصميم التكنولوجي',
     sectionsCount: 3,
     subjectsAndSections: 'تكنولوجيا التصميم: 9/1، 9/2، 9/3',
     evalCoverageRatio: '0/3',
@@ -2494,7 +2494,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t33',
     name: 'ضرار حسن صادق ملاح',
-    department: 'الفيزياء',
+    department: 'STEM',
     sectionsCount: 3,
     subjectsAndSections: 'الفيزياء 1 AP: 10/1، 10/2، 10/3',
     evalCoverageRatio: '0/3',
@@ -2527,7 +2527,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t34',
     name: 'اشرف صالح محمد فدعوس',
-    department: 'الفيزياء',
+    department: 'STEM',
     sectionsCount: 2,
     subjectsAndSections: 'الفيزياء 1 AP: 10/4، 11/1',
     evalCoverageRatio: '0/2',
@@ -2626,7 +2626,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t37',
     name: 'شاكيل احمد رفيق',
-    department: 'الكيمياء',
+    department: 'STEM',
     sectionsCount: 4,
     subjectsAndSections: 'الكيمياء AP: 11/1، 11/2، 11/3، 11/4',
     evalCoverageRatio: '0/4',
@@ -2691,8 +2691,8 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     id: 'oct_t39',
-    name: 'نزار بن عبدالله حاجي',
-    department: 'الفيزياء',
+    name: 'نزار بن عبدالله  حاجي',
+    department: 'STEM',
     sectionsCount: 3,
     subjectsAndSections: 'فيزياء الميكانيكا C-AP: 11/1، 11/2، 11/3',
     evalCoverageRatio: '0/3',
@@ -2725,7 +2725,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t40',
     name: 'زوكير عبدالرحمانوف',
-    department: 'الفيزياء',
+    department: 'STEM',
     sectionsCount: 2,
     subjectsAndSections: 'فيزياء الميكانيكا C-AP: 11/4، 12/1',
     evalCoverageRatio: '0/2',
@@ -2758,7 +2758,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t41',
     name: 'سيد علي هايدور',
-    department: 'الأحياء',
+    department: 'STEM',
     sectionsCount: 2,
     subjectsAndSections: 'الأحياء و AP Biology: 10/1، 12/1',
     evalCoverageRatio: '0/2',
@@ -2824,7 +2824,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t43',
     name: 'سليمان ميا',
-    department: 'الكيمياء',
+    department: 'STEM',
     sectionsCount: 1,
     subjectsAndSections: 'الكيمياء AP: 12/2',
     evalCoverageRatio: '0/1',
@@ -2857,7 +2857,7 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     id: 'oct_t44',
     name: 'ابراهيم عونى عمر حسن النعيمى',
-    department: 'المختبرات التخصصية',
+    department: 'مختبر الطاقة',
     sectionsCount: 1,
     subjectsAndSections: 'مختبر الطاقة',
     evalCoverageRatio: '0/1',
@@ -2955,8 +2955,8 @@ export const OCTOBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     id: 'oct_t47',
-    name: 'محمد علاءالدين محمد عوض الله',
-    department: 'التربية البدنية',
+    name: 'محمد علاءالدين محمد عوض  الله',
+    department: 'اللغة العربية',
     sectionsCount: 6,
     subjectsAndSections: 'التربية البدنية: الصفوف 7، 9، 10، 11، 12',
     evalCoverageRatio: '0/6',

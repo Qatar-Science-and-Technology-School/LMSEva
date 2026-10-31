@@ -47,7 +47,7 @@ export const SEPTEMBER_2026_LMS_METRICS = {
   date: '27 سبتمبر 2026',
   period: 'سبتمبر 2026',
   academicYear: '2026-2027',
-  totalStaffCount: 63,
+  totalStaffCount: 62,
   teachersCount: 42, // في تقرير الدروس
   teachersInAssessments: 26, // في تقرير التقييمات
   teachersWithActivity: 42,
@@ -1029,7 +1029,7 @@ export const TOP_10_INDEX_TEACHERS = [
   {
     "rank": 5,
     "name": "محمد سامي ابراهيم عبدالقادر الكفرى",
-    "department": "علوم الحاسوب",
+    "department": "الحاسوب",
     "generalIndex": 88.5,
     "evalIndex": 85.0,
     "lessonsIndex": 92.0,
@@ -1039,7 +1039,7 @@ export const TOP_10_INDEX_TEACHERS = [
   {
     "rank": 6,
     "name": "اوزدن اوزغور",
-    "department": "العلوم والفيزياء",
+    "department": "STEM",
     "generalIndex": 87.2,
     "evalIndex": 84.4,
     "lessonsIndex": 90.0,
@@ -1068,7 +1068,7 @@ export const TOP_10_INDEX_TEACHERS = [
   },
   {
     "rank": 9,
-    "name": "انس عبدالكريم موسى جرادات",
+    "name": "انس عبدالكريم موسى  جرادات",
     "department": "مختبر الطاقة",
     "generalIndex": 81.0,
     "evalIndex": 82.0,
@@ -1135,7 +1135,7 @@ export const DEPARTMENT_CHAMPIONS_10 = [
   },
   {
     rank: 5,
-    department: 'علوم الحاسوب',
+    department: 'الحاسوب',
     teacherName: 'محمد سامي ابراهيم عبدالقادر الكفرى',
     score: 88.50,
     evalScore: 85.00,
@@ -1146,7 +1146,7 @@ export const DEPARTMENT_CHAMPIONS_10 = [
   },
   {
     rank: 6,
-    department: 'العلوم والفيزياء',
+    department: 'STEM',
     teacherName: 'اوزدن اوزغور',
     score: 87.20,
     evalScore: 84.40,
@@ -1180,7 +1180,7 @@ export const DEPARTMENT_CHAMPIONS_10 = [
   {
     rank: 9,
     department: 'مختبر الطاقة',
-    teacherName: 'انس عبدالكريم موسى جرادات',
+    teacherName: 'انس عبدالكريم موسى  جرادات',
     score: 81.00,
     evalScore: 82.00,
     lessonsScore: 80.00,
@@ -1390,10 +1390,10 @@ export const DEPARTMENT_PERFORMANCE_LIST = [
 export const ADMINISTRATIVE_RATINGS_LIST = [
   // 7 ممتاز للمهندسين والمختبرات
   { name: 'ابراهيم عونى عمر حسن النعيمى', department: 'مختبر الطاقة', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: false },
-  { name: 'انس عبدالكريم موسى جرادات', department: 'مختبر الطاقة', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: true },
+  { name: 'انس عبدالكريم موسى  جرادات', department: 'مختبر الطاقة', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: true },
   { name: 'اياد أحمد سلمان عبدالقادر', department: 'مختبر التصنيع الرقمي', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: true },
-  { name: 'اياد محمود علي سالمه', department: 'مختبر الروبوت', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: false },
-  { name: 'عبدالعزيز محمد', department: 'المختبرات التخصصية', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: true },
+  { name: 'اياد محمود علي سلامه', department: 'مختبر الروبوت', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: false },
+  { name: 'عبدالعزيز محمد', department: 'STEM', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: true },
   { name: 'على سالم على سالمين الصيعري', department: 'مختبر التصنيع الرقمي', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: true },
   { name: 'محمود علم اقبال احمد', department: 'مختبر الروبوت', rating: 'ممتاز', basis: 'تقدير إداري للمهندسين والمختبرات التخصصية', hasActivity: false },
 
@@ -1405,32 +1405,31 @@ export const ADMINISTRATIVE_RATINGS_LIST = [
   { name: 'زايد كاظم', department: 'STEM', rating: 'جيد جداً', basis: 'تقدير إداري للمعلمين ضمن النطاق دون بيانات نشاط متاحة', hasActivity: false },
   { name: 'سليمان ميا', department: 'STEM', rating: 'جيد جداً', basis: 'تقدير إداري للمعلمين ضمن النطاق دون بيانات نشاط متاحة', hasActivity: false },
   { name: 'فوزي عصام بو فخرالدين', department: 'STEM', rating: 'جيد جداً', basis: 'تقدير إداري للمعلمين ضمن النطاق دون بيانات نشاط متاحة', hasActivity: false },
-  { name: 'نبيل صالح الدين عطيه ايوب', department: 'STEM', rating: 'جيد جداً', basis: 'تقدير إداري للمعلمين ضمن النطاق دون بيانات نشاط متاحة', hasActivity: false },
-  { name: 'حجيباهلل خاسييف', department: 'STEM', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
-  { name: 'زكي أحمد خالد', department: 'STEM', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
+  { name: 'نبيل صلاح الدين عطيه ايوب', department: 'STEM', rating: 'جيد جداً', basis: 'تقدير إداري للمعلمين ضمن النطاق دون بيانات نشاط متاحة', hasActivity: false },
+  { name: 'حجيبالله خاسييف', department: 'STEM', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
+  { name: 'زكي أحمد خالد', department: 'اللغة الإنجليزية', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
   { name: 'زوكير عبدالرحمانوف', department: 'STEM', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
   { name: 'سيد علي هايدور', department: 'STEM', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
   { name: 'شاكيل احمد رفيق', department: 'STEM', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
-  { name: 'طاهر كمال عبدهللا الحلو', department: 'التربية البدنية', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
+  { name: 'طاهر كمال عبدالله الحلو', department: 'التربية البدنية', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
   { name: 'عبدالغني عبيده', department: 'الرياضيات', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
-  { name: 'عالء حسني محمد موسى', department: 'التربية الإسلامية', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
-  { name: 'كريم ولجي', department: 'STEM', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
+  { name: 'علاء حسني محمد موسى', department: 'التربية الإسلامية', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
+  { name: 'كريم ولجي', department: 'الحاسوب', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
   { name: 'محمد كمال محمد زيد', department: 'الرياضيات', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
   { name: 'ناصر احمد حسن حلوة', department: 'التربية الإسلامية', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
-  { name: 'نزار بن عبدهللا حاجي', department: 'STEM', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
+  { name: 'نزار بن عبدالله  حاجي', department: 'STEM', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
   { name: 'هشام محمد امام سليمان', department: 'اللغة العربية', rating: 'جيد جداً', basis: 'حد أدنى إداري لمعلمي الصف الثاني عشر لاستخدام منصات تعليمية أخرى، وفق إفادة الإدارة', hasActivity: true },
 ];
 
 export const EXCLUDED_COORDINATORS_LIST = [
-  { name: 'احمد عادل عبده طبيشات', department: 'التعليم الإلكتروني', role: 'منسق المشاريع الالكترونية', reason: 'منسق مشاريع' },
   { name: 'احمد عقله فارس فارس', department: 'STEM', role: 'منسق STEM', reason: 'منسق قسم' },
   { name: 'اسعد محمود ناعس', department: 'اللغة العربية', role: 'منسق اللغة العربية', reason: 'منسق قسم' },
   { name: 'جاد مصطفى العيتاني', department: 'البحث العلمي', role: 'اخصائي البحث العلمي', reason: 'أخصائي بحث علمي' },
   { name: 'روي جورج مخول', department: 'الحاسوب', role: 'منسق الحاسوب', reason: 'منسق قسم' },
   { name: 'ماهر عيسى حسن علوان', department: 'التربية الإسلامية', role: 'منسق الدراسات الاسلامية', reason: 'منسق قسم' },
-  { name: 'محمد عمر محمد سلامة', department: 'اللغة الإنجليزية', role: 'منسق اللغة الانجليزية', reason: 'منسق قسم' },
+  { name: 'محمد عمر محمد سلامه', department: 'البحث العلمي', role: 'اخصائي البحث العلمي', reason: 'أخصائي بحث علمي' },
   { name: 'يامن فايز فرح', department: 'الرياضيات', role: 'منسق الرياضيات', reason: 'منسق قسم' },
-  { name: 'يوسف محمد دحمان', department: 'التربية البدنية', role: 'منسق التربية البدنية', reason: 'منسق قسم' },
+  { name: 'يوسف دحمان', department: 'اللغة الإنجليزية', role: 'منسق اللغة الإنجليزية', reason: 'منسق قسم' },
 ];
 
 export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
@@ -1653,7 +1652,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     "id": "lms_t7",
-    "name": "انس عبدالكريم موسى جرادات",
+    "name": "انس عبدالكريم موسى  جرادات",
     "department": "مختبر الطاقة",
     "sectionsCount": 4,
     "subjectsAndSections": "المختبرات التخصصية10 / 3 ،7 / 3 ،7 / 2 ،7 / 1 :",
@@ -1760,7 +1759,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     "id": "lms_t10",
-    "name": "حجيباهلل خاسييف",
+    "name": "حجيبالله خاسييف",
     "department": "STEM",
     "sectionsCount": 5,
     "subjectsAndSections": "الكيمياء11 / 4 ،11 / 3 ،11 / 2 ،11 / 1 :؛ الكيمياء 12 / 2 :AP",
@@ -1902,7 +1901,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     "id": "lms_t14",
     "name": "زكي أحمد خالد",
-    "department": "STEM",
+    "department": "اللغة الإنجليزية",
     "sectionsCount": 5,
     "subjectsAndSections": "اللغة االنجليزية12 / 5 ،12 / 4 ،12 / 3 ،12 / 2 ،12 / 1 :",
     "evalCoverageRatio": "0/5",
@@ -2116,7 +2115,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     "id": "lms_t20",
-    "name": "ضرار حسن صادق مالح",
+    "name": "ضرار حسن صادق ملاح",
     "department": "STEM",
     "sectionsCount": 2,
     "subjectsAndSections": "الفيزياء 11 / 4 ،11 / 3 :AP 1",
@@ -2149,7 +2148,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     "id": "lms_t21",
-    "name": "طاهر كمال عبدهللا الحلو",
+    "name": "طاهر كمال عبدالله الحلو",
     "department": "التربية البدنية",
     "sectionsCount": 5,
     "subjectsAndSections": "التربية البدنية12 / 5 ،12 / 4 ،12 / 3 ،12 / 2 ،12 / 1 :",
@@ -2183,7 +2182,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     "id": "lms_t22",
     "name": "عبدالعزيز محمد",
-    "department": "المختبرات التخصصية",
+    "department": "STEM",
     "sectionsCount": 1,
     "subjectsAndSections": "المختبرات التخصصية12 / 5 ،12 / 4 ،12 / 3 ،12 / 2 ،11 / 4 ،11 / 3 ،11 / 2 :",
     "evalCoverageRatio": "4 / 4",
@@ -2252,7 +2251,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     "id": "lms_t24",
-    "name": "عالء حسني محمد موسى",
+    "name": "علاء حسني محمد موسى",
     "department": "التربية الإسلامية",
     "sectionsCount": 3,
     "subjectsAndSections": "التربية االسالمية12 / 5 ،10 / 4 ،10 / 3 :",
@@ -2428,7 +2427,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     "id": "lms_t29",
     "name": "كريم ولجي",
-    "department": "STEM",
+    "department": "الحاسوب",
     "sectionsCount": 5,
     "subjectsAndSections": "علم الحاسوب11 / 3 ،10 / 4 :؛ علم الحاسوب المتقدم 12 / 5 ،12 / 3 ،12 / 2 ،12 / 1 :AP",
     "evalCoverageRatio": "12 / 20",
@@ -2603,7 +2602,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     "id": "lms_t34",
     "name": "محمد عادل عبدالعزيز الطاهر",
-    "department": "اللغة العربية",
+    "department": "التربية البدنية",
     "sectionsCount": 4,
     "subjectsAndSections": "اللغة العربية11 / 4 ،11 / 3 ،11 / 2 ،11 / 1 :",
     "evalCoverageRatio": "14 / 16",
@@ -2640,8 +2639,8 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     "id": "lms_t35",
-    "name": "محمد عالءالدين محمد عوض هللا",
-    "department": "التربية البدنية",
+    "name": "محمد علاءالدين محمد عوض  الله",
+    "department": "اللغة العربية",
     "sectionsCount": 6,
     "subjectsAndSections": "التربية البدنية9 / 3 ،9 / 2 ،9 / 1 ،7 / 3 ،7 / 2 ،7 / 1 :",
     "evalCoverageRatio": "0/6",
@@ -2710,7 +2709,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   {
     "id": "lms_t37",
     "name": "محمد عيسي دادي",
-    "department": "اللغة الإنجليزية",
+    "department": "STEM",
     "sectionsCount": 1,
     "subjectsAndSections": "9 / 3 ،7 / 3 :STEM",
     "evalCoverageRatio": "1 / 4",
@@ -2887,7 +2886,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     "id": "lms_t42",
-    "name": "نزار بن عبدهللا حاجي",
+    "name": "نزار بن عبدالله  حاجي",
     "department": "STEM",
     "sectionsCount": 3,
     "subjectsAndSections": "فيزياء الميكانيكا 12 / 5 ،12 / 4 ،12 / 3 :C-AP",
@@ -2941,7 +2940,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
     "lessonsValid": 76,
     "lessonsValidPercent": 100,
     "missingEvalRecords": "اللغة العربية12 / 5 ،12 / 4 ،12 / 3 ،12 / 2 ،12 / 1 :",
-    "missingLessonRecords": "ال يوجد  نواقص التقييمات ضمن السجالت المتاحة  29معلًما من أصل  43ال تظهر تقييمات في جميع سجالتهم 9 :بتغطية جزئية و 20بال سجالت تقييم .التسعة غير الظاهرين في كال الملفين مدرجون منفصلين مع تقديراتهم المعتمدة .نواقص المنصة ال تلغي التقديرات اإلدارية أو مراعاة استخدام منصات أخرى.  تغطية جزئية المعلم  المغطى  /اإلجمالي  السجالت غير الظاهرة  احمد اسامه صقر المعاني  8 / 21  البحث واالبتكار9 / 3 ،9 / 2 ،9 / 1 ،7 / 3 ،7 / 2 ،7 / 1 :؛ تكنولوجيا التصميم10 / 4 ،10 / 3 ،10 / 2 ،10 / 1 ،9 / 3 ،9 / 2 ،9 / 1 :  راجي ترابي  1/3  9 / 1 ،7 / 1 :STEM  عبدالعزيز محمد  4/7  المختبرات التخصصية12 / 4 ،11 / 4 ،11 / 2 :  عالء حسني محمد موسى  2/3  التربية االسالمية12 / 5 :",
+    "missingLessonRecords": "ال يوجد  نواقص التقييمات ضمن السجالت المتاحة  29معلًما من أصل  43ال تظهر تقييمات في جميع سجالتهم 9 :بتغطية جزئية و 20بال سجالت تقييم .التسعة غير الظاهرين في كال الملفين مدرجون منفصلين مع تقديراتهم المعتمدة .نواقص المنصة ال تلغي التقديرات اإلدارية أو مراعاة استخدام منصات أخرى.  تغطية جزئية المعلم  المغطى  /اإلجمالي  السجالت غير الظاهرة  احمد اسامه صقر المعاني  8 / 21  البحث واالبتكار9 / 3 ،9 / 2 ،9 / 1 ،7 / 3 ،7 / 2 ،7 / 1 :؛ تكنولوجيا التصميم10 / 4 ،10 / 3 ،10 / 2 ،10 / 1 ،9 / 3 ،9 / 2 ،9 / 1 :  راجي ترابي  1/3  9 / 1 ،7 / 1 :STEM  عبدالعزيز محمد  4/7  المختبرات التخصصية12 / 4 ،11 / 4 ،11 / 2 :  علاء حسني محمد موسى  2/3  التربية االسالمية12 / 5 :",
     "notes": "مؤشر التقييمات: 70.6% (جيد) • مؤشر الدروس: 100% (متميز) • نسبة حل الطلبة 60.4% دون المستهدف 80% خاصة شعبة 12/4 • معدل 2 تقييم لكل شعبة",
     "category": "top_overall",
     "badges": [
@@ -2990,7 +2989,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     "id": "lms_t45",
-    "name": "اياد محمود علي سالمه",
+    "name": "اياد محمود علي سلامه",
     "department": "مختبر الروبوت",
     "sectionsCount": 0,
     "subjectsAndSections": "مختبر الروبوت التخصصي",
@@ -3221,7 +3220,7 @@ export const SEPTEMBER_2026_LMS_TEACHERS: LmsReportTeacherRecord[] = [
   },
   {
     "id": "lms_t52",
-    "name": "نبيل صالح الدين عطيه ايوب",
+    "name": "نبيل صلاح الدين عطيه ايوب",
     "department": "STEM",
     "sectionsCount": 0,
     "subjectsAndSections": "STEM",
