@@ -477,11 +477,16 @@ export function MonthlyWorkshopsReport({
           <div>
             <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>مراجعة وتدقيق</div>
             <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F2044', margin: '4px 0 2px' }}>
-              أ. راني التميمي
+              د. راني التوم
             </div>
             <div style={{ fontSize: '0.74rem', color: '#64748B' }}>النائب الأكاديمي</div>
             <div style={{ height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '4px' }}>
-              <span style={{ fontSize: '0.82rem', color: '#94A3B8', fontWeight: 700 }}>معتمد أكاديمياً</span>
+              <img
+                src="/signature-rani.png"
+                alt="توقيع د. راني التوم"
+                style={{ height: '36px', objectFit: 'contain' }}
+                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+              />
             </div>
           </div>
 
@@ -964,11 +969,16 @@ export function MonthlyIndividualReport({
           <div>
             <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 700 }}>مراجعة وتدقيق</div>
             <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F2044', margin: '4px 0 2px' }}>
-              أ. راني التميمي
+              د. راني التوم
             </div>
             <div style={{ fontSize: '0.74rem', color: '#64748B' }}>النائب الأكاديمي</div>
             <div style={{ height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '4px' }}>
-              <span style={{ fontSize: '0.82rem', color: '#94A3B8', fontWeight: 700 }}>معتمد أكاديمياً</span>
+              <img
+                src="/signature-rani.png"
+                alt="توقيع د. راني التوم"
+                style={{ height: '36px', objectFit: 'contain' }}
+                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+              />
             </div>
           </div>
 

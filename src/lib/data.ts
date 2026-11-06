@@ -868,7 +868,7 @@ export const initialUsers: User[] = [
   { id:'u1',  name:'م.أحمد طبيشات',  nameEn:'Ahmad Tubaishat',      email:'a.tubaishat1704@education.qa', password:'Admin@QSTSS2026',  role:'admin',   status:'active' },
   { id:'u10', name:'م.أحمد طبيشات (مشاهد)', nameEn:'Ahmad Tubaishat (Viewer)', email:'admin@school.qa', password:'SysAdmin#2026!',  role:'viewer',  status:'active' },
   // ─ School Leadership (Viewer Only) ─────────────────────────────────────────
-  { id:'u2',  name:'د.راني التوم',   nameEn:'Dr. Rani Al-Toum',     email:'r.altoum1512@education.qa',    password:'Leader@QSTSS26', role:'viewer',  status:'active' },
+  { id:'u2',  name:'د. راني التوم',   nameEn:'Dr. Rani Al-Toum',     email:'r.altoum1512@education.qa',    password:'Leader@QSTSS26', role:'viewer',  status:'active' },
   { id:'u12', name:'قيادة المدرسة', nameEn:'School Leader',        email:'leader@school.qa',             password:'SchoolLead#2026', role:'viewer',  status:'active' },
   // ─ Evaluator (Viewer Only) ─────────────────────────────────────────────────
   { id:'u11', name:'منسق إلكتروني', nameEn:'Evaluator',            email:'evaluator@school.qa',          password:'EvalCoord@2026',   role:'viewer',  status:'active' },
