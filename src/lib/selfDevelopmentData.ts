@@ -5,6 +5,20 @@
 // =============================================================================
 
 import { getCollection, saveCollection, isAuthorizedToSave, COLLECTIONS } from './firestoreDb';
+import { parsePDDateTimestamp } from './pdData';
+
+export function sortSelfDevRecordsNewestFirst<T extends Partial<SelfDevelopmentRecord>>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    const tA = parsePDDateTimestamp(a.issueDate, undefined, a.academicYear);
+    const tB = parsePDDateTimestamp(b.issueDate, undefined, b.academicYear);
+    if (tB !== tA) return tB - tA;
+    if (a.updatedAt && b.updatedAt) {
+      const uDiff = new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      if (!Number.isNaN(uDiff) && uDiff !== 0) return uDiff;
+    }
+    return String(b.id || '').localeCompare(String(a.id || ''));
+  });
+}
 
 export type SelfDevelopmentCategory =
   | 'الذكاء الاصطناعي والحلول الرقمية'
@@ -931,7 +945,7 @@ if (typeof window !== 'undefined') {
 }
 
 export function loadSelfDevelopmentRecords(academicYear: string = '2026-2027'): SelfDevelopmentRecord[] {
-  if (typeof window === 'undefined') return INITIAL_SELF_DEVELOPMENT_RECORDS;
+  if (typeof window === 'undefined') return sortSelfDevRecordsNewestFirst(INITIAL_SELF_DEVELOPMENT_RECORDS);
   try {
     const key = getSelfDevelopmentStorageKey(academicYear);
     const stored = localStorage.getItem(key);
@@ -947,21 +961,23 @@ export function loadSelfDevelopmentRecords(academicYear: string = '2026-2027'): 
             isUpdated = true;
           }
         }
+        const sortedList = sortSelfDevRecordsNewestFirst(mergedList);
         if (isUpdated) {
           try {
-            localStorage.setItem(key, JSON.stringify(mergedList));
+            localStorage.setItem(key, JSON.stringify(sortedList));
           } catch (e) {}
-          return mergedList;
+          return sortedList;
         }
-        return parsed;
+        return sortedList;
       }
     }
     // حفظ البيانات الأولية إذا لم تكن موجودة محلياً وسحابياً
-    saveSelfDevelopmentRecords(INITIAL_SELF_DEVELOPMENT_RECORDS, academicYear);
-    return INITIAL_SELF_DEVELOPMENT_RECORDS;
+    const sortedInitial = sortSelfDevRecordsNewestFirst(INITIAL_SELF_DEVELOPMENT_RECORDS);
+    saveSelfDevelopmentRecords(sortedInitial, academicYear);
+    return sortedInitial;
   } catch (error) {
     console.error('Error loading self development records:', error);
-    return INITIAL_SELF_DEVELOPMENT_RECORDS;
+    return sortSelfDevRecordsNewestFirst(INITIAL_SELF_DEVELOPMENT_RECORDS);
   }
 }
 
@@ -974,13 +990,14 @@ export function saveSelfDevelopmentRecords(
     console.warn('[Security] Unauthorized attempt to save self development records blocked.');
     return;
   }
+  const sortedRecords = sortSelfDevRecordsNewestFirst(records);
   try {
     const key = getSelfDevelopmentStorageKey(academicYear);
-    localStorage.setItem(key, JSON.stringify(records));
+    localStorage.setItem(key, JSON.stringify(sortedRecords));
     // إرسال حدث مخصص لتحديث الخطة الإجرائية وبقية المكونات
     window.dispatchEvent(
       new CustomEvent('qstss_self_development_updated', {
-        detail: { academicYear, count: records.length },
+        detail: { academicYear, count: sortedRecords.length },
       })
     );
   } catch (error) {
@@ -989,7 +1006,7 @@ export function saveSelfDevelopmentRecords(
 
   // حفظ التعديلات في سحابة Firebase Firestore
   try {
-    saveCollection(COLLECTIONS.selfDevelopment, records).catch(err => {
+    saveCollection(COLLECTIONS.selfDevelopment, sortedRecords).catch(err => {
       console.warn('Error saving self development records to Firestore:', err);
     });
   } catch (err) {

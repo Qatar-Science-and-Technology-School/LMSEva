@@ -13,6 +13,7 @@ import {
   getDepartmentStaffCount, getInstitutionalEvaluation,
   resolveTeacherDepartment 
 } from '@/lib/data';
+import { parsePDDateTimestamp } from '@/lib/pdData';
 import {
   MINISTRY_LOGO_BASE64,
   SCHOOL_LOGO_BASE64,
@@ -113,9 +114,16 @@ export default function MeeeCertifiedReportModal({
   const fontScale = FONT_SCALES[tableFontSize] || FONT_SCALES.normal;
   const totalTeachersCount = selectedYear === '2026-2027' ? 65 : (meeeStats?.totalSchoolTeachers || 62);
 
-  // Filter records by selected academic year
+  // Filter records by selected academic year and sort newest to oldest
   const yearFilteredRecords = useMemo(() => {
-    return meeeRecords.filter(r => selectedYear === 'all' || r.academicYear === selectedYear);
+    return meeeRecords
+      .filter(r => selectedYear === 'all' || r.academicYear === selectedYear)
+      .sort((a, b) => {
+        const tA = parsePDDateTimestamp(a.certificationDate || a.applicationDate || a.updatedAt, undefined, a.academicYear);
+        const tB = parsePDDateTimestamp(b.certificationDate || b.applicationDate || b.updatedAt, undefined, b.academicYear);
+        if (tB !== tA) return tB - tA;
+        return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+      });
   }, [meeeRecords, selectedYear]);
 
   // Certified vs Applied

@@ -65,6 +65,7 @@ import {
   INITIAL_SELF_DEVELOPMENT_RECORDS,
   isDuplicateSelfDevRecord,
   normalizeRecordTitle,
+  sortSelfDevRecordsNewestFirst,
 } from '@/lib/selfDevelopmentData';
 import {
   printComprehensiveSelfDevelopmentReport,
@@ -138,9 +139,9 @@ export default function SelfDevelopmentTab({
     }
   };
 
-  // تصفية السجلات
+  // تصفية السجلات وترتيبها من الأحدث للأقدم
   const filteredRecords = useMemo(() => {
-    return records.filter(rec => {
+    const matched = records.filter(rec => {
       const matchesSearch =
         !searchTerm.trim() ||
         rec.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -156,6 +157,7 @@ export default function SelfDevelopmentTab({
 
       return matchesSearch && matchesYear && matchesCategory && matchesStatus && matchesPdType;
     });
+    return sortSelfDevRecordsNewestFirst(matched);
   }, [records, searchTerm, selectedYear, selectedCategory, selectedStatus, selectedPdType]);
 
   // الإحصاءات العامة

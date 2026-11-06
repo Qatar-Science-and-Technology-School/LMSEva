@@ -962,3 +962,117 @@ export const extractRecordMonth = (month?: string, dateStr?: string): string => 
   }
   return '';
 };
+
+// ── Date Parsing & Newest-First Sorting Helpers for All PD Records ──
+export function parsePDDateTimestamp(
+  dateStr?: string,
+  monthStr?: string,
+  academicYear?: string
+): number {
+  const toEnglishDigits = (s: string) =>
+    s.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
+
+  const cleanDate = toEnglishDigits((dateStr || '').trim());
+  const cleanMonth = toEnglishDigits((monthStr || '').trim());
+  const cleanYear = toEnglishDigits((academicYear || '').trim());
+
+  // 1. YYYY-MM-DD or YYYY/MM/DD
+  const isoMatch = cleanDate.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (isoMatch) {
+    const y = parseInt(isoMatch[1], 10);
+    const m = parseInt(isoMatch[2], 10);
+    const d = parseInt(isoMatch[3], 10);
+    return Date.UTC(y, Math.max(0, m - 1), Math.max(1, d));
+  }
+
+  // 2. DD-MM-YYYY or DD/MM/YYYY
+  const dmyMatch = cleanDate.match(/(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+  if (dmyMatch) {
+    const d = parseInt(dmyMatch[1], 10);
+    const m = parseInt(dmyMatch[2], 10);
+    const y = parseInt(dmyMatch[3], 10);
+    return Date.UTC(y, Math.max(0, m - 1), Math.max(1, d));
+  }
+
+  // 3. Arabic month name in dateStr or monthStr
+  const MONTH_MAP: [string, number][] = [
+    ['يناير', 1],
+    ['فبراير', 2],
+    ['مارس', 3],
+    ['أبريل', 4],
+    ['ابريل', 4],
+    ['مايو', 5],
+    ['يونيو', 6],
+    ['يوليو', 7],
+    ['أغسطس', 8],
+    ['اغسطس', 8],
+    ['سبتمبر', 9],
+    ['أكتوبر', 10],
+    ['اكتوبر', 10],
+    ['نوفمبر', 11],
+    ['ديسمبر', 12],
+  ];
+
+  const combined = `${cleanDate} ${cleanMonth}`;
+  let detectedMonth = 0;
+  for (const [mName, mNum] of MONTH_MAP) {
+    if (combined.includes(mName)) {
+      detectedMonth = mNum;
+      break;
+    }
+  }
+
+  let detectedYear = 0;
+  const yearInCombined = combined.match(/\b(20\d{2})\b/);
+  if (yearInCombined) {
+    detectedYear = parseInt(yearInCombined[1], 10);
+  } else if (cleanYear) {
+    const ayParts = cleanYear.split('-');
+    const startYear = parseInt(ayParts[0], 10);
+    if (!isNaN(startYear)) {
+      detectedYear = detectedMonth >= 1 && detectedMonth <= 7 ? startYear + 1 : startYear;
+    }
+  }
+
+  if (detectedYear > 0 && detectedMonth > 0) {
+    const strippedYears = combined.replace(/\b20\d{2}\b/g, '');
+    const dayMatch = strippedYears.match(/\b(\d{1,2})\b/);
+    const day = dayMatch ? Math.min(31, Math.max(1, parseInt(dayMatch[1], 10))) : 15;
+    return Date.UTC(detectedYear, detectedMonth - 1, day);
+  }
+
+  if (cleanDate) {
+    const parsed = Date.parse(cleanDate);
+    if (!isNaN(parsed)) return parsed;
+  }
+
+  if (detectedYear > 0) {
+    return Date.UTC(detectedYear, 7, 1);
+  }
+
+  return 0;
+}
+
+export function sortWorkshopsNewestFirst<T extends Partial<Workshop>>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    const tB = parsePDDateTimestamp(b.date || b.originalDateText, b.month, b.academicYear);
+    const tA = parsePDDateTimestamp(a.date || a.originalDateText, a.month, a.academicYear);
+    if (tB !== tA) return tB - tA;
+    const uB = b.updatedAt ? Date.parse(b.updatedAt) || 0 : 0;
+    const uA = a.updatedAt ? Date.parse(a.updatedAt) || 0 : 0;
+    if (uB !== uA) return uB - uA;
+    return (b.workshopNumber || 0) - (a.workshopNumber || 0);
+  });
+}
+
+export function sortIndividualRecordsNewestFirst<T extends Partial<IndividualPDRecord>>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    const tB = parsePDDateTimestamp(b.trainingDate, b.month, b.academicYear);
+    const tA = parsePDDateTimestamp(a.trainingDate, a.month, a.academicYear);
+    if (tB !== tA) return tB - tA;
+    const uB = b.updatedAt ? Date.parse(b.updatedAt) || 0 : 0;
+    const uA = a.updatedAt ? Date.parse(a.updatedAt) || 0 : 0;
+    if (uB !== uA) return uB - uA;
+    return String(b.id || '').localeCompare(String(a.id || ''));
+  });
+}

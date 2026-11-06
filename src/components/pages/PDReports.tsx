@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { SCHOOL_NAME, getDeptName } from '@/lib/data';
 import type { Workshop, IndividualPDRecord, PDAttendee } from '@/lib/pdData';
-import { extractRecordMonth, PD_MONTH_OPTIONS } from '@/lib/pdData';
+import { extractRecordMonth, PD_MONTH_OPTIONS, parsePDDateTimestamp, sortWorkshopsNewestFirst, sortIndividualRecordsNewestFirst } from '@/lib/pdData';
 import { MonthlyWorkshopsReport, MonthlyIndividualReport } from './PDMonthlyReports';
 import { loadSelfDevelopmentRecords, SelfDevelopmentRecord, calculateSelfDevelopmentStats } from '@/lib/selfDevelopmentData';
 import { printComprehensiveSelfDevelopmentReport, printSingleSelfDevelopmentCard } from '@/lib/selfDevelopmentReportPrinter';
@@ -2632,20 +2632,26 @@ export function PDReportsCenterTab({
   const [showMonthlyWorkshopsModal, setShowMonthlyWorkshopsModal] = useState(false);
   const [showMonthlyIndividualModal, setShowMonthlyIndividualModal] = useState(false);
 
-  // Self Development records for Projects Coordinator
+  // Self Development records for Projects Coordinator (sorted newest to oldest)
   const selfDevRecords = useMemo(() => {
-    return loadSelfDevelopmentRecords(filterYear);
+    const recs = loadSelfDevelopmentRecords(filterYear);
+    return [...recs].sort((a, b) => {
+      const tA = parsePDDateTimestamp(a.issueDate, undefined, a.academicYear);
+      const tB = parsePDDateTimestamp(b.issueDate, undefined, b.academicYear);
+      return tB - tA;
+    });
   }, [filterYear]);
   const selfDevStats = useMemo(() => calculateSelfDevelopmentStats(selfDevRecords), [selfDevRecords]);
 
-  // Workshops filtering and selection
+  // Workshops filtering and selection (sorted newest to oldest)
   const yearWorkshops = useMemo(() => {
-    return workshops.filter(w => {
+    const matched = workshops.filter(w => {
       const matchYear = filterYear === 'all' || w.academicYear === filterYear;
       const recMonth = extractRecordMonth(w.month, w.date);
       const matchMonth = reportsWorkshopMonth === 'all' || recMonth === reportsWorkshopMonth;
       return matchYear && matchMonth;
     });
+    return sortWorkshopsNewestFirst(matched);
   }, [workshops, filterYear, reportsWorkshopMonth]);
 
   const [selectedWorkshopId, setSelectedWorkshopId] = useState<string>(yearWorkshops[0]?.id || '');
@@ -2659,14 +2665,15 @@ export function PDReportsCenterTab({
     return yearWorkshops.find(w => w.id === selectedWorkshopId) || yearWorkshops[0] || null;
   }, [yearWorkshops, selectedWorkshopId]);
 
-  // Individual PD filtering and selection
+  // Individual PD filtering and selection (sorted newest to oldest)
   const yearIndividual = useMemo(() => {
-    return individualRecords.filter(r => {
+    const matched = individualRecords.filter(r => {
       const matchYear = filterYear === 'all' || r.academicYear === filterYear;
       const recMonth = extractRecordMonth(r.month, r.trainingDate);
       const matchMonth = reportsIndividualMonth === 'all' || recMonth === reportsIndividualMonth;
       return matchYear && matchMonth;
     });
+    return sortIndividualRecordsNewestFirst(matched);
   }, [individualRecords, filterYear, reportsIndividualMonth]);
 
   const [selectedIndId, setSelectedIndId] = useState<string>(yearIndividual[0]?.id || '');
@@ -2811,9 +2818,9 @@ export function PDReportsCenterTab({
                     background: '#fff', color: '#0F2044', cursor: 'pointer'
                   }}
                 >
-                  {yearWorkshops.map(w => (
+                  {yearWorkshops.map((w, idx) => (
                     <option key={w.id} value={w.id}>
-                      {w.workshopNumber ? `#${w.workshopNumber} - ` : ''}{w.titleAr || w.nameAr} ({w.date || w.month}) - {w.facilitatorName || w.trainer}
+                      {`#${idx + 1} - `}{w.titleAr || w.nameAr} ({w.date || w.month}) - {w.facilitatorName || w.trainer}
                     </option>
                   ))}
                 </select>

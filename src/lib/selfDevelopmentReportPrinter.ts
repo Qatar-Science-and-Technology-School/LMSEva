@@ -9,6 +9,7 @@ import {
   SELF_DEV_CATEGORIES,
   SELF_DEV_STATUS_CONFIG,
   calculateSelfDevelopmentStats,
+  sortSelfDevRecordsNewestFirst,
 } from './selfDevelopmentData';
 
 interface PrintReportOptions {
@@ -23,10 +24,11 @@ interface PrintReportOptions {
 // 1. تقرير رسمي شامل لسجل التطوير الذاتي لمنسق المشاريع (Comprehensive Report)
 // ─────────────────────────────────────────────────────────────────────────────
 export function printComprehensiveSelfDevelopmentReport(
-  records: SelfDevelopmentRecord[],
+  rawRecords: SelfDevelopmentRecord[],
   options: PrintReportOptions | string = {}
 ): void {
   if (typeof window === 'undefined') return;
+  const records = sortSelfDevRecordsNewestFirst(rawRecords);
 
   const opts: PrintReportOptions = typeof options === 'string' ? { academicYear: options } : options;
   const academicYear = opts.academicYear || '2026-2027';

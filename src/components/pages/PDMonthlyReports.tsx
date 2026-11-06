@@ -19,6 +19,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import type { Workshop, IndividualPDRecord } from '@/lib/pdData';
+import { sortWorkshopsNewestFirst, sortIndividualRecordsNewestFirst } from '@/lib/pdData';
 import * as XLSX from 'xlsx';
 
 // ─── 1. تقرير ورش التطوير المهني الجماعية الشهري ──────────────────────────────
@@ -33,12 +34,13 @@ export interface MonthlyWorkshopsReportProps {
 }
 
 export function MonthlyWorkshopsReport({
-  workshops,
+  workshops: rawWorkshops,
   selectedMonth,
   selectedYear,
   onClose
 }: MonthlyWorkshopsReportProps) {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const workshops = React.useMemo(() => sortWorkshopsNewestFirst(rawWorkshops), [rawWorkshops]);
 
   // Statistics
   const totalWorkshops = workshops.length;
@@ -522,12 +524,13 @@ export interface MonthlyIndividualReportProps {
 }
 
 export function MonthlyIndividualReport({
-  records,
+  records: rawRecords,
   selectedMonth,
   selectedYear,
   onClose
 }: MonthlyIndividualReportProps) {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const records = React.useMemo(() => sortIndividualRecordsNewestFirst(rawRecords), [rawRecords]);
 
   // Statistics
   const totalSessions = records.length;

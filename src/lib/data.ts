@@ -1,5 +1,5 @@
 import { SEED_TASKS, SEED_NOTES, SEED_ACHIEVEMENTS } from './seedData';
-import { PD_WORKSHOPS, PD_INDIVIDUAL_RECORDS } from './pdData';
+import { PD_WORKSHOPS, PD_INDIVIDUAL_RECORDS, sortWorkshopsNewestFirst, sortIndividualRecordsNewestFirst } from './pdData';
 import { generateSeptember2026Evaluations } from './lmsReportSeptember2026';
 import { generateOctober2026Evaluations } from './lmsReportOctober2026';
 export * from './lmsReportSeptember2026';
@@ -3032,7 +3032,7 @@ export const db = {
     const allSeeds = [...SEED_WORKSHOPS_2627, ...(typeof PD_WORKSHOPS !== 'undefined' ? PD_WORKSHOPS : [])];
     const missing = allSeeds.filter((w: any) => !existingIds.has(w.id) && !deletedIds.has(String(w.id)));
     if (missing.length > 0) {
-      const merged: any[] = [...existing, ...missing];
+      const merged: any[] = sortWorkshopsNewestFirst([...existing, ...missing]);
       try {
         await saveCollection(COLLECTIONS.workshops, merged);
       } catch (e) {
@@ -3040,10 +3040,11 @@ export const db = {
       }
       return merged;
     }
-    return existing.length > 0 ? existing : allSeeds.filter((w: any) => !deletedIds.has(String(w.id)));
+    const result = existing.length > 0 ? existing : allSeeds.filter((w: any) => !deletedIds.has(String(w.id)));
+    return sortWorkshopsNewestFirst(result);
   },
   saveWorkshops: async (w: any[]): Promise<void> => {
-    await saveCollection(COLLECTIONS.workshops, w);
+    await saveCollection(COLLECTIONS.workshops, sortWorkshopsNewestFirst(w));
   },
   saveWorkshop: async (w: any): Promise<string> => {
     return saveDocument(COLLECTIONS.workshops, w);
@@ -3070,7 +3071,7 @@ export const db = {
       return r;
     });
     if (missing.length > 0) {
-      const merged: any[] = syncDept([...existing, ...missing]);
+      const merged: any[] = sortIndividualRecordsNewestFirst(syncDept([...existing, ...missing]));
       try {
         await saveCollection(COLLECTIONS.individualPDRecords, merged);
       } catch (e) {
@@ -3078,10 +3079,11 @@ export const db = {
       }
       return merged;
     }
-    return syncDept(existing.length > 0 ? existing : allSeeds.filter((r: any) => !deletedIds.has(String(r.id))));
+    const result = syncDept(existing.length > 0 ? existing : allSeeds.filter((r: any) => !deletedIds.has(String(r.id))));
+    return sortIndividualRecordsNewestFirst(result);
   },
   saveIndividualPDRecords: async (r: any[]): Promise<void> => {
-    await saveCollection(COLLECTIONS.individualPDRecords, r.filter(x => !isExcludedTeacher(x)));
+    await saveCollection(COLLECTIONS.individualPDRecords, sortIndividualRecordsNewestFirst(r.filter(x => !isExcludedTeacher(x))));
   },
   saveIndividualPDRecord: async (r: any): Promise<string> => {
     return saveDocument(COLLECTIONS.individualPDRecords, r);

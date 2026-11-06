@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { OfficialReportHeader } from './PDReports';
 import type { Workshop, IndividualPDRecord } from '@/lib/pdData';
+import { parsePDDateTimestamp, sortWorkshopsNewestFirst, sortIndividualRecordsNewestFirst } from '@/lib/pdData';
 import { type Teacher, type Department, resolveTeacherDepartment, getDepartmentStaffCount } from '@/lib/data';
 import { getDocument, setSingleDocument, COLLECTIONS } from '@/lib/firestoreDb';
 
@@ -686,11 +687,7 @@ export default function PDPlanTab({
     );
 
     if (yearWorkshops.length > 0) {
-      const sortedWorkshops = [...yearWorkshops].sort((a, b) => {
-        if (a.workshopNumber && b.workshopNumber) return a.workshopNumber - b.workshopNumber;
-        if (a.date && b.date) return new Date(a.date).getTime() - new Date(b.date).getTime();
-        return 0;
-      });
+      const sortedWorkshops = sortWorkshopsNewestFirst(yearWorkshops);
 
       sortedWorkshops.forEach((w) => {
         const isDone = w.status === 'موثق' || w.status === 'تم التنفيذ';
@@ -710,8 +707,13 @@ export default function PDPlanTab({
         });
       });
     } else {
-      // Fallback baseline if DB not yet loaded
-      rows.push(...BASELINE_PLAN_ITEMS_2627.map(r => ({ ...r, rowType: 'collective' as const })));
+      // Fallback baseline if DB not yet loaded (sorted newest to oldest)
+      const sortedBaseline = [...BASELINE_PLAN_ITEMS_2627].sort((a, b) => {
+        const tA = parsePDDateTimestamp(a.timeframe, a.timeframe, targetYear);
+        const tB = parsePDDateTimestamp(b.timeframe, b.timeframe, targetYear);
+        return tB - tA;
+      });
+      rows.push(...sortedBaseline.map(r => ({ ...r, rowType: 'collective' as const })));
     }
 
     // B. Individual Workshops for the selected academic year
@@ -722,10 +724,7 @@ export default function PDPlanTab({
     const indToUse = relevantInd.length > 0 ? relevantInd : (targetYear === '2026-2027' ? individualRecords.slice(0, 14) : []);
 
     if (indToUse.length > 0) {
-      const sortedInd = [...indToUse].sort((a, b) => {
-        if (a.trainingDate && b.trainingDate) return new Date(b.trainingDate).getTime() - new Date(a.trainingDate).getTime();
-        return 0;
-      });
+      const sortedInd = sortIndividualRecordsNewestFirst(indToUse);
 
       sortedInd.forEach(r => {
         const titleText = r.skillProvided 
@@ -767,10 +766,30 @@ export default function PDPlanTab({
     return rows;
   }, [workshops, individualRecords, meeeStats, filterYear]);
 
-  // Active Plan Rows: Smart merge between dynamic defaultPlanRows and custom manual edits
+  // Active Plan Rows: Smart merge between dynamic defaultPlanRows and custom manual edits (sorted newest to oldest)
   const activePlanRows = useMemo(() => {
+    const targetYear = filterYear && filterYear !== 'all' ? filterYear : '2026-2027';
+    const getRowTimestamp = (r: PlanRow): number => {
+      if (r.reportWorkshop) {
+        return parsePDDateTimestamp(r.reportWorkshop.date, r.reportWorkshop.month, r.reportWorkshop.academicYear || targetYear);
+      }
+      if (r.individualRecord) {
+        return parsePDDateTimestamp(r.individualRecord.trainingDate, r.individualRecord.month, r.individualRecord.academicYear || targetYear);
+      }
+      return parsePDDateTimestamp(r.timeframe, r.timeframe, targetYear);
+    };
+
+    const typePriority = (t?: string) => (t === 'individual' ? 1 : t === 'program' ? 2 : 0);
+
+    const sortPlanRowsNewestFirst = (list: PlanRow[]) =>
+      [...list].sort((a, b) => {
+        const pDiff = typePriority(a.rowType) - typePriority(b.rowType);
+        if (pDiff !== 0) return pDiff;
+        return getRowTimestamp(b) - getRowTimestamp(a);
+      });
+
     if (!customRows || customRows.length === 0) {
-      return defaultPlanRows;
+      return sortPlanRowsNewestFirst(defaultPlanRows);
     }
     const customIdSet = new Set(customRows.map(r => r.id));
     const deletedSet = new Set(deletedRowIds);
@@ -778,7 +797,7 @@ export default function PDPlanTab({
     // New items from defaultPlanRows that were not in customRows and not deleted
     const newItems = defaultPlanRows.filter(r => !customIdSet.has(r.id) && !deletedSet.has(r.id));
     
-    // Existing items following customRows order with live references merged
+    // Existing items with live references merged
     const orderedExisting = customRows
       .filter(r => !deletedSet.has(r.id))
       .map(customRow => {
@@ -794,9 +813,8 @@ export default function PDPlanTab({
         return customRow;
       });
 
-    // New items (newly added collective or individual workshops) are prepended so they are instantly visible
-    return [...newItems, ...orderedExisting];
-  }, [customRows, defaultPlanRows, deletedRowIds]);
+    return sortPlanRowsNewestFirst([...newItems, ...orderedExisting]);
+  }, [customRows, defaultPlanRows, deletedRowIds, filterYear]);
 
   // Filtered rows for the view
   const collectiveCount = useMemo(() => activePlanRows.filter(r => (r.rowType || 'collective') === 'collective').length, [activePlanRows]);

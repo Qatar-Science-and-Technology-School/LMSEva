@@ -19,7 +19,8 @@ import {
 } from '@/lib/data';
 import { 
   type Workshop, type PDAttendance, type PDEvidence, type IndividualPDRecord, 
-  type IndividualPDSkill, classifyIndividualSkill, extractRecordMonth, PD_MONTH_OPTIONS 
+  type IndividualPDSkill, classifyIndividualSkill, extractRecordMonth, PD_MONTH_OPTIONS,
+  parsePDDateTimestamp, sortWorkshopsNewestFirst, sortIndividualRecordsNewestFirst
 } from '@/lib/pdData';
 import { MonthlyWorkshopsReport, MonthlyIndividualReport } from './PDMonthlyReports';
 import { 
@@ -239,13 +240,15 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
   }, []);
 
   const saveWorkshops = async (newWorkshops: Workshop[]) => {
-    setWorkshops(newWorkshops);
-    await db.saveWorkshops(newWorkshops);
+    const sorted = sortWorkshopsNewestFirst(newWorkshops);
+    setWorkshops(sorted);
+    await db.saveWorkshops(sorted);
   };
 
   const saveIndividualRecords = async (newRecords: IndividualPDRecord[]) => {
-    setIndividualRecords(newRecords);
-    await db.saveIndividualPDRecords(newRecords);
+    const sorted = sortIndividualRecordsNewestFirst(newRecords);
+    setIndividualRecords(sorted);
+    await db.saveIndividualPDRecords(sorted);
   };
 
   const saveMeeeRecords = async (newRecords: MeeeRecord[]) => {
@@ -362,7 +365,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
   }, [meeeRecords, filterYear, teachers, departments]);
 
   const filteredWorkshops = useMemo(() => {
-    return workshops.filter(w => {
+    const matched = workshops.filter(w => {
       const title = w.titleAr || w.nameAr || '';
       const trainer = w.facilitatorName || w.trainer || '';
       const obj = w.objectives || '';
@@ -381,11 +384,12 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
       const matchesMonth = filterWorkshopMonth === 'all' || recMonth === filterWorkshopMonth;
       
       return matchesSearch && matchesYear && matchesCategory && matchesStatus && matchesAudience && matchesMonth;
-    }).sort((a, b) => (b.workshopNumber || 0) - (a.workshopNumber || 0));
+    });
+    return sortWorkshopsNewestFirst(matched);
   }, [workshops, searchTerm, filterYear, filterCategory, filterStatus, filterAudience, filterWorkshopMonth]);
 
   const filteredIndividual = useMemo(() => {
-    return individualRecords.filter(r => {
+    const matched = individualRecords.filter(r => {
       const name = r.traineeNameAr || '';
       const skill = r.skillProvided || '';
       const dept = r.department || '';
@@ -403,7 +407,8 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
       const matchesMonth = filterIndividualMonth === 'all' || recMonth === filterIndividualMonth;
       
       return matchesSearch && matchesYear && matchesDept && matchesCategory && matchesMonth;
-    }).sort((a, b) => new Date(b.trainingDate).getTime() - new Date(a.trainingDate).getTime());
+    });
+    return sortIndividualRecordsNewestFirst(matched);
   }, [individualRecords, searchTerm, filterYear, filterDept, filterCategory, filterIndividualMonth]);
 
   // --- KPI Calculation ---
@@ -1129,7 +1134,7 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
                     const s = getStatusStyle(w.status); 
                     return (
                       <tr key={w.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.2s' }} className="table-row">
-                        <td style={{ padding: '1.5rem 1rem', fontWeight: 900, color: '#94A3B8' }}>{w.workshopNumber || idx + 1}</td>
+                        <td style={{ padding: '1.5rem 1rem', fontWeight: 900, color: '#94A3B8' }}>{idx + 1}</td>
                         <td style={{ padding: '1.5rem 1rem' }}>
                           <div style={{ fontWeight: 900, color: '#0F2044', fontSize: '1.05rem', lineHeight: 1.4 }}>{w.titleAr || w.nameAr}</div>
                           {(w.titleEn || w.nameEn) && (
@@ -2097,7 +2102,12 @@ function MeeeTabContent({ meeeRecords, meeeStats, filterYear, teachers = [], dep
       const matchesStatus = filterStatus === 'all' || r.status === filterStatus;
       const matchesDept = filterDept === 'all' || deptName === filterDept;
       return matchesYear && matchesSearch && matchesStatus && matchesDept;
-    }).sort((a: MeeeRecord, b: MeeeRecord) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    }).sort((a: MeeeRecord, b: MeeeRecord) => {
+      const tA = parsePDDateTimestamp(a.certificationDate || a.applicationDate || a.updatedAt, undefined, a.academicYear);
+      const tB = parsePDDateTimestamp(b.certificationDate || b.applicationDate || b.updatedAt, undefined, b.academicYear);
+      if (tB !== tA) return tB - tA;
+      return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+    });
   }, [meeeRecords, filterYear, searchTerm, filterStatus, filterDept, teachers, departments]);
 
   const MEEE_DEPT_COLORS = ['#0F2044', '#00B4D8', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16', '#06B6D4', '#E11D48', '#A855F7'];
@@ -2955,9 +2965,13 @@ function MeeeForm({ record, onSave, onClose }: { record: MeeeRecord | null; onSa
 
 // ==================== COMPREHENSIVE PD REPORT ====================
 function ComprehensivePDReport({ workshops, individualRecords, meeeRecords, teachers, departments, filterYear, dashboardStats, chartsData, meeeStats, onClose }: any) {
-  const yearWorkshops = workshops.filter((w: any) => w.academicYear === filterYear);
-  const yearIndividual = individualRecords.filter((r: any) => r.academicYear === filterYear);
-  const yearMeee = meeeRecords.filter((r: any) => r.academicYear === filterYear);
+  const yearWorkshops = sortWorkshopsNewestFirst(workshops.filter((w: any) => w.academicYear === filterYear));
+  const yearIndividual = sortIndividualRecordsNewestFirst(individualRecords.filter((r: any) => r.academicYear === filterYear));
+  const yearMeee = [...meeeRecords.filter((r: any) => r.academicYear === filterYear)].sort((a: any, b: any) => {
+    const tA = parsePDDateTimestamp(a.certificationDate || a.applicationDate || a.updatedAt, undefined, a.academicYear);
+    const tB = parsePDDateTimestamp(b.certificationDate || b.applicationDate || b.updatedAt, undefined, b.academicYear);
+    return tB - tA;
+  });
   const certified = yearMeee.filter((r: any) => r.status === 'حصل على الشهادة');
   const applied = yearMeee.filter((r: any) => r.status === 'تم التقديم');
 
