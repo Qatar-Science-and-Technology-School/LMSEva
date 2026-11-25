@@ -1930,20 +1930,38 @@ export const SEED_WORKSHOPS_2627: any[] = [
 ];
 
 export const SEED_INDIVIDUAL_2627_RECORDS: any[] = [
-  { id: 'IND-2627-01', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-23', traineeNameAr: 'أحمد العجي', department: 'الإرشاد الأكاديمي', skillProvided: 'Canva', skillCategory: 'Canva', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-23T08:00:00.000Z', updatedAt: '2026-08-23T08:00:00.000Z' },
-  { id: 'IND-2627-02', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-23', traineeNameAr: 'يامن فرح', department: 'الرياضيات', skillProvided: 'AI Generation Video', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 25, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-23T08:30:00.000Z', updatedAt: '2026-08-23T08:30:00.000Z' },
-  { id: 'IND-2627-03', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-24', traineeNameAr: 'أحمد فارس', department: 'STEM', skillProvided: 'LMS Monitoring', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-24T09:00:00.000Z', updatedAt: '2026-08-24T09:00:00.000Z' },
-  { id: 'IND-2627-04', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-24', traineeNameAr: 'فوزي بوفخر الدين', department: 'STEM', skillProvided: 'SharePoint', skillCategory: 'Microsoft 365', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-24T09:30:00.000Z', updatedAt: '2026-08-24T09:30:00.000Z' },
-  { id: 'IND-2627-05', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-25', traineeNameAr: 'كليفورد كالي', department: 'الرياضيات', skillProvided: 'Qatar Education', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-25T10:00:00.000Z', updatedAt: '2026-08-25T10:00:00.000Z' },
-  { id: 'IND-2627-06', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-25', traineeNameAr: 'عيسى سويدان', department: 'الحاسوب', skillProvided: 'GitHub Copilot', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-25T10:30:00.000Z', updatedAt: '2026-08-25T10:30:00.000Z' },
-  { id: 'IND-2627-07', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-25', traineeNameAr: 'د. محمد سلامة', department: 'Research', skillProvided: 'GitHub Copilot', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-25T11:00:00.000Z', updatedAt: '2026-08-25T11:00:00.000Z' },
-  { id: 'IND-2627-08', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-27', traineeNameAr: 'علي الصيعري', department: 'مهندس', skillProvided: 'LMS Qatar Education', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-27T08:00:00.000Z', updatedAt: '2026-08-27T08:00:00.000Z' },
-  { id: 'IND-2627-09', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-27', traineeNameAr: 'صهيب محمد', department: 'أخصائي أنشطة', skillProvided: 'AI Tools', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-27T08:30:00.000Z', updatedAt: '2026-08-27T08:30:00.000Z' },
-  { id: 'IND-2627-10', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-28', traineeNameAr: 'صهيب محمد', department: 'أخصائي أنشطة', skillProvided: 'Canva', skillCategory: 'Canva', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-28T09:00:00.000Z', updatedAt: '2026-08-28T09:00:00.000Z' },
-  { id: 'IND-2627-11', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-08-26', traineeNameAr: 'نبيل أيوب', department: 'STEM', skillProvided: 'نظام قطر للتعليم و Canva', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-26T09:30:00.000Z', updatedAt: '2026-08-26T09:30:00.000Z' },
-  { id: 'IND-2627-12', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-01', traineeNameAr: 'أشرف فدعوس', department: 'STEM', skillProvided: 'AI Tools', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '2026-09-01T10:00:00.000Z' },
-  { id: 'IND-2627-13', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-01', traineeNameAr: 'نزار حاجي', department: 'STEM', skillProvided: 'Outlook', skillCategory: 'Microsoft 365', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-01T10:30:00.000Z', updatedAt: '2026-09-01T10:30:00.000Z' },
-  { id: 'IND-2627-14', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-02', traineeNameAr: 'محمد أحمد حلمي', department: 'مصادر التعلم', skillProvided: 'Calameo E-Book Publisher', skillCategory: 'الكتب الإلكترونية', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-02T11:00:00.000Z', updatedAt: '2026-09-02T11:00:00.000Z' },
+  { id: 'IND-2627-01', teacherId: 't47', employeeId: '27581801911', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-23', traineeNameAr: 'ابراهيم حلمى ابراهيم جمعه', traineeNameEn: 'IBRAHIM GOMAA', department: 'اللغة العربية', skillProvided: 'Canva', skillCategory: 'Canva', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-23T08:00:00.000Z', updatedAt: '2026-08-23T08:00:00.000Z' },
+  { id: 'IND-2627-02', teacherId: 't41', employeeId: '27976002886', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-23', traineeNameAr: 'يامن فرح فرح', traineeNameEn: 'YAMEN FARAH FARAH', department: 'الرياضيات', skillProvided: 'AI Generation Video', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 25, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-23T08:30:00.000Z', updatedAt: '2026-08-23T08:30:00.000Z' },
+  { id: 'IND-2627-03', teacherId: 't9', employeeId: '27782601147', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-24', traineeNameAr: 'امجد سهيل عزيز', traineeNameEn: 'AMJAD SUHAIL AZIZ', department: 'STEM', skillProvided: 'LMS Monitoring', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-24T09:00:00.000Z', updatedAt: '2026-08-24T09:00:00.000Z' },
+  { id: 'IND-2627-04', teacherId: 't30', employeeId: '28442201873', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-24', traineeNameAr: 'فوزي عصام بو فخرالدين', traineeNameEn: 'FAWZI ESSAM BOUFAKHER', department: 'STEM', skillProvided: 'SharePoint', skillCategory: 'Microsoft 365', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-24T09:30:00.000Z', updatedAt: '2026-08-24T09:30:00.000Z' },
+  { id: 'IND-2627-05', teacherId: 't52', employeeId: '27382601243', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-25', traineeNameAr: 'كليفرد جورج بايلي', traineeNameEn: 'CLIFFORD GEORGE BAILEY', department: 'الرياضيات', skillProvided: 'Qatar Education', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-25T10:00:00.000Z', updatedAt: '2026-08-25T10:00:00.000Z' },
+  { id: 'IND-2627-06', teacherId: 't46', employeeId: '27642201189', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-25', traineeNameAr: 'روي جورج مخول', traineeNameEn: 'ROY GEORGES MAKHOUL', department: 'الحاسوب', skillProvided: 'GitHub Copilot', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-25T10:30:00.000Z', updatedAt: '2026-08-25T10:30:00.000Z' },
+  { id: 'IND-2627-07', teacherId: 't71', employeeId: '28240001674', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-25', traineeNameAr: 'محمد عمر محمد سلامه', traineeNameEn: 'MOHAMMED OMAR MOHD SALAMEH', department: 'البحث العلمي', skillProvided: 'GitHub Copilot', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-25T11:00:00.000Z', updatedAt: '2026-08-25T11:00:00.000Z' },
+  { id: 'IND-2627-08', teacherId: 't15', employeeId: '29188600078', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-27', traineeNameAr: 'على سالم على سالمين الصيعري', traineeNameEn: 'ALI SALEM ALI SALMEEN ALSEARI', department: 'مختبر التصنيع الرقمي', skillProvided: 'LMS Qatar Education', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-27T08:00:00.000Z', updatedAt: '2026-08-27T08:00:00.000Z' },
+  { id: 'IND-2627-09', teacherId: 't17', employeeId: '29051200038', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-27', traineeNameAr: 'فيصل محمد مسلم الحضري', traineeNameEn: 'FAISAL MOHAMMED M ALHADHRI', department: 'الدراسات الاجتماعية', skillProvided: 'AI Tools', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-27T08:30:00.000Z', updatedAt: '2026-08-27T08:30:00.000Z' },
+  { id: 'IND-2627-10', teacherId: 't53', employeeId: '27376001799', academicYear: '2026-2027', month: 'أغسطس', trainingDate: '2026-08-28', traineeNameAr: 'اسعد محمود ناعس', traineeNameEn: 'ASAAD MAHMOUD NAIS', department: 'اللغة العربية', skillProvided: 'Canva', skillCategory: 'Canva', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-28T09:00:00.000Z', updatedAt: '2026-08-28T09:00:00.000Z' },
+  { id: 'IND-2627-11', teacherId: 't38', employeeId: '28140001682', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-08-26', traineeNameAr: 'نبيل صلاح الدين عطيه ايوب', traineeNameEn: 'NABEEL SALAHALDEEN ATIEH AYOUB', department: 'STEM', skillProvided: 'نظام قطر للتعليم و Canva', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-08-26T09:30:00.000Z', updatedAt: '2026-08-26T09:30:00.000Z' },
+  { id: 'IND-2627-12', teacherId: 't44', employeeId: '27840001272', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-01', traineeNameAr: 'اشرف صالح محمد فدعوس', traineeNameEn: 'ASHRAF SALEH MOHAMMAD FADOUS', department: 'STEM', skillProvided: 'AI Tools', skillCategory: 'الذكاء الاصطناعي', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-01T10:00:00.000Z', updatedAt: '2026-09-01T10:00:00.000Z' },
+  { id: 'IND-2627-13', teacherId: 't40', employeeId: '28078800165', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-01', traineeNameAr: 'نزار بن عبدالله حاجي', traineeNameEn: 'NIZAR HAJJI', department: 'STEM', skillProvided: 'Outlook', skillCategory: 'Microsoft 365', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-01T10:30:00.000Z', updatedAt: '2026-09-01T10:30:00.000Z' },
+  { id: 'IND-2627-14', teacherId: 't48', employeeId: '27550400480', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-02', traineeNameAr: 'سمير بلفقي', traineeNameEn: 'SAMIR BELLAFQI', department: 'اللغة العربية', skillProvided: 'Calameo E-Book Publisher', skillCategory: 'الكتب الإلكترونية', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-02T11:00:00.000Z', updatedAt: '2026-09-02T11:00:00.000Z' },
+  { id: 'IND-2627-15', teacherId: 't38', employeeId: '28140001682', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-03', traineeNameAr: 'نبيل صلاح الدين عطيه ايوب', traineeNameEn: 'NABEEL SALAHALDEEN ATIEH AYOUB', department: 'STEM', skillProvided: 'Class NoteBook', skillCategory: 'Microsoft OneNote / Class Notebook', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-03T09:00:00.000Z', updatedAt: '2026-09-03T09:00:00.000Z' },
+  { id: 'IND-2627-16', teacherId: 't34', employeeId: '28340002151', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-11', traineeNameAr: 'محمد سامي ابراهيم عبدالقادر الكفرى', traineeNameEn: 'MOHAMMAD SAMI IAQ ALKAFRI', department: 'الحاسوب', skillProvided: 'Qatar Education', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-11T10:00:00.000Z', updatedAt: '2026-09-11T10:00:00.000Z' },
+  { id: 'IND-2627-17', teacherId: 't41', employeeId: '27976002886', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-15', traineeNameAr: 'يامن فرح فرح', traineeNameEn: 'YAMEN FARAH FARAH', department: 'الرياضيات', skillProvided: 'AI 101 Professional Learning for Educators', skillCategory: 'الذكاء الاصطناعي', trainerName: 'Sharifa Alghowinem', trainerRole: 'MIT Professional Learning', trainingType: 'برنامج تعلم ذاتي / تطوير مهني خارجي', deliveryMethod: 'Online', durationMinutes: 300, evidenceStatus: 'شهادة مرفقة', signatureStatus: 'تم التوقيع', sourceFileName: 'MIT REPORT.pdf', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-15T09:00:00.000Z', updatedAt: '2026-09-15T09:00:00.000Z' },
+  { id: 'IND-2627-18', teacherId: 't34', employeeId: '28340002151', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-15', traineeNameAr: 'محمد سامي ابراهيم عبدالقادر الكفرى', traineeNameEn: 'MOHAMMAD SAMI IAQ ALKAFRI', department: 'الحاسوب', skillProvided: 'AI 101 Professional Learning for Educators', skillCategory: 'الذكاء الاصطناعي', trainerName: 'Sharifa Alghowinem', trainerRole: 'MIT Professional Learning', trainingType: 'برنامج تعلم ذاتي / تطوير مهني خارجي', deliveryMethod: 'Online', durationMinutes: 300, evidenceStatus: 'شهادة مرفقة', signatureStatus: 'تم التوقيع', sourceFileName: 'MIT REPORT.pdf', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-15T09:15:00.000Z', updatedAt: '2026-09-15T09:15:00.000Z' },
+  { id: 'IND-2627-19', teacherId: 't48', employeeId: '27550400480', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-15', traineeNameAr: 'سمير بلفقي', traineeNameEn: 'SAMIR BELLAFQI', department: 'اللغة العربية', skillProvided: 'AI 101 Professional Learning for Educators', skillCategory: 'الذكاء الاصطناعي', trainerName: 'Sharifa Alghowinem', trainerRole: 'MIT Professional Learning', trainingType: 'برنامج تعلم ذاتي / تطوير مهني خارجي', deliveryMethod: 'Online', durationMinutes: 300, evidenceStatus: 'شهادة مرفقة', signatureStatus: 'تم التوقيع', sourceFileName: 'MIT REPORT.pdf', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-15T09:30:00.000Z', updatedAt: '2026-09-15T09:30:00.000Z' },
+  { id: 'IND-2627-20', teacherId: 't22', employeeId: '28852800073', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-15', traineeNameAr: 'يوسف دحمان', traineeNameEn: 'YOUSSEF DAHMAN', department: 'اللغة الإنجليزية', skillProvided: 'AI 101 Professional Learning for Educators', skillCategory: 'الذكاء الاصطناعي', trainerName: 'Sharifa Alghowinem', trainerRole: 'MIT Professional Learning', trainingType: 'برنامج تعلم ذاتي / تطوير مهني خارجي', deliveryMethod: 'Online', durationMinutes: 300, evidenceStatus: 'شهادة مرفقة', signatureStatus: 'تم التوقيع', sourceFileName: 'MIT REPORT.pdf', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-15T09:45:00.000Z', updatedAt: '2026-09-15T09:45:00.000Z' },
+  { id: 'IND-2627-21', teacherId: 't40', employeeId: '28078800165', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-15', traineeNameAr: 'نزار بن عبدالله حاجي', traineeNameEn: 'NIZAR HAJJI', department: 'STEM', skillProvided: 'AI 101 Professional Learning for Educators', skillCategory: 'الذكاء الاصطناعي', trainerName: 'Sharifa Alghowinem', trainerRole: 'MIT Professional Learning', trainingType: 'برنامج تعلم ذاتي / تطوير مهني خارجي', deliveryMethod: 'Online', durationMinutes: 300, evidenceStatus: 'شهادة مرفقة', signatureStatus: 'تم التوقيع', sourceFileName: 'MIT REPORT.pdf', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-15T10:00:00.000Z', updatedAt: '2026-09-15T10:00:00.000Z' },
+  { id: 'IND-2627-22', teacherId: 't39', employeeId: '28140001202', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-15', traineeNameAr: 'حسام حامد علي البنوي', traineeNameEn: 'HUSAM HAMID ALI AL BANWI', department: 'التربية الإسلامية', skillProvided: 'AI 101 Professional Learning for Educators', skillCategory: 'الذكاء الاصطناعي', trainerName: 'Sharifa Alghowinem', trainerRole: 'MIT Professional Learning', trainingType: 'برنامج تعلم ذاتي / تطوير مهني خارجي', deliveryMethod: 'Online', durationMinutes: 300, evidenceStatus: 'شهادة مرفقة', signatureStatus: 'تم التوقيع', sourceFileName: 'MIT REPORT.pdf', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-15T10:15:00.000Z', updatedAt: '2026-09-15T10:15:00.000Z' },
+  { id: 'IND-2627-23', teacherId: 't4', employeeId: '29040002523', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-18', traineeNameAr: 'انس عبدالكريم موسى جرادات', traineeNameEn: 'ANAS ABEDALKAREEM MOUSA JARADAT', department: 'مختبر الطاقة', skillProvided: 'ML NoteBook', skillCategory: 'Microsoft OneNote / Class Notebook', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 25, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-18T09:00:00.000Z', updatedAt: '2026-09-18T09:00:00.000Z' },
+  { id: 'IND-2627-24', teacherId: 't19', employeeId: '28940000290', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-20', traineeNameAr: 'اياد محمود علي سلامه', traineeNameEn: 'IYAD M ALI SALAMEH', department: 'مختبر الروبوت', skillProvided: 'ML NoteBook', skillCategory: 'Microsoft OneNote / Class Notebook', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 25, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-20T09:30:00.000Z', updatedAt: '2026-09-20T09:30:00.000Z' },
+  { id: 'IND-2627-25', teacherId: 't71', employeeId: '28240001674', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-22', traineeNameAr: 'محمد عمر محمد سلامه', traineeNameEn: 'MOHAMMED OMAR MOHD SALAMEH', department: 'البحث العلمي', skillProvided: 'ML NoteBook', skillCategory: 'Microsoft OneNote / Class Notebook', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 25, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-22T10:00:00.000Z', updatedAt: '2026-09-22T10:00:00.000Z' },
+  { id: 'IND-2627-26', teacherId: 't2', employeeId: '29382600819', academicYear: '2026-2027', month: 'سبتمبر', trainingDate: '2026-09-24', traineeNameAr: 'محمد ورسامي عمر', traineeNameEn: 'MOHAMED WARSAME OMAR', department: 'اللغة الإنجليزية', skillProvided: 'LMS Qatar Education', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-09-24T10:30:00.000Z', updatedAt: '2026-09-24T10:30:00.000Z' },
+  { id: 'IND-2627-27', teacherId: 't41', employeeId: '27976002886', academicYear: '2026-2027', month: 'أكتوبر', trainingDate: '2026-10-05', traineeNameAr: 'يامن فرح فرح', traineeNameEn: 'YAMEN FARAH FARAH', department: 'الرياضيات', skillProvided: 'Qatar Education - How create units and awards', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 25, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-10-05T09:00:00.000Z', updatedAt: '2026-10-05T09:00:00.000Z' },
+  { id: 'IND-2627-28', teacherId: 't30', employeeId: '28442201873', academicYear: '2026-2027', month: 'أكتوبر', trainingDate: '2026-10-09', traineeNameAr: 'فوزي عصام بو فخرالدين', traineeNameEn: 'FAWZI ESSAM BOUFAKHER', department: 'STEM', skillProvided: 'Gizmos - Add classes and students', skillCategory: 'Gizmos', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-10-09T09:30:00.000Z', updatedAt: '2026-10-09T09:30:00.000Z' },
+  { id: 'IND-2627-29', teacherId: 't49', employeeId: '27482600941', academicYear: '2026-2027', month: 'أكتوبر', trainingDate: '2026-10-14', traineeNameAr: 'محمد قاسم', traineeNameEn: 'MUHAMMAD BIN QASIM', department: 'الرياضيات', skillProvided: 'Microsoft Teams', skillCategory: 'Microsoft Teams', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-10-14T10:00:00.000Z', updatedAt: '2026-10-14T10:00:00.000Z' },
+  { id: 'IND-2627-30', teacherId: 't34', employeeId: '28340002151', academicYear: '2026-2027', month: 'أكتوبر', trainingDate: '2026-10-16', traineeNameAr: 'محمد سامي ابراهيم عبدالقادر الكفرى', traineeNameEn: 'MOHAMMAD SAMI IAQ ALKAFRI', department: 'الحاسوب', skillProvided: 'Qatar Education & Edpuzzle', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 25, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-10-16T10:30:00.000Z', updatedAt: '2026-10-16T10:30:00.000Z' },
+  { id: 'IND-2627-31', teacherId: 't50', employeeId: '27440001203', academicYear: '2026-2027', month: 'أكتوبر', trainingDate: '2026-10-23', traineeNameAr: 'ماهر عيسى حسن علوان', traineeNameEn: 'MAHER ISSA HASAN ELWAN', department: 'التربية الإسلامية', skillProvided: 'QE-LMS', skillCategory: 'نظام قطر للتعليم', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-10-23T11:00:00.000Z', updatedAt: '2026-10-23T11:00:00.000Z' },
+  { id: 'IND-2627-32', teacherId: 't48', employeeId: '27550400480', academicYear: '2026-2027', month: 'أكتوبر', trainingDate: '2026-10-27', traineeNameAr: 'سمير بلفقي', traineeNameEn: 'SAMIR BELLAFQI', department: 'اللغة العربية', skillProvided: 'Microsoft Teams', skillCategory: 'Microsoft Teams', trainerName: 'أحمد طبيشات', trainerRole: 'منسق المشاريع الإلكترونية', trainingType: 'تدريب فردي', deliveryMethod: 'دعم مباشر', durationMinutes: 20, evidenceStatus: 'موثق', signatureStatus: 'تم التوقيع', sourceType: 'كشف تدريب فردي مرفق', createdBy: 'أحمد طبيشات', createdAt: '2026-10-27T11:30:00.000Z', updatedAt: '2026-10-27T11:30:00.000Z' },
 ];
 
 // Seed MEEE records for staff who applied or got certified (Original 2025-2026 data as requested)
@@ -2556,12 +2574,142 @@ export function normalizeTeacherName(name: string): string {
     .replace(/مالح/g, 'ملاح')
     .replace(/سالمه/g, 'سلامه')
     .replace(/نبيل صالح/g, 'نبيل صلاح')
-    .replace(/^(الأستاذ|الاستاذ|دكتور|الدكتور|أ\.|د\.|م\.)\s+/g, '') // strip honorific prefixes
+    .replace(/^(الأستاذ|الاستاذ|دكتور|الدكتور|المهندس|أ\.|د\.|م\.|أ\/|د\/|م\/)\s*/g, '') // strip honorific prefixes
     .replace(/[أإآ]/g, 'ا')
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')
     .replace(/\s+/g, ' ')
     .toLowerCase();
+}
+
+export const TEACHER_SHORT_NAME_ALIASES: Record<string, string> = {
+  [normalizeTeacherName('يامن فرح')]: 't41',
+  [normalizeTeacherName('يامن فايز فرح')]: 't41',
+  [normalizeTeacherName('يامن فرح فرح')]: 't41',
+  [normalizeTeacherName('فوزي بوفخر الدين')]: 't30',
+  [normalizeTeacherName('فوزي بو فخر الدين')]: 't30',
+  [normalizeTeacherName('فوزي بو فخرالدين')]: 't30',
+  [normalizeTeacherName('فوزي عصام بو فخرالدين')]: 't30',
+  [normalizeTeacherName('كليفورد كالي')]: 't52',
+  [normalizeTeacherName('كليفورد بايلي')]: 't52',
+  [normalizeTeacherName('كليفرد بايلي')]: 't52',
+  [normalizeTeacherName('كليفرد جورج بايلي')]: 't52',
+  [normalizeTeacherName('د. محمد سلامة')]: 't71',
+  [normalizeTeacherName('محمد سلامة')]: 't71',
+  [normalizeTeacherName('محمد عمر سلامة')]: 't71',
+  [normalizeTeacherName('محمد عمر محمد سلامه')]: 't71',
+  [normalizeTeacherName('علي الصيعري')]: 't15',
+  [normalizeTeacherName('على الصيعري')]: 't15',
+  [normalizeTeacherName('على سالم على سالمين الصيعري')]: 't15',
+  [normalizeTeacherName('نبيل أيوب')]: 't38',
+  [normalizeTeacherName('نبيل ايوب')]: 't38',
+  [normalizeTeacherName('نبيل صلاح الدين عطيه ايوب')]: 't38',
+  [normalizeTeacherName('أشرف فدعوس')]: 't44',
+  [normalizeTeacherName('اشرف فدعوس')]: 't44',
+  [normalizeTeacherName('اشرف صالح محمد فدعوس')]: 't44',
+  [normalizeTeacherName('نزار حاجي')]: 't40',
+  [normalizeTeacherName('نزار بن عبدالله حاجي')]: 't40',
+  [normalizeTeacherName('محمد سامي')]: 't34',
+  [normalizeTeacherName('محمد الكفري')]: 't34',
+  [normalizeTeacherName('محمد الكفرى')]: 't34',
+  [normalizeTeacherName('محمد سامي الكفري')]: 't34',
+  [normalizeTeacherName('محمد عبدالسلام الكفري')]: 't34',
+  [normalizeTeacherName('محمد سامي ابراهيم عبدالقادر الكفرى')]: 't34',
+  [normalizeTeacherName('م. أنس جرادات')]: 't4',
+  [normalizeTeacherName('أنس جرادات')]: 't4',
+  [normalizeTeacherName('انس جرادات')]: 't4',
+  [normalizeTeacherName('انس عبدالكريم موسى جرادات')]: 't4',
+  [normalizeTeacherName('إياد سلامة')]: 't19',
+  [normalizeTeacherName('اياد سلامه')]: 't19',
+  [normalizeTeacherName('اياد محمود علي سلامه')]: 't19',
+  [normalizeTeacherName('حسام البنوي')]: 't39',
+  [normalizeTeacherName('حسام حامد علي البنوي')]: 't39',
+  [normalizeTeacherName('سمير بلفقي')]: 't48',
+  [normalizeTeacherName('يوسف دحمان')]: 't22',
+  [normalizeTeacherName('محمد قاسم')]: 't49',
+  [normalizeTeacherName('محمد ورسامي عمر')]: 't2',
+  [normalizeTeacherName('محمد ورسامي')]: 't2',
+  [normalizeTeacherName('روي مخول')]: 't46',
+  [normalizeTeacherName('روي جورج مخول')]: 't46',
+  [normalizeTeacherName('خالد بارودي')]: 't43',
+  [normalizeTeacherName('خالد عصام بارودي')]: 't43',
+  [normalizeTeacherName('أسعد ناعس')]: 't53',
+  [normalizeTeacherName('اسعد ناعس')]: 't53',
+  [normalizeTeacherName('اسعد محمود ناعس')]: 't53',
+  [normalizeTeacherName('ماهر علوان')]: 't50',
+  [normalizeTeacherName('د. ماهر علوان')]: 't50',
+  [normalizeTeacherName('ماهر عيسى حسن علوان')]: 't50',
+  [normalizeTeacherName('ناصر حلوة')]: 't56',
+  [normalizeTeacherName('ناصر احمد حسن حلوة')]: 't56',
+  [normalizeTeacherName('اوزدن اوزغور')]: 't57',
+  [normalizeTeacherName('د. أوزغور')]: 't57',
+  [normalizeTeacherName('امران كاشف محمد شافعي')]: 't36',
+  [normalizeTeacherName('عمران كاشف')]: 't36',
+  [normalizeTeacherName('عمران كاشف محمد حسين اسد')]: 't36',
+  [normalizeTeacherName('ضرار ملاح')]: 't23',
+  [normalizeTeacherName('ضرار حسن صادق ملاح')]: 't23',
+  [normalizeTeacherName('عبدالغني عبيده')]: 't51',
+  [normalizeTeacherName('محمد عماد ازكول')]: 't13',
+  [normalizeTeacherName('محمد ازكول')]: 't13',
+  [normalizeTeacherName('سيد مصطفى السيد سليمان')]: 't54',
+  [normalizeTeacherName('سيد مصطفى سليمان')]: 't54',
+  [normalizeTeacherName('ابراهيم جمعه')]: 't47',
+  [normalizeTeacherName('ابراهيم حلمي')]: 't47',
+  [normalizeTeacherName('ابراهيم حلمى ابراهيم جمعه')]: 't47',
+  [normalizeTeacherName('ابراهيم النعيمي')]: 't24',
+  [normalizeTeacherName('ابراهيم عونى عمر حسن النعيمى')]: 't24',
+  [normalizeTeacherName('فيصل الحضري')]: 't17',
+  [normalizeTeacherName('فيصل محمد مسلم الحضري')]: 't17',
+  [normalizeTeacherName('الحسن علي')]: 't1',
+  [normalizeTeacherName('الحسن علي محمد علي')]: 't1',
+  [normalizeTeacherName('امجد عزيز')]: 't9',
+  [normalizeTeacherName('امجد سهيل عزيز')]: 't9',
+  [normalizeTeacherName('هشام سليمان')]: 't33',
+  [normalizeTeacherName('هشام محمد امام سليمان')]: 't33',
+};
+
+export function matchTeacherFromRecord(
+  rawName?: string,
+  teacherId?: string,
+  teachersList: Teacher[] = initialTeachers
+): Teacher | undefined {
+  const list = teachersList && teachersList.length > 0 ? teachersList : initialTeachers;
+
+  if (teacherId) {
+    const byId = list.find(t => t.id === teacherId || t.employeeId === teacherId);
+    if (byId) return byId;
+  }
+
+  const norm = normalizeTeacherName(rawName || '');
+  if (!norm) return undefined;
+
+  // 1. Direct normalized name match (Arabic or English)
+  const direct = list.find(
+    t =>
+      normalizeTeacherName(t.nameAr) === norm ||
+      (t.nameEn && t.nameEn.trim().toLowerCase() === (rawName || '').trim().toLowerCase())
+  );
+  if (direct) return direct;
+
+  // 2. Explicit short-name alias match
+  const aliasId = TEACHER_SHORT_NAME_ALIASES[norm];
+  if (aliasId) {
+    const byAlias = list.find(t => t.id === aliasId);
+    if (byAlias) return byAlias;
+  }
+
+  // 3. Token-based smart match (all tokens in rawName appear in teacher's normalized name)
+  const tokens = norm.split(' ').filter(tok => tok.length >= 2);
+  if (tokens.length >= 2) {
+    const tokenMatches = list.filter(t => {
+      const tNorm = normalizeTeacherName(t.nameAr);
+      const tTokens = tNorm.split(' ');
+      return tokens[0] === tTokens[0] && tokens.every(tok => tNorm.includes(tok));
+    });
+    if (tokenMatches.length === 1) return tokenMatches[0];
+  }
+
+  return undefined;
 }
 
 export function deduplicateTeachersList(rawTeachers: Teacher[]): {
@@ -3087,32 +3235,55 @@ export const db = {
   getIndividualPDRecords: async (): Promise<any[]> => {
     const existing = (await getCollection(COLLECTIONS.individualPDRecords) as any[]).filter((r: any) => !isExcludedTeacher(r));
     const deletedIds = getDeletedIds(COLLECTIONS.individualPDRecords);
-    const existingIds = new Set(existing.map((r: any) => r.id));
     const allSeeds = [...SEED_INDIVIDUAL_2627_RECORDS, ...(typeof PD_INDIVIDUAL_RECORDS !== 'undefined' ? PD_INDIVIDUAL_RECORDS : [])].filter((r: any) => !isExcludedTeacher(r));
+    const seedById = new Map<string, any>(allSeeds.map((s: any) => [String(s.id), s]));
+    const existingIds = new Set(existing.map((r: any) => r.id));
     const missing = allSeeds.filter((r: any) => !existingIds.has(r.id) && !deletedIds.has(String(r.id)));
-    const syncDept = (recs: any[]) => recs.map(r => {
-      const tName = normalizeTeacherName(r.teacherName || '');
-      const matched = initialTeachers.find(it =>
-        (r.teacherId && it.id === r.teacherId) ||
-        (tName && normalizeTeacherName(it.nameAr) === tName)
-      );
-      if (matched) {
-        const deptName = initialDepartments.find(d => d.id === matched.departmentId)?.nameAr || r.department;
-        return { ...r, teacherId: matched.id, teacherName: matched.nameAr, department: deptName };
-      }
-      return r;
-    });
-    if (missing.length > 0) {
-      const merged: any[] = sortIndividualRecordsNewestFirst(syncDept([...existing, ...missing]));
+
+    let hasUpgraded = false;
+    const syncDept = (recs: any[]) =>
+      recs
+        .map(r => {
+          const seedRec = seedById.get(String(r.id));
+          let matched = matchTeacherFromRecord(r.traineeNameAr || r.teacherName, r.teacherId, initialTeachers);
+          // If an existing seed record in Firestore had an old non-teacher name, link it using the updated canonical seed teacher
+          if (!matched && seedRec) {
+            matched = matchTeacherFromRecord(seedRec.traineeNameAr || seedRec.teacherName, seedRec.teacherId, initialTeachers);
+          }
+          if (matched) {
+            const deptName = initialDepartments.find(d => d.id === matched!.departmentId)?.nameAr || r.department;
+            if (
+              r.teacherId !== matched.id ||
+              r.traineeNameAr !== matched.nameAr ||
+              r.department !== deptName
+            ) {
+              hasUpgraded = true;
+            }
+            return {
+              ...r,
+              teacherId: matched.id,
+              employeeId: matched.employeeId,
+              traineeNameAr: matched.nameAr,
+              traineeNameEn: matched.nameEn,
+              teacherName: matched.nameAr,
+              department: deptName,
+            };
+          }
+          return r;
+        })
+        .filter(r => Boolean(r.teacherId) || Boolean(matchTeacherFromRecord(r.traineeNameAr || r.teacherName, r.teacherId, initialTeachers)));
+
+    const baseList = existing.length > 0 ? [...existing, ...missing] : allSeeds.filter((r: any) => !deletedIds.has(String(r.id)));
+    const synced = sortIndividualRecordsNewestFirst(syncDept(baseList));
+
+    if (missing.length > 0 || hasUpgraded || synced.length !== existing.length) {
       try {
-        await saveCollection(COLLECTIONS.individualPDRecords, merged);
+        await saveCollection(COLLECTIONS.individualPDRecords, synced);
       } catch (e) {
-        console.error("Failed to save merged individual PD records:", e);
+        console.error("Failed to save synced individual PD records:", e);
       }
-      return merged;
     }
-    const result = syncDept(existing.length > 0 ? existing : allSeeds.filter((r: any) => !deletedIds.has(String(r.id))));
-    return sortIndividualRecordsNewestFirst(result);
+    return synced;
   },
   saveIndividualPDRecords: async (r: any[]): Promise<void> => {
     await saveCollection(COLLECTIONS.individualPDRecords, sortIndividualRecordsNewestFirst(r.filter(x => !isExcludedTeacher(x))));
@@ -3146,13 +3317,12 @@ export const db = {
     }
 
     const syncDept = (recs: any[]) => recs.map(r => {
-      const tName = normalizeTeacherName(r.teacherName || '');
-      const matched = initialTeachers.find(it =>
-        (r.teacherId && it.id === r.teacherId) ||
-        (tName && normalizeTeacherName(it.nameAr) === tName)
-      );
+      const matched = matchTeacherFromRecord(r.teacherName, r.teacherId, initialTeachers);
       if (matched) {
         const deptName = initialDepartments.find(d => d.id === matched.departmentId)?.nameAr || r.department;
+        if (r.teacherId !== matched.id || r.teacherName !== matched.nameAr || r.department !== deptName) {
+          hasChanged = true;
+        }
         return { ...r, teacherId: matched.id, teacherName: matched.nameAr, department: deptName };
       }
       return r;

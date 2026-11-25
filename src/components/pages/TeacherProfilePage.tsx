@@ -14,6 +14,8 @@ import {
   isSuperAdmin,
   isTeacherUser,
   generateId,
+  matchTeacherFromRecord,
+  initialTeachers,
 } from '@/lib/data';
 import { invalidateCache, saveDocument, COLLECTIONS } from '@/lib/firestoreDb';
 import type {
@@ -26,7 +28,12 @@ import type {
   Achievement,
   TeacherFeedbackRecord,
 } from '@/lib/data';
-import type { IndividualPDRecord, Workshop } from '@/lib/pdData';
+import {
+  type IndividualPDRecord,
+  type Workshop,
+  sortIndividualRecordsNewestFirst,
+  sortWorkshopsNewestFirst,
+} from '@/lib/pdData';
 import {
   TeacherDistanceLesson,
   DISTANCE_LEARNING_CLASSES,
@@ -242,37 +249,57 @@ export default function TeacherProfilePage({
     );
   }, [achievements, teacher, departments]);
 
-  // PD records for this teacher ONLY
+  // PD records (Individual & Self-Training) for this teacher ONLY
   const teacherPD = useMemo(() => {
     if (!teacher) return [];
-    return individualRecords.filter(
-      r => r.teacherId === teacherId || (r.traineeNameAr && r.traineeNameAr.includes(teacher.nameAr))
-    );
-  }, [individualRecords, teacherId, teacher]);
+    const tList = teachers.length > 0 ? teachers : initialTeachers;
+    const matched = individualRecords.filter(r => {
+      if (r.teacherId && r.teacherId === teacherId) return true;
+      const m = matchTeacherFromRecord(r.traineeNameAr || (r as any).teacherName, r.teacherId, tList);
+      if (m && m.id === teacher.id) return true;
+      return Boolean(r.traineeNameAr && r.traineeNameAr.includes(teacher.nameAr));
+    });
+    return sortIndividualRecordsNewestFirst(matched);
+  }, [individualRecords, teacherId, teacher, teachers]);
 
   // Collective Workshops attended by this teacher ONLY
   const teacherWorkshops = useMemo(() => {
     if (!teacher) return [];
-    return workshops.filter(
-      w =>
-        (w.attendees &&
-          w.attendees.some(
-            att => att.teacherId === teacherId || (att.name && att.name.includes(teacher.nameAr))
-          )) ||
-        (w.trainerName && w.trainerName.includes(teacher.nameAr)) ||
-        (w.facilitatorName && w.facilitatorName.includes(teacher.nameAr))
-    );
-  }, [workshops, teacherId, teacher]);
+    const tList = teachers.length > 0 ? teachers : initialTeachers;
+    const matched = workshops.filter(w => {
+      const inAttendees =
+        w.attendees &&
+        w.attendees.some(att => {
+          if (att.teacherId && att.teacherId === teacherId) return true;
+          const m = matchTeacherFromRecord(att.name, att.teacherId, tList);
+          if (m && m.id === teacher.id) return true;
+          return Boolean(att.name && att.name.includes(teacher.nameAr));
+        });
+      const isTrainer =
+        (w.trainerName &&
+          (w.trainerName.includes(teacher.nameAr) ||
+            matchTeacherFromRecord(w.trainerName, undefined, tList)?.id === teacher.id)) ||
+        (w.facilitatorName &&
+          (w.facilitatorName.includes(teacher.nameAr) ||
+            matchTeacherFromRecord(w.facilitatorName, undefined, tList)?.id === teacher.id));
+      return Boolean(inAttendees || isTrainer);
+    });
+    return sortWorkshopsNewestFirst(matched);
+  }, [workshops, teacherId, teacher, teachers]);
 
   // MEEE for this teacher ONLY
   const teacherMeee = useMemo(() => {
     if (!teacher) return null;
+    const tList = teachers.length > 0 ? teachers : initialTeachers;
     return (
-      meeeRecords.find(
-        m => m.teacherId === teacherId || (m.teacherName && m.teacherName.includes(teacher.nameAr))
-      ) || null
+      meeeRecords.find(m => {
+        if (m.teacherId && m.teacherId === teacherId) return true;
+        const matched = matchTeacherFromRecord(m.teacherName, m.teacherId, tList);
+        if (matched && matched.id === teacher.id) return true;
+        return Boolean(m.teacherName && m.teacherName.includes(teacher.nameAr));
+      }) || null
     );
-  }, [meeeRecords, teacherId, teacher]);
+  }, [meeeRecords, teacherId, teacher, teachers]);
 
   if (loading) {
     return (
@@ -1067,6 +1094,7 @@ export default function TeacherProfilePage({
             {statBox('التقييمات الشهرية', teacherEvals.length, 'تقييم معتمد')}
             {statBox('حصص التعليم الإلكتروني', teacherModelLessons.length, 'حصة مقيمة', '#4338CA')}
             {statBox('حصص التعلم عن بعد', teacherDistanceLessons.length, 'Microsoft Teams', '#059669')}
+            {statBox('التدريب الفردي والذاتي', teacherPD.length, 'جلسة وبرنامج موثق', '#00B4D8')}
             {statBox('ملاحظاتي وآرائي', teacherFeedbacks.length, 'إقرار وملاحظة', '#D97706')}
           </div>
 
@@ -2170,6 +2198,48 @@ export default function TeacherProfilePage({
                 🖨️ طباعة جدول حصص Teams الخاص بي
               </button>
             </div>
+
+            {/* 3. Teacher Individual & Self-PD Report */}
+            <div
+              style={{
+                border: '1.5px solid #059669',
+                borderRadius: '12px',
+                padding: '1.1rem',
+                background: '#ECFDF5',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                gap: '0.75rem',
+              }}
+            >
+              <div>
+                <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>🎓</div>
+                <div style={{ fontWeight: 900, fontSize: '0.9rem', color: '#065F46' }}>
+                  سجل التدريب الفردي والتدريب الذاتي والشهادات المهنية للمعلم
+                </div>
+                <p style={{ fontSize: '0.73rem', color: '#475569', margin: '0.3rem 0 0', lineHeight: 1.5 }}>
+                  طباعة كشف رسمي معتمد بجميع جلسات التدريب الفردي وبرامج التعلم الذاتي وشهادة MEEE المرتبطة بصفحة المعلم ({teacherPD.length} سجل تدريبي).
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setActiveTab('pd');
+                  setTimeout(() => window.print(), 200);
+                }}
+                style={{
+                  background: '#059669',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.6rem',
+                  fontWeight: 800,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                }}
+              >
+                🖨️ طباعة سجل التدريب الفردي والذاتي
+              </button>
+            </div>
           </div>
 
           {/* Individual Monthly Evaluation Printable Reports */}
@@ -2278,9 +2348,70 @@ export default function TeacherProfilePage({
       {/* ──── TAB 6: PROFESSIONAL DEVELOPMENT & MEEE ──── */}
       {activeTab === 'pd' && (
         <div style={cardStyle}>
-          <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F2044', marginBottom: '1rem' }}>
-            🎓 التطوير المهني والشهادات المعتمدة الخاصة بالمعلم
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <h3 style={{ fontSize: '0.98rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
+                🎓 التطوير المهني، التدريب الفردي والذاتي، والشهادات المعتمدة الخاصة بالمعلم
+              </h3>
+              <p style={{ fontSize: '0.75rem', color: '#64748B', margin: '0.2rem 0 0', fontWeight: 600 }}>
+                جميع سجلات التدريب الفردي وبرامج التعلم الذاتي والورش المرتبطة بملف المعلم أ. {teacher.nameAr} ({deptName})
+              </p>
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="no-print"
+              style={{
+                background: '#0F2044',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '9px',
+                padding: '0.5rem 1rem',
+                fontSize: '0.78rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              🖨️ طباعة سجل التطوير المهني والتدريب الذاتي
+            </button>
+          </div>
+
+          {/* Summary KPI Row for Teacher PD */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+              gap: '0.75rem',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '10px', padding: '0.85rem' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0369A1' }}>إجمالي التدريب الفردي والذاتي</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0F2044', marginTop: '0.2rem' }}>
+                {teacherPD.length} <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>سجل موثق</span>
+              </div>
+            </div>
+            <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '10px', padding: '0.85rem' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#4338CA' }}>برامج التدريب والتعلم الذاتي</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#4338CA', marginTop: '0.2rem' }}>
+                {teacherPD.filter(r => r.trainingType === 'برنامج تعلم ذاتي / تطوير مهني خارجي').length}{' '}
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>برنامج</span>
+              </div>
+            </div>
+            <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '10px', padding: '0.85rem' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#065F46' }}>جلسات التدريب والدعم الفردي</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#065F46', marginTop: '0.2rem' }}>
+                {teacherPD.filter(r => r.trainingType !== 'برنامج تعلم ذاتي / تطوير مهني خارجي').length}{' '}
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>جلسة</span>
+              </div>
+            </div>
+            <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '10px', padding: '0.85rem' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#92400E' }}>إجمالي دقائق التدريب الفردي والذاتي</div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#92400E', marginTop: '0.2rem' }}>
+                {teacherPD.reduce((sum, r) => sum + (r.durationMinutes || 20), 0)}{' '}
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>دقيقة</span>
+              </div>
+            </div>
+          </div>
 
           <div
             style={{
@@ -2310,50 +2441,97 @@ export default function TeacherProfilePage({
             <span style={{ fontSize: '2rem' }}>{teacherMeee?.status === 'حصل على الشهادة' ? '🎖️' : '⏳'}</span>
           </div>
 
-          <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F2044', marginBottom: '0.75rem' }}>
-            📋 الورش التدريبية الفردية ({teacherPD.length})
+          <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F2044', marginBottom: '0.75rem' }}>
+            📋 سجلات التدريب الفردي والتدريب الذاتي المرتبطة بالمعلم ({teacherPD.length})
           </h4>
           {teacherPD.length === 0 ? (
-            <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.8rem' }}>
-              لا توجد سجلات تطوير مهني فردية مسجلة
+            <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.8rem', background: '#F8FAFC', borderRadius: '10px' }}>
+              لا توجد سجلات تطوير مهني فردية أو ذاتية مسجلة لهذا المعلم حتى الآن
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1.25rem' }}>
-              {teacherPD.map(pd => (
-                <div
-                  key={pd.id}
-                  style={{
-                    padding: '0.75rem',
-                    background: '#F8FAFC',
-                    borderRadius: '8px',
-                    border: '1px solid #E2E8F0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#0F2044' }}>
-                      {pd.skillProvided || 'تدريب فردي'}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: '#64748B' }}>
-                      📅 {pd.trainingDate} | المدة: {pd.durationMinutes || 60} دقيقة | المدرب: {pd.trainerName || 'منسق المشاريع'}
-                    </div>
-                  </div>
-                  <span
-                    style={{
-                      background: '#EEF2FF',
-                      color: '#4338CA',
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {pd.trainingType || 'تدريب فردي'}
-                  </span>
-                </div>
-              ))}
+            <div style={{ overflowX: 'auto', marginBottom: '1.25rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                <thead>
+                  <tr style={{ background: '#0F2044', color: '#fff' }}>
+                    {['#', 'التاريخ والعام', 'المهارة / البرنامج التدريبي', 'التصنيف', 'نوع التدريب', 'المدرب / الجهة', 'المدة', 'الحالة'].map(h => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: '0.6rem 0.75rem',
+                          textAlign: h === '#' || h === 'المدة' || h === 'الحالة' ? 'center' : 'right',
+                          fontWeight: 800,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {teacherPD.map((pd, idx) => {
+                    const isSelfLearning = pd.trainingType === 'برنامج تعلم ذاتي / تطوير مهني خارجي';
+                    return (
+                      <tr
+                        key={pd.id || idx}
+                        style={{
+                          background: idx % 2 === 0 ? '#fff' : '#F8FAFC',
+                          borderBottom: '1px solid #E2E8F0',
+                        }}
+                      >
+                        <td style={{ padding: '0.6rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
+                        <td style={{ padding: '0.6rem', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontWeight: 800, color: '#0F2044' }}>{pd.trainingDate}</div>
+                          <div style={{ fontSize: '0.68rem', color: '#64748B' }}>{pd.month} ({pd.academicYear})</div>
+                        </td>
+                        <td style={{ padding: '0.6rem', fontWeight: 800, color: '#0369A1' }}>
+                          {pd.skillProvided || 'تدريب فردي'}
+                        </td>
+                        <td style={{ padding: '0.6rem' }}>
+                          <span style={{ background: '#F1F5F9', color: '#334155', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>
+                            {pd.skillCategory || 'نظام قطر للتعليم'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.6rem' }}>
+                          <span
+                            style={{
+                              background: isSelfLearning ? '#EEF2FF' : '#E0F2FE',
+                              color: isSelfLearning ? '#4338CA' : '#0369A1',
+                              border: `1px solid ${isSelfLearning ? '#C7D2FE' : '#BAE6FD'}`,
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontSize: '0.7rem',
+                              fontWeight: 800,
+                            }}
+                          >
+                            {isSelfLearning ? '🎓 تدريب ذاتي / خارجي' : pd.trainingType || '👤 تدريب فردي'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.6rem', fontWeight: 700, color: '#334155' }}>
+                          {pd.trainerName || 'أحمد طبيشات'}
+                        </td>
+                        <td style={{ padding: '0.6rem', textAlign: 'center', fontWeight: 800, color: '#0F2044' }}>
+                          {pd.durationMinutes || 20} د
+                        </td>
+                        <td style={{ padding: '0.6rem', textAlign: 'center' }}>
+                          <span
+                            style={{
+                              background: pd.signatureStatus === 'تم التوقيع' ? '#D1FAE5' : '#FEF3C7',
+                              color: pd.signatureStatus === 'تم التوقيع' ? '#065F46' : '#92400E',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontSize: '0.7rem',
+                              fontWeight: 800,
+                            }}
+                          >
+                            {pd.signatureStatus || 'موثق'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
 

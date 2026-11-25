@@ -15,7 +15,7 @@ import {
 import { 
   SCHOOL_NAME, ACADEMIC_YEARS, MONTHS, db, generateId, type User, getDeptName,
   getDepartmentStaffCount, getInstitutionalEvaluation, resolveTeacherDepartment,
-  isSuperAdmin
+  isSuperAdmin, initialTeachers, initialDepartments, matchTeacherFromRecord
 } from '@/lib/data';
 import { 
   type Workshop, type PDAttendance, type PDEvidence, type IndividualPDRecord, 
@@ -174,9 +174,10 @@ interface MeeeRecord {
 interface Props {
   currentUser: User;
   selectedYear?: string;
+  onViewTeacher?: (teacherId: string) => void;
 }
 
-export default function ProfessionalDevelopmentPage({ currentUser, selectedYear: propYear }: Props) {
+export default function ProfessionalDevelopmentPage({ currentUser, selectedYear: propYear, onViewTeacher }: Props) {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [individualRecords, setIndividualRecords] = useState<IndividualPDRecord[]>([]);
   const [meeeRecords, setMeeeRecords] = useState<MeeeRecord[]>([]);
@@ -992,35 +993,104 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredIndividual.map((r) => (
-                    <tr key={r.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.2s' }} className="table-row">
-                      <td style={{ padding: '1.2rem 1rem', fontWeight: 700, color: '#64748B' }}>{r.trainingDate}</td>
-                      <td style={{ padding: '1.2rem 1rem' }}>
-                        <div style={{ fontWeight: 900, color: '#0F2044' }}>{r.traineeNameAr}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>{r.sourceType}</div>
-                      </td>
-                      <td style={{ padding: '1.2rem 1rem', fontWeight: 700 }}>{r.department}</td>
-                      <td style={{ padding: '1.2rem 1rem' }}>
-                        <div style={{ fontWeight: 800, color: '#00B4D8' }}>{r.skillProvided}</div>
-                      </td>
-                      <td style={{ padding: '1.2rem 1rem' }}>
-                        <span style={{ padding: '0.3rem 0.8rem', borderRadius: '8px', background: '#F1F5F9', fontSize: '0.8rem', fontWeight: 700 }}>{r.skillCategory}</span>
-                      </td>
-                      <td style={{ padding: '1.2rem 1rem', fontWeight: 700 }}>{r.trainerName}</td>
-                      <td style={{ padding: '1.2rem 1rem' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.8rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 800, background: r.signatureStatus === 'تم التوقيع' ? '#D1FAE5' : '#FEE2E2', color: r.signatureStatus === 'تم التوقيع' ? '#065F46' : '#991B1B' }}>
-                          {r.signatureStatus === 'تم التوقيع' ? <CheckCircle2 size={14} /> : <Clock size={14} />} {r.signatureStatus}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1.2rem 1rem' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                          <button onClick={() => setReportingIndividual(r)} style={{ padding: '0.5rem', borderRadius: '10px', border: '1px solid #BAE6FD', background: '#F0F9FF', cursor: 'pointer', color: '#0369A1' }} title="التقرير الرسمي المعتمد (مع إقرار وتوقيع الحاضر)"><FileText size={16} /></button>
-                          <button onClick={() => { setEditingIndividual(r); setIsIndFormOpen(true); }} style={{ padding: '0.5rem', borderRadius: '10px', border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer', color: '#1E40AF' }} title="تعديل"><Edit2 size={16} /></button>
-                          <button onClick={() => { setSelectedIndividual(r); }} style={{ padding: '0.5rem', borderRadius: '10px', border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer', color: '#0F2044' }} title="عرض التفاصيل"><Eye size={16} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredIndividual.map((r) => {
+                    const matchedT = matchTeacherFromRecord(r.traineeNameAr, r.teacherId, teachers.length > 0 ? teachers : initialTeachers);
+                    const isSelfLearning = r.trainingType === 'برنامج تعلم ذاتي / تطوير مهني خارجي';
+                    return (
+                      <tr key={r.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.2s' }} className="table-row">
+                        <td style={{ padding: '1.2rem 1rem', fontWeight: 700, color: '#64748B' }}>{r.trainingDate}</td>
+                        <td style={{ padding: '1.2rem 1rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            {matchedT && onViewTeacher ? (
+                              <button
+                                type="button"
+                                onClick={() => onViewTeacher(matchedT.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  padding: 0,
+                                  fontWeight: 900,
+                                  color: '#0F2044',
+                                  fontSize: '0.95rem',
+                                  cursor: 'pointer',
+                                  textDecoration: 'underline',
+                                  textDecorationColor: '#00B4D8',
+                                }}
+                                title="فتح الصفحة الخاصة بالمعلم"
+                              >
+                                {matchedT.nameAr}
+                              </button>
+                            ) : (
+                              <div style={{ fontWeight: 900, color: '#0F2044' }}>{matchedT ? matchedT.nameAr : r.traineeNameAr}</div>
+                            )}
+                            {matchedT && (
+                              <span
+                                onClick={() => onViewTeacher && onViewTeacher(matchedT.id)}
+                                style={{
+                                  background: '#ECFDF5',
+                                  color: '#065F46',
+                                  border: '1px solid #A7F3D0',
+                                  padding: '2px 8px',
+                                  borderRadius: '999px',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 800,
+                                  cursor: onViewTeacher ? 'pointer' : 'default',
+                                }}
+                                title="مرتبط بصفحة المعلم الخاصة"
+                              >
+                                🔗 مرتبط بصفحة المعلم
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                            <span
+                              style={{
+                                fontSize: '0.68rem',
+                                fontWeight: 800,
+                                padding: '1px 7px',
+                                borderRadius: '6px',
+                                background: isSelfLearning ? '#EEF2FF' : '#E0F2FE',
+                                color: isSelfLearning ? '#4338CA' : '#0369A1',
+                              }}
+                            >
+                              {r.trainingType || 'تدريب فردي'}
+                            </span>
+                            <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>{r.sourceType}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1.2rem 1rem', fontWeight: 700 }}>{r.department}</td>
+                        <td style={{ padding: '1.2rem 1rem' }}>
+                          <div style={{ fontWeight: 800, color: '#00B4D8' }}>{r.skillProvided}</div>
+                        </td>
+                        <td style={{ padding: '1.2rem 1rem' }}>
+                          <span style={{ padding: '0.3rem 0.8rem', borderRadius: '8px', background: '#F1F5F9', fontSize: '0.8rem', fontWeight: 700 }}>{r.skillCategory}</span>
+                        </td>
+                        <td style={{ padding: '1.2rem 1rem', fontWeight: 700 }}>{r.trainerName}</td>
+                        <td style={{ padding: '1.2rem 1rem' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.8rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 800, background: r.signatureStatus === 'تم التوقيع' ? '#D1FAE5' : '#FEE2E2', color: r.signatureStatus === 'تم التوقيع' ? '#065F46' : '#991B1B' }}>
+                            {r.signatureStatus === 'تم التوقيع' ? <CheckCircle2 size={14} /> : <Clock size={14} />} {r.signatureStatus}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1.2rem 1rem' }}>
+                          <div style={{ display: 'flex', gap: '0.45rem' }}>
+                            {matchedT && onViewTeacher && (
+                              <button
+                                onClick={() => onViewTeacher(matchedT.id)}
+                                style={{ padding: '0.5rem 0.65rem', borderRadius: '10px', border: '1px solid #A7F3D0', background: '#ECFDF5', cursor: 'pointer', color: '#065F46', fontSize: '0.72rem', fontWeight: 800 }}
+                                title="فتح صفحة المعلم الخاصة"
+                              >
+                                👤 صفحة المعلم
+                              </button>
+                            )}
+                            <button onClick={() => setReportingIndividual(r)} style={{ padding: '0.5rem', borderRadius: '10px', border: '1px solid #BAE6FD', background: '#F0F9FF', cursor: 'pointer', color: '#0369A1' }} title="التقرير الرسمي المعتمد (مع إقرار وتوقيع الحاضر)"><FileText size={16} /></button>
+                            {canEdit && <button onClick={() => { setEditingIndividual(r); setIsIndFormOpen(true); }} style={{ padding: '0.5rem', borderRadius: '10px', border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer', color: '#1E40AF' }} title="تعديل"><Edit2 size={16} /></button>}
+                            <button onClick={() => { setSelectedIndividual(r); }} style={{ padding: '0.5rem', borderRadius: '10px', border: '1px solid #E2E8F0', background: '#fff', cursor: 'pointer', color: '#0F2044' }} title="عرض التفاصيل"><Eye size={16} /></button>
+                            {canDelete && <button onClick={() => handleDeleteIndividual(r.id)} style={{ padding: '0.5rem', borderRadius: '10px', border: '1px solid #FEE2E2', background: '#fff', cursor: 'pointer', color: '#EF4444' }} title="حذف"><Trash2 size={16} /></button>}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1211,6 +1281,8 @@ export default function ProfessionalDevelopmentPage({ currentUser, selectedYear:
           key={editingIndividual?.id || 'new-ind'}
           record={editingIndividual} 
           defaultYear={filterYear !== 'all' ? filterYear : '2026-2027'}
+          teachers={teachers.length > 0 ? teachers : initialTeachers}
+          departments={departments.length > 0 ? departments : initialDepartments}
           onSave={handleSaveIndividual} 
           onClose={() => { setIsIndFormOpen(false); setEditingIndividual(null); }} 
         />
@@ -1956,36 +2028,113 @@ function IndividualPDModal({ record, onClose, onEdit, onPrint, canEdit }: any) {
   );
 }
 
-function IndividualPDForm({ record, defaultYear = '2026-2027', onSave, onClose }: any) {
+function IndividualPDForm({ record, defaultYear = '2026-2027', teachers = [], departments = [], onSave, onClose }: any) {
   const todayStr = new Date().toISOString().split('T')[0];
   const resolvedYear = defaultYear && defaultYear !== 'all' ? defaultYear : '2026-2027';
-  const [fd, setFd] = useState<Partial<IndividualPDRecord>>(record || {
-    id: `IND-${resolvedYear.replace('-20', '')}-F${generateId().slice(0, 5)}`,
-    academicYear: resolvedYear,
-    month: getMonthFromDate(todayStr),
-    trainingDate: todayStr,
-    traineeNameAr: '',
-    department: 'STEM',
-    skillProvided: '',
-    skillCategory: 'نظام قطر للتعليم',
-    trainerName: 'أحمد طبيشات',
-    trainerRole: 'منسق المشاريع الإلكترونية',
-    trainingType: 'تدريب فردي',
-    deliveryMethod: 'دعم مباشر',
-    durationMinutes: 20,
-    evidenceStatus: 'موثق',
-    signatureStatus: 'تم التوقيع',
-    sourceType: 'كشف تدريب فردي مرفق',
-    createdBy: 'أحمد طبيشات',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+  const activeTeachers = useMemo(() => {
+    const base = teachers && teachers.length > 0 ? teachers : initialTeachers;
+    return [...base]
+      .filter((t: any) => t.status !== 'inactive')
+      .sort((a: any, b: any) => (a.nameAr || '').localeCompare(b.nameAr || '', 'ar'));
+  }, [teachers]);
+
+  const activeDepts = useMemo(() => {
+    return departments && departments.length > 0 ? departments : initialDepartments;
+  }, [departments]);
+
+  const initialMatchedTeacher = useMemo(() => {
+    if (!record) return undefined;
+    return matchTeacherFromRecord(record.traineeNameAr, record.teacherId, activeTeachers);
+  }, [record, activeTeachers]);
+
+  const [deptFilter, setDeptFilter] = useState<string>('all');
+
+  const [fd, setFd] = useState<Partial<IndividualPDRecord>>(() => {
+    if (record) {
+      if (initialMatchedTeacher) {
+        const dName = getDeptName(initialMatchedTeacher.departmentId, activeDepts);
+        return {
+          ...record,
+          teacherId: initialMatchedTeacher.id,
+          employeeId: initialMatchedTeacher.employeeId,
+          traineeNameAr: initialMatchedTeacher.nameAr,
+          traineeNameEn: initialMatchedTeacher.nameEn,
+          department: dName || record.department,
+        };
+      }
+      return { ...record };
+    }
+    return {
+      id: `IND-${resolvedYear.replace('-20', '')}-F${generateId().slice(0, 5)}`,
+      academicYear: resolvedYear,
+      month: getMonthFromDate(todayStr),
+      trainingDate: todayStr,
+      teacherId: '',
+      employeeId: '',
+      traineeNameAr: '',
+      traineeNameEn: '',
+      department: 'STEM',
+      skillProvided: '',
+      skillCategory: 'نظام قطر للتعليم',
+      trainerName: 'أحمد طبيشات',
+      trainerRole: 'منسق المشاريع الإلكترونية',
+      trainingType: 'تدريب فردي',
+      deliveryMethod: 'دعم مباشر',
+      durationMinutes: 20,
+      evidenceStatus: 'موثق',
+      signatureStatus: 'تم التوقيع',
+      sourceType: 'كشف تدريب فردي مرفق',
+      createdBy: 'أحمد طبيشات',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
   });
 
   useEffect(() => {
     if (record) {
-      setFd({ ...record });
+      const matched = matchTeacherFromRecord(record.traineeNameAr, record.teacherId, activeTeachers);
+      if (matched) {
+        setFd({
+          ...record,
+          teacherId: matched.id,
+          employeeId: matched.employeeId,
+          traineeNameAr: matched.nameAr,
+          traineeNameEn: matched.nameEn,
+          department: getDeptName(matched.departmentId, activeDepts) || record.department,
+        });
+      } else {
+        setFd({ ...record });
+      }
     }
-  }, [record]);
+  }, [record, activeTeachers, activeDepts]);
+
+  const filteredTeachersList = useMemo(() => {
+    if (deptFilter === 'all') return activeTeachers;
+    return activeTeachers.filter((t: any) => getDeptName(t.departmentId, activeDepts) === deptFilter);
+  }, [activeTeachers, activeDepts, deptFilter]);
+
+  const handleSelectTeacher = (selectedId: string) => {
+    const t = activeTeachers.find((x: any) => x.id === selectedId);
+    if (t) {
+      const deptName = getDeptName(t.departmentId, activeDepts);
+      setFd(prev => ({
+        ...prev,
+        teacherId: t.id,
+        employeeId: t.employeeId,
+        traineeNameAr: t.nameAr,
+        traineeNameEn: t.nameEn,
+        department: deptName,
+      }));
+    } else {
+      setFd(prev => ({
+        ...prev,
+        teacherId: '',
+        employeeId: '',
+        traineeNameAr: '',
+        traineeNameEn: '',
+      }));
+    }
+  };
 
   const handleSkillChange = (val: string) => {
     setFd({
@@ -1995,48 +2144,163 @@ function IndividualPDForm({ record, defaultYear = '2026-2027', onSave, onClose }
     });
   };
 
+  const handleDateChange = (dateVal: string) => {
+    setFd({
+      ...fd,
+      trainingDate: dateVal,
+      month: getMonthFromDate(dateVal),
+    });
+  };
+
+  const deptOptions = useMemo(() => {
+    const names = activeDepts.filter((d: any) => d.id !== 'd_admin').map((d: any) => d.nameAr);
+    return Array.from(new Set([...names, 'اللغة العربية', 'التربية الإسلامية', 'الحاسوب', 'الرياضيات', 'اللغة الإنجليزية', 'STEM', 'مختبر الطاقة', 'مختبر التصنيع الرقمي', 'مختبر الروبوت', 'الدراسات الاجتماعية', 'البحث العلمي', 'التربية البدنية', 'التصميم التكنولوجي']));
+  }, [activeDepts]);
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,32,68,0.7)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
-      <div style={{ background: '#fff', borderRadius: '32px', width: '95%', maxWidth: '800px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: '#fff', borderRadius: '32px', width: '95%', maxWidth: '820px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '1.5rem 2.5rem', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8FAFC' }}>
-          <h3 style={{ fontWeight: 900, color: '#0F2044' }}>{record ? 'تعديل سجل تدريب فردي' : 'إضافة سجل تدريب فردي جديد'}</h3>
+          <div>
+            <h3 style={{ fontWeight: 900, color: '#0F2044', margin: 0 }}>{record ? 'تعديل سجل تدريب فردي / ذاتي' : 'إضافة سجل تدريب فردي جديد'}</h3>
+            <p style={{ fontSize: '0.78rem', color: '#0369A1', margin: '0.2rem 0 0', fontWeight: 700 }}>
+              اختر اسم المعلم من القائمة ليتم تعبئة القسم وربط التدريب بصفحة المعلم الخاصة تلقائياً
+            </p>
+          </div>
           <button onClick={onClose} style={{ background: '#FEE2E2', color: '#EF4444', border: 'none', borderRadius: '12px', padding: '0.5rem', cursor: 'pointer' }}><X size={24} /></button>
         </div>
         
         <form onSubmit={e => { e.preventDefault(); onSave(fd as IndividualPDRecord); }} style={{ padding: '2rem 2.5rem', overflowY: 'auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
-            <div style={{ gridColumn: 'span 2' }}>
-              <FormLabel>اسم المعلم / الموظف</FormLabel>
-              <input value={fd.traineeNameAr} onChange={e => setFd({...fd, traineeNameAr: e.target.value})} className="form-input" required />
-            </div>
+            {/* Quick Department Filter to narrow down Teacher dropdown */}
             <div>
-              <FormLabel>القسم</FormLabel>
-              <select value={fd.department} onChange={e => setFd({...fd, department: e.target.value})} className="form-input">
-                {['اللغة العربية', 'التربية الإسلامية', 'الحاسوب', 'الرياضيات', 'اللغة الإنجليزية', 'STEM', 'مختبر الطاقة', 'مختبر التصنيع الرقمي', 'مختبر الروبوت', 'الدراسات الاجتماعية', 'الإرشاد الأكاديمي', 'مصادر التعلم', 'أخصائي أنشطة', 'الإداريين', 'أخرى'].map(d => <option key={d} value={d}>{d}</option>)}
+              <FormLabel>تصفية المعلمين حسب القسم (اختياري)</FormLabel>
+              <select
+                value={deptFilter}
+                onChange={e => setDeptFilter(e.target.value)}
+                className="form-input"
+                style={{ background: '#F8FAFC' }}
+              >
+                <option value="all">جميع الأقسام ({activeTeachers.length} معلم)</option>
+                {deptOptions.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
               </select>
             </div>
+
+            {/* Automatic Teacher Selector Dropdown */}
+            <div>
+              <FormLabel>اختر اسم المعلم *</FormLabel>
+              <select
+                value={fd.teacherId || ''}
+                onChange={e => handleSelectTeacher(e.target.value)}
+                className="form-input"
+                required
+                style={{ borderColor: fd.teacherId ? '#10B981' : '#0284C7', borderWidth: '2px', background: '#F0F9FF' }}
+              >
+                <option value="">-- اختر المعلم من القائمة الرسمية --</option>
+                {filteredTeachersList.map((t: any) => {
+                  const dName = getDeptName(t.departmentId, activeDepts);
+                  return (
+                    <option key={t.id} value={t.id}>
+                      {t.nameAr} — ({dName})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            {/* Selected Teacher Confirmation Banner */}
+            {fd.teacherId && fd.traineeNameAr && (
+              <div
+                style={{
+                  gridColumn: 'span 2',
+                  background: '#ECFDF5',
+                  border: '1px solid #A7F3D0',
+                  borderRadius: '14px',
+                  padding: '0.8rem 1.1rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '0.5rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <CheckCircle2 size={18} color="#059669" />
+                  <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#065F46' }}>
+                    المعلم المختار: <strong>{fd.traineeNameAr}</strong> ({fd.department})
+                  </span>
+                </div>
+                <span
+                  style={{
+                    background: '#D1FAE5',
+                    color: '#065F46',
+                    fontSize: '0.73rem',
+                    fontWeight: 900,
+                    padding: '0.2rem 0.65rem',
+                    borderRadius: '999px',
+                  }}
+                >
+                  🔗 سيتم ربط هذا السجل تلقائياً بصفحة المعلم الخاصة
+                </span>
+              </div>
+            )}
+
+            <div>
+              <FormLabel>القسم الأكاديمي</FormLabel>
+              <input
+                value={fd.department || ''}
+                readOnly
+                className="form-input"
+                style={{ background: '#F8FAFC', color: '#0F2044', fontWeight: 800 }}
+                placeholder="يتم تحديده تلقائياً عند اختيار المعلم"
+              />
+            </div>
+
+            <div>
+              <FormLabel>نوع التدريب</FormLabel>
+              <select
+                value={fd.trainingType || 'تدريب فردي'}
+                onChange={e => setFd({ ...fd, trainingType: e.target.value as any })}
+                className="form-input"
+              >
+                <option value="تدريب فردي">تدريب فردي (دعم مباشر للمعلم)</option>
+                <option value="برنامج تعلم ذاتي / تطوير مهني خارجي">تدريب ذاتي / تطوير مهني خارجي</option>
+                <option value="تدريب تطبيقي">تدريب تطبيقي</option>
+                <option value="دعم فني">دعم فني وتقني</option>
+                <option value="متابعة منصة">متابعة منصة نظام قطر للتعليم</option>
+                <option value="إرشاد رقمي">إرشاد وتمكين رقمي</option>
+              </select>
+            </div>
+
+            <div style={{ gridColumn: 'span 2' }}>
+              <FormLabel>المهارة / البرنامج التدريبي المقدم *</FormLabel>
+              <input value={fd.skillProvided} onChange={e => handleSkillChange(e.target.value)} className="form-input" required placeholder="مثال: Canva, Microsoft Teams, AI Tools, نظام قطر للتعليم..." />
+            </div>
+
+            <div>
+              <FormLabel>تصنيف المهارة</FormLabel>
+              <input value={fd.skillCategory} readOnly className="form-input" style={{ background: '#F8FAFC', color: '#64748B' }} />
+            </div>
+
             <div>
               <FormLabel>العام الدراسي</FormLabel>
               <select value={fd.academicYear} onChange={e => setFd({...fd, academicYear: e.target.value})} className="form-input">
                 {ACADEMIC_YEARS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <FormLabel>المهارة / الدعم المقدم</FormLabel>
-              <input value={fd.skillProvided} onChange={e => handleSkillChange(e.target.value)} className="form-input" required placeholder="مثال: Canva, Microsoft Teams, AI Tools..." />
-            </div>
-            <div>
-              <FormLabel>تصنيف المهارة</FormLabel>
-              <input value={fd.skillCategory} readOnly className="form-input" style={{ background: '#F8FAFC', color: '#64748B' }} />
-            </div>
+
+            <div><FormLabel>التاريخ</FormLabel><input type="date" value={fd.trainingDate} onChange={e => handleDateChange(e.target.value)} className="form-input" /></div>
+
             <div>
               <FormLabel>الشهر</FormLabel>
               <select value={fd.month} onChange={e => setFd({...fd, month: e.target.value})} className="form-input">
                 {['أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'].map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
-            <div><FormLabel>التاريخ</FormLabel><input type="date" value={fd.trainingDate} onChange={e => setFd({...fd, trainingDate: e.target.value})} className="form-input" /></div>
-            <div><FormLabel>المدة (بالدقائق)</FormLabel><input type="number" value={fd.durationMinutes} onChange={e => setFd({...fd, durationMinutes: parseInt(e.target.value)})} className="form-input" /></div>
+
+            <div><FormLabel>المدة (بالدقائق)</FormLabel><input type="number" value={fd.durationMinutes} onChange={e => setFd({...fd, durationMinutes: parseInt(e.target.value) || 20})} className="form-input" /></div>
             
             <div>
               <FormLabel>طريقة التقديم</FormLabel>
@@ -2047,6 +2311,12 @@ function IndividualPDForm({ record, defaultYear = '2026-2027', onSave, onClose }
                 <option value="Online">Online</option>
               </select>
             </div>
+
+            <div>
+              <FormLabel>المدرب / الجهة المنظمة</FormLabel>
+              <input value={fd.trainerName || ''} onChange={e => setFd({...fd, trainerName: e.target.value})} className="form-input" placeholder="مثال: أحمد طبيشات / Microsoft..." />
+            </div>
+
             <div>
               <FormLabel>الحالة</FormLabel>
               <select value={fd.signatureStatus} onChange={e => setFd({...fd, signatureStatus: e.target.value as any})} className="form-input">
@@ -2069,7 +2339,7 @@ function IndividualPDForm({ record, defaultYear = '2026-2027', onSave, onClose }
           
           <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
             <button type="button" onClick={onClose} style={{ padding: '0.8rem 2rem', borderRadius: '14px', border: '1px solid #E2E8F0', fontWeight: 800, cursor: 'pointer', background: '#fff' }}>إلغاء</button>
-            <button type="submit" style={{ padding: '0.8rem 3rem', background: '#0F2044', color: '#fff', border: 'none', borderRadius: '14px', fontWeight: 900, cursor: 'pointer' }}>حفظ البيانات</button>
+            <button type="submit" style={{ padding: '0.8rem 3rem', background: '#0F2044', color: '#fff', border: 'none', borderRadius: '14px', fontWeight: 900, cursor: 'pointer' }}>حفظ وربط بصفحة المعلم</button>
           </div>
         </form>
       </div>
