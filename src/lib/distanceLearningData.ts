@@ -5,7 +5,7 @@
 // =============================================================================
 
 import { SECTIONS_LMS_STATS } from './lmsReportSeptember2026';
-import { getCollection, saveCollection, isAuthorizedToSave, COLLECTIONS } from './firestoreDb';
+import { getCollection, saveCollection, saveDocument, deleteDocument, isAuthorizedToSave, COLLECTIONS } from './firestoreDb';
 
 export type DistanceLearningReason =
   | 'عذر طبي'
@@ -621,4 +621,194 @@ export function resetDistanceLearningRecords(academicYear: string = '2026-2027')
   saveDistanceLearningRecords(INITIAL_DISTANCE_LEARNING_RECORDS, academicYear);
   return INITIAL_DISTANCE_LEARNING_RECORDS;
 }
+
+// =============================================================================
+// 2. جدول حصص التعلم عن بعد الخاصة بالمعلمين (Teacher Distance Learning Teams Links)
+// يقوم كل معلم بإضافة حصصه الخاصة وروابط Microsoft Teams ليتمكن مدير النظام من
+// استخراج جدول موحد وإرساله للطلاب
+// =============================================================================
+
+export type TeacherDistanceLessonStatus = 'مجدولة' | 'جارية الآن' | 'تم التنفيذ' | 'ملغاة';
+
+export interface TeacherDistanceLesson {
+  id: string;
+  teacherId: string;
+  teacherNameAr: string;
+  teacherNameEn?: string;
+  departmentId?: string;
+  departmentName: string;
+  subject: string;
+  lessonTitle: string;
+  grade: string;        // مثال: الصف 10
+  section: string;      // مثال: 1 أو جميع الشعب
+  gradeSection: string; // مثال: 10/1 أو الصف 10 (جميع الشعب)
+  date: string;         // YYYY-MM-DD
+  dayName: string;      // الأحد، الإثنين، الثلاثاء، الأربعاء، الخميس
+  period: string;       // الحصة الأولى، الحصة الثانية...
+  startTime: string;    // 07:15
+  endTime: string;      // 08:00
+  teamsLink: string;    // رابط Microsoft Teams المباشر
+  platform: string;     // Microsoft Teams
+  studentNotes?: string;
+  status: TeacherDistanceLessonStatus;
+  academicYear: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const SCHOOL_PERIOD_OPTIONS = [
+  { id: '1', label: 'الحصة الأولى', startTime: '07:15', endTime: '08:00' },
+  { id: '2', label: 'الحصة الثانية', startTime: '08:05', endTime: '08:50' },
+  { id: '3', label: 'الحصة الثالثة', startTime: '08:55', endTime: '09:40' },
+  { id: '4', label: 'الحصة الرابعة', startTime: '10:05', endTime: '10:50' },
+  { id: '5', label: 'الحصة الخامسة', startTime: '10:55', endTime: '11:40' },
+  { id: '6', label: 'الحصة السادسة', startTime: '11:45', endTime: '12:30' },
+  { id: '7', label: 'الحصة السابعة', startTime: '12:45', endTime: '13:30' },
+  { id: '8', label: 'حصة مسائية / إثرائية', startTime: '16:00', endTime: '17:00' },
+];
+
+export function getArabicDayName(dateStr: string): string {
+  if (!dateStr) return 'الأحد';
+  try {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(y, (m || 1) - 1, d || 1);
+    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    return days[dt.getDay()] || 'الأحد';
+  } catch {
+    return 'الأحد';
+  }
+}
+
+const TEACHER_DL_LESSONS_STORAGE_KEY = 'qstss_teacher_distance_lessons_v1';
+
+// مزامنة فورية في الخلفية مع Firebase Firestore لجدول حصص المعلمين عن بعد
+if (typeof window !== 'undefined') {
+  try {
+    getCollection<TeacherDistanceLesson>(COLLECTIONS.teacherDistanceLessons)
+      .then(cloudItems => {
+        if (cloudItems && cloudItems.length > 0) {
+          localStorage.setItem(TEACHER_DL_LESSONS_STORAGE_KEY, JSON.stringify(cloudItems));
+          window.dispatchEvent(
+            new CustomEvent('qstss_teacher_dl_lessons_updated', {
+              detail: { count: cloudItems.length },
+            })
+          );
+        }
+      })
+      .catch(() => {});
+  } catch {}
+}
+
+export function sortTeacherDistanceLessons(lessons: TeacherDistanceLesson[]): TeacherDistanceLesson[] {
+  const periodOrder: Record<string, number> = {
+    'الحصة الأولى': 1,
+    'الحصة الثانية': 2,
+    'الحصة الثالثة': 3,
+    'الحصة الرابعة': 4,
+    'الحصة الخامسة': 5,
+    'الحصة السادسة': 6,
+    'الحصة السابعة': 7,
+    'حصة مسائية / إثرائية': 8,
+  };
+  return [...lessons].sort((a, b) => {
+    const dateDiff = (b.date || '').localeCompare(a.date || '');
+    if (dateDiff !== 0) return dateDiff;
+    const pA = periodOrder[a.period] || 99;
+    const pB = periodOrder[b.period] || 99;
+    if (pA !== pB) return pA - pB;
+    return (a.gradeSection || '').localeCompare(b.gradeSection || '');
+  });
+}
+
+export function loadTeacherDistanceLessons(academicYear?: string): TeacherDistanceLesson[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(TEACHER_DL_LESSONS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const filtered =
+          academicYear && academicYear !== 'all'
+            ? parsed.filter((x: TeacherDistanceLesson) => !x.academicYear || x.academicYear === academicYear)
+            : parsed;
+        return sortTeacherDistanceLessons(filtered);
+      }
+    }
+  } catch (e) {
+    console.warn('Error reading teacher distance lessons from localStorage:', e);
+  }
+  return [];
+}
+
+export async function fetchTeacherDistanceLessonsFromCloud(academicYear?: string): Promise<TeacherDistanceLesson[]> {
+  try {
+    const cloudItems = await getCollection<TeacherDistanceLesson>(COLLECTIONS.teacherDistanceLessons);
+    if (typeof window !== 'undefined' && cloudItems.length > 0) {
+      localStorage.setItem(TEACHER_DL_LESSONS_STORAGE_KEY, JSON.stringify(cloudItems));
+    }
+    const source = cloudItems.length > 0 ? cloudItems : loadTeacherDistanceLessons();
+    const filtered =
+      academicYear && academicYear !== 'all'
+        ? source.filter(x => !x.academicYear || x.academicYear === academicYear)
+        : source;
+    return sortTeacherDistanceLessons(filtered);
+  } catch {
+    return loadTeacherDistanceLessons(academicYear);
+  }
+}
+
+export async function saveSingleTeacherDistanceLesson(lesson: TeacherDistanceLesson): Promise<TeacherDistanceLesson[]> {
+  const existing = loadTeacherDistanceLessons();
+  const idx = existing.findIndex(x => x.id === lesson.id);
+  const updated = idx >= 0 ? existing.map(x => (x.id === lesson.id ? lesson : x)) : [lesson, ...existing];
+  const sorted = sortTeacherDistanceLessons(updated);
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(TEACHER_DL_LESSONS_STORAGE_KEY, JSON.stringify(sorted));
+      window.dispatchEvent(
+        new CustomEvent('qstss_teacher_dl_lessons_updated', {
+          detail: { count: sorted.length },
+        })
+      );
+    } catch (e) {
+      console.warn('Error saving teacher distance lesson locally:', e);
+    }
+  }
+
+  try {
+    await saveDocument<TeacherDistanceLesson>(COLLECTIONS.teacherDistanceLessons, lesson);
+  } catch (e) {
+    console.warn('Error saving teacher distance lesson to Firestore:', e);
+  }
+
+  return sorted;
+}
+
+export async function removeTeacherDistanceLesson(lessonId: string): Promise<TeacherDistanceLesson[]> {
+  const existing = loadTeacherDistanceLessons();
+  const remaining = existing.filter(x => x.id !== lessonId);
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(TEACHER_DL_LESSONS_STORAGE_KEY, JSON.stringify(remaining));
+      window.dispatchEvent(
+        new CustomEvent('qstss_teacher_dl_lessons_updated', {
+          detail: { count: remaining.length },
+        })
+      );
+    } catch (e) {
+      console.warn('Error removing teacher distance lesson locally:', e);
+    }
+  }
+
+  try {
+    await deleteDocument(COLLECTIONS.teacherDistanceLessons, lessonId);
+  } catch (e) {
+    console.warn('Error deleting teacher distance lesson from Firestore:', e);
+  }
+
+  return remaining;
+}
+
 

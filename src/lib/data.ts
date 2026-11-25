@@ -14,7 +14,7 @@ export const SYSTEM_TITLE = 'التعليم الالكتروني والحلول 
 export const SYSTEM_SUBTITLE = 'نظام إلكتروني لمتابعة وتقييم تفعيل المعلمين لنظام قطر للتعليم والمنصات التعليمية الرقمية';
 export const DESIGNER_CREDIT = 'تصميم وتطوير: م.أحمد طبيشات - منسق المشاريع الإلكترونية';
 
-export type Role = 'admin' | 'evaluator' | 'leader' | 'coordinator' | 'viewer';
+export type Role = 'admin' | 'evaluator' | 'leader' | 'coordinator' | 'viewer' | 'teacher';
 export interface User {
   id:string; name:string; nameEn?:string;
   email:string; username?:string;
@@ -25,11 +25,31 @@ export interface User {
   status:'active'|'inactive'|'pending';
   employeeId?:string;
   teacherId?:string;
+  subject?:string;
 }
 export interface Department { id:string; nameAr:string; nameEn:string; }
 export interface Teacher { id:string; employeeId:string; nameAr:string; nameEn:string; departmentId:string; subject:string; email:string; jobCategory:string; status:'active'|'inactive'; createdAt:string; activeFromYear?:string; excludedYears?:string[]; }
 export interface EvaluationCriterion { score:number; note:string; }
-export interface Evaluation { id:string; teacherId:string; evaluatorId:string; month:string; academicYear:string; term?:string; evaluationDate:string; criteria:EvaluationCriterion[]; totalScore:number; averageScore:number; percentage:number; performanceLevel:string; strengths:string; improvementAreas:string; recommendations:string; actionPlan:string; hasWeeklyAssignment?:boolean; evidenceLinks:string[]; generalNotes:string; createdAt:string; updatedAt:string; }
+export interface Evaluation { id:string; teacherId:string; evaluatorId:string; month:string; academicYear:string; term?:string; evaluationDate:string; criteria:EvaluationCriterion[]; totalScore:number; averageScore:number; percentage:number; performanceLevel:string; strengths:string; improvementAreas:string; recommendations:string; actionPlan:string; hasWeeklyAssignment?:boolean; evidenceLinks:string[]; generalNotes:string; teacherOpinion?:string; teacherNotes?:string; teacherAcknowledged?:boolean; teacherFeedbackDate?:string; createdAt:string; updatedAt:string; }
+
+export interface TeacherFeedbackRecord {
+  id: string;
+  teacherId: string;
+  teacherNameAr: string;
+  departmentName?: string;
+  targetType: 'monthly_evaluation' | 'model_lesson' | 'scheduled_lesson' | 'general';
+  targetId: string;
+  targetTitle: string;
+  academicYear: string;
+  month?: string;
+  opinionText: string;
+  actionTaken?: string;
+  acknowledged: boolean;
+  acknowledgedAt?: string;
+  adminReply?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface ModelLessonEvaluation {
   id: string;
@@ -267,7 +287,7 @@ export const ACHIEVEMENT_RESULTS = [
   'مشاركة متميزة',
 ];
 export interface EvaluationCriterion { score:number; note:string; value?:string|boolean; }
-export interface Evaluation { id:string; teacherId:string; evaluatorId:string; month:string; academicYear:string; term?:string; evaluationDate:string; criteria:EvaluationCriterion[]; totalScore:number; averageScore:number; percentage:number; performanceLevel:string; strengths:string; improvementAreas:string; recommendations:string; actionPlan:string; hasWeeklyAssignment?:boolean; evidenceLinks:string[]; generalNotes:string; createdAt:string; updatedAt:string; }
+export interface Evaluation { id:string; teacherId:string; evaluatorId:string; month:string; academicYear:string; term?:string; evaluationDate:string; criteria:EvaluationCriterion[]; totalScore:number; averageScore:number; percentage:number; performanceLevel:string; strengths:string; improvementAreas:string; recommendations:string; actionPlan:string; hasWeeklyAssignment?:boolean; evidenceLinks:string[]; generalNotes:string; teacherOpinion?:string; teacherNotes?:string; teacherAcknowledged?:boolean; teacherFeedbackDate?:string; createdAt:string; updatedAt:string; }
 
 export interface ModelLessonEvaluation {
   id: string;
@@ -299,6 +319,10 @@ export interface ModelLessonEvaluation {
   eProjectsCoordSignature?: string;
   evaluatorId?: string;
   evaluatorName?: string;
+  teacherOpinion?: string;
+  teacherNotes?: string;
+  teacherAcknowledged?: boolean;
+  teacherFeedbackDate?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -853,12 +877,20 @@ export function isSuperAdmin(user?: User | null): boolean {
   );
 }
 
+export function isTeacherUser(user?: User | null): boolean {
+  if (!user) return false;
+  return user.role === 'teacher' && Boolean(user.teacherId);
+}
+
 /**
- * Ensures that any user other than a.tubaishat1704@education.qa has their role set to 'viewer'.
+ * Ensures that any user other than a.tubaishat1704@education.qa has their role set to 'teacher' (if teacher session) or 'viewer'.
  */
 export function normalizeUserRole(user: User): User {
   if (isSuperAdmin(user)) {
     return { ...user, role: 'admin' };
+  }
+  if (user.role === 'teacher' && user.teacherId) {
+    return { ...user, role: 'teacher' };
   }
   return { ...user, role: 'viewer' };
 }
@@ -3167,6 +3199,16 @@ export const db = {
   deleteElearningSms: async (id: string): Promise<void> => {
     return deleteDocument(COLLECTIONS.elearningSms, id);
   },
+  getTeacherFeedbacks: async (): Promise<TeacherFeedbackRecord[]> => {
+    const stored = await getCollection<TeacherFeedbackRecord>(COLLECTIONS.teacherFeedbacks);
+    return stored.sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  },
+  saveTeacherFeedback: async (record: TeacherFeedbackRecord): Promise<string> => {
+    return saveDocument<TeacherFeedbackRecord>(COLLECTIONS.teacherFeedbacks, record);
+  },
+  deleteTeacherFeedback: async (id: string): Promise<void> => {
+    return deleteDocument(COLLECTIONS.teacherFeedbacks, id);
+  },
   // Session management stays in localStorage
   getCurrentUser: (): User | null => {
     if (typeof window === 'undefined') return null;
@@ -3194,6 +3236,70 @@ export const db = {
       console.error("Error writing current user session:", e);
     }
   },
+  loginTeacher: async (identifier: string, password?: string): Promise<User | null> => {
+    const teachers = await db.getTeachers();
+    const cleanInput = (identifier || '').toLowerCase().trim();
+    const cleanPass = (password || '').trim();
+    if (!cleanInput) return null;
+
+    const matchedTeacher = teachers.find(t => {
+      const email = (t.email || '').toLowerCase().trim();
+      const emailPrefix = email.split('@')[0] || '';
+      const empId = (t.employeeId || '').trim();
+      return (
+        t.id === identifier.trim() ||
+        email === cleanInput ||
+        emailPrefix === cleanInput ||
+        empId === cleanInput ||
+        t.nameAr.trim() === identifier.trim() ||
+        normalizeTeacherName(t.nameAr) === normalizeTeacherName(identifier)
+      );
+    });
+
+    if (!matchedTeacher) return null;
+
+    // Verify password if provided: accept employeeId, email prefix, full email, standard teacher passwords, or matching user password
+    if (cleanPass) {
+      const email = (matchedTeacher.email || '').toLowerCase().trim();
+      const emailPrefix = email.split('@')[0] || '';
+      const empId = (matchedTeacher.employeeId || '').trim();
+      const validStandardPasswords = new Set([
+        'teacher@2026',
+        'qstss2026',
+        'qstss@2026',
+        '123456',
+        empId.toLowerCase(),
+        emailPrefix.toLowerCase(),
+        email.toLowerCase(),
+      ]);
+      let passOk = validStandardPasswords.has(cleanPass.toLowerCase());
+      if (!passOk) {
+        const users = await db.getUsers();
+        const userAcc = users.find(u => (u.email || '').toLowerCase().trim() === email);
+        if (userAcc && (userAcc.password || '').trim() === cleanPass) {
+          passOk = true;
+        }
+      }
+      if (!passOk) return null;
+    }
+
+    const teacherUser: User = {
+      id: `teacher_${matchedTeacher.id}`,
+      name: matchedTeacher.nameAr,
+      nameEn: matchedTeacher.nameEn,
+      email: matchedTeacher.email,
+      username: (matchedTeacher.email || '').split('@')[0] || matchedTeacher.employeeId,
+      password: '',
+      role: 'teacher',
+      departmentId: matchedTeacher.departmentId,
+      departmentIds: [matchedTeacher.departmentId],
+      employeeId: matchedTeacher.employeeId,
+      teacherId: matchedTeacher.id,
+      subject: matchedTeacher.subject,
+      status: 'active',
+    };
+    return teacherUser;
+  },
   login: async (emailOrUser: string, password: string): Promise<User | null> => {
     // Invalidate users cache to guarantee checking the freshest credentials from Firestore
     invalidateCache(COLLECTIONS.users);
@@ -3209,8 +3315,13 @@ export const db = {
       return (matchEmail || matchUsername) && matchPassword && isActive;
     });
 
-    if (!found) return null;
-    return normalizeUserRole(found);
+    if (found) return normalizeUserRole(found);
+
+    // Fallback: allow any teacher from the official roster to log in directly as a Teacher
+    const teacherUser = await db.loginTeacher(emailOrUser, password);
+    if (teacherUser) return teacherUser;
+
+    return null;
   },
   forceReseedAll: async (): Promise<void> => {
     await Promise.all([

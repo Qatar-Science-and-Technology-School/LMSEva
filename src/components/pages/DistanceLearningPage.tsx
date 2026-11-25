@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { isSuperAdmin, type User } from '@/lib/data';
+import { db, isSuperAdmin, getDeptName, type User, type Teacher, type Department } from '@/lib/data';
 import {
   DistanceLearningRecord,
   DistanceLearningReason,
   DistanceLearningStatus,
+  TeacherDistanceLesson,
+  TeacherDistanceLessonStatus,
+  SCHOOL_PERIOD_OPTIONS,
+  getArabicDayName,
   REASON_CONFIG,
   STATUS_CONFIG,
   LMS_SECTIONS,
@@ -19,10 +23,15 @@ import {
   loadDistanceLearningRecords,
   saveDistanceLearningRecords,
   resetDistanceLearningRecords,
+  loadTeacherDistanceLessons,
+  fetchTeacherDistanceLessonsFromCloud,
+  saveSingleTeacherDistanceLesson,
+  removeTeacherDistanceLesson,
 } from '@/lib/distanceLearningData';
 import {
   printComprehensiveDistanceLearningReport,
   printStudentDistanceLearningCertificate,
+  printTeacherDistanceLessonsScheduleReport,
 } from '@/lib/distanceLearningReportPrinter';
 import * as XLSX from 'xlsx';
 import {
@@ -78,6 +87,37 @@ export default function DistanceLearningPage({
 }: DistanceLearningPageProps) {
   // Permission Check: ONLY a.tubaishat1704@education.qa has add/edit/delete permissions
   const isAdmin = isSuperAdmin(currentUser);
+
+  // Main Sub-Tab: 'teacher_schedule' (جدول حصص التعلم عن بعد للمعلمين - روابط Teams للطلاب) | 'student_cases' (سجل حالات الطلاب)
+  const [activeSubTab, setActiveSubTab] = useState<'teacher_schedule' | 'student_cases'>('teacher_schedule');
+
+  // Teacher Distance Learning Schedule (Teams Links) State
+  const [teacherLessons, setTeacherLessons] = useState<TeacherDistanceLesson[]>([]);
+  const [teachersList, setTeachersList] = useState<Teacher[]>([]);
+  const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
+  const [schedGradeFilter, setSchedGradeFilter] = useState<string>('all');
+  const [schedSectionFilter, setSchedSectionFilter] = useState<string>('all');
+  const [schedDateFilter, setSchedDateFilter] = useState<string>('');
+  const [schedTeacherFilter, setSchedTeacherFilter] = useState<string>('all');
+  const [schedSearch, setSchedSearch] = useState<string>('');
+  const [showAddTeacherLessonModal, setShowAddTeacherLessonModal] = useState<boolean>(false);
+  const [editingTeacherLesson, setEditingTeacherLesson] = useState<TeacherDistanceLesson | null>(null);
+  const [copySuccessMsg, setCopySuccessMsg] = useState<string>('');
+
+  // Admin Add/Edit Teacher Lesson Form State
+  const todayIso = new Date().toISOString().split('T')[0];
+  const [tlTeacherId, setTlTeacherId] = useState<string>('');
+  const [tlLessonTitle, setTlLessonTitle] = useState<string>('');
+  const [tlSubject, setTlSubject] = useState<string>('');
+  const [tlGrade, setTlGrade] = useState<string>('الصف 10');
+  const [tlSection, setTlSection] = useState<string>('1');
+  const [tlDate, setTlDate] = useState<string>(todayIso);
+  const [tlPeriod, setTlPeriod] = useState<string>('الحصة الأولى');
+  const [tlStartTime, setTlStartTime] = useState<string>('07:15');
+  const [tlEndTime, setTlEndTime] = useState<string>('08:00');
+  const [tlTeamsLink, setTlTeamsLink] = useState<string>('');
+  const [tlStudentNotes, setTlStudentNotes] = useState<string>('');
+  const [tlStatus, setTlStatus] = useState<TeacherDistanceLessonStatus>('مجدولة');
 
   // State
   const [records, setRecords] = useState<DistanceLearningRecord[]>([]);
@@ -135,11 +175,135 @@ export default function DistanceLearningPage({
     const refresh = () => {
       const loaded = loadDistanceLearningRecords(selectedYear);
       setRecords(loaded);
+      fetchTeacherDistanceLessonsFromCloud(selectedYear)
+        .then(list => setTeacherLessons(list))
+        .catch(() => setTeacherLessons(loadTeacherDistanceLessons(selectedYear)));
     };
     refresh();
+    Promise.all([db.getTeachers(), db.getDepartments()])
+      .then(([t, d]) => {
+        setTeachersList(t);
+        setDepartmentsList(d);
+      })
+      .catch(() => {});
     window.addEventListener('qstss_distance_learning_updated', refresh);
-    return () => window.removeEventListener('qstss_distance_learning_updated', refresh);
+    window.addEventListener('qstss_teacher_dl_lessons_updated', refresh);
+    return () => {
+      window.removeEventListener('qstss_distance_learning_updated', refresh);
+      window.removeEventListener('qstss_teacher_dl_lessons_updated', refresh);
+    };
   }, [selectedYear]);
+
+  // Filtered Teacher Distance Learning Lessons (Teams links)
+  const filteredTeacherLessons = useMemo(() => {
+    return teacherLessons.filter(l => {
+      if (schedGradeFilter !== 'all' && l.grade !== schedGradeFilter) return false;
+      if (schedSectionFilter !== 'all' && l.gradeSection !== schedSectionFilter && l.section !== schedSectionFilter) return false;
+      if (schedDateFilter && l.date !== schedDateFilter) return false;
+      if (schedTeacherFilter !== 'all' && l.teacherId !== schedTeacherFilter) return false;
+      if (schedSearch.trim()) {
+        const q = schedSearch.trim().toLowerCase();
+        return (
+          (l.teacherNameAr || '').toLowerCase().includes(q) ||
+          (l.subject || '').toLowerCase().includes(q) ||
+          (l.lessonTitle || '').toLowerCase().includes(q) ||
+          (l.gradeSection || '').toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [teacherLessons, schedGradeFilter, schedSectionFilter, schedDateFilter, schedTeacherFilter, schedSearch]);
+
+  const handleSaveAdminTeacherLesson = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const chosenTeacher = teachersList.find(t => t.id === tlTeacherId);
+    if (!chosenTeacher || !tlLessonTitle.trim() || !tlTeamsLink.trim()) {
+      alert('يرجى اختيار المعلم وإدخال عنوان الحصة ورابط Microsoft Teams');
+      return;
+    }
+    const now = new Date().toISOString();
+    const gradeNumMatch = tlGrade.match(/\d+/);
+    const gradeNum = gradeNumMatch ? gradeNumMatch[0] : '10';
+    const gradeSection = tlSection === 'جميع الشعب' ? `${tlGrade} (جميع الشعب)` : `${gradeNum}/${tlSection}`;
+    const deptName = getDeptName(chosenTeacher.departmentId, departmentsList);
+
+    const lesson: TeacherDistanceLesson = {
+      id: editingTeacherLesson?.id || `TDL-${chosenTeacher.id}-${Date.now().toString().slice(-6)}`,
+      teacherId: chosenTeacher.id,
+      teacherNameAr: chosenTeacher.nameAr,
+      teacherNameEn: chosenTeacher.nameEn,
+      departmentId: chosenTeacher.departmentId,
+      departmentName: deptName,
+      subject: tlSubject.trim() || chosenTeacher.subject,
+      lessonTitle: tlLessonTitle.trim(),
+      grade: tlGrade,
+      section: tlSection,
+      gradeSection,
+      date: tlDate,
+      dayName: getArabicDayName(tlDate),
+      period: tlPeriod,
+      startTime: tlStartTime,
+      endTime: tlEndTime,
+      teamsLink: tlTeamsLink.trim(),
+      platform: 'Microsoft Teams',
+      studentNotes: tlStudentNotes.trim(),
+      status: tlStatus,
+      academicYear: selectedYear,
+      createdAt: editingTeacherLesson?.createdAt || now,
+      updatedAt: now,
+    };
+
+    const updated = await saveSingleTeacherDistanceLesson(lesson);
+    setTeacherLessons(updated);
+    setShowAddTeacherLessonModal(false);
+    setEditingTeacherLesson(null);
+  };
+
+  const handleExportTeacherScheduleExcel = () => {
+    const rows = filteredTeacherLessons.map((l, i) => ({
+      '#': i + 1,
+      'اليوم': l.dayName,
+      'التاريخ': l.date,
+      'الحصة': l.period,
+      'من الساعة': l.startTime,
+      'إلى الساعة': l.endTime,
+      'الصف والشعبة': l.gradeSection,
+      'المادة الدراسية': l.subject,
+      'اسم المعلم': l.teacherNameAr,
+      'القسم': l.departmentName,
+      'عنوان الدرس': l.lessonTitle,
+      'رابط الحصة (Microsoft Teams Link)': l.teamsLink,
+      'ملاحظات للطلاب': l.studentNotes || '',
+      'الحالة': l.status,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'جدول حصص التعلم عن بعد');
+    XLSX.writeFile(wb, `جدول_حصص_التعلم_عن_بعد_Teams_للطلاب_${selectedYear}.xlsx`);
+  };
+
+  const handleCopyScheduleForStudents = () => {
+    if (filteredTeacherLessons.length === 0) {
+      alert('لا توجد حصص مضافة حالياً لنسخها.');
+      return;
+    }
+    const header = `🏫 *مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين*\n🌐 *جدول حصص التعلم عن بعد (Microsoft Teams)*\n📅 العام الأكاديمي: ${selectedYear}${schedGradeFilter !== 'all' ? ` | ${schedGradeFilter}` : ''}${schedSectionFilter !== 'all' ? ` (${schedSectionFilter})` : ''}\n────────────────────────\n`;
+    const body = filteredTeacherLessons
+      .map(
+        (l, idx) =>
+          `${idx + 1}. *${l.subject}* — (${l.gradeSection})\n` +
+          `👨‍🏫 المعلم: أ. ${l.teacherNameAr}\n` +
+          `📖 الدرس: ${l.lessonTitle}\n` +
+          `🕒 الموعد: ${l.dayName} ${l.date} | ${l.period} (${l.startTime} - ${l.endTime})\n` +
+          `🎥 رابط الحصة في Teams:\n${l.teamsLink}` +
+          (l.studentNotes ? `\n📌 ملاحظة: ${l.studentNotes}` : '')
+      )
+      .join('\n────────────────────────\n');
+    const footer = `\n────────────────────────\n💡 يرجى من أبنائنا الطلاب الدخول إلى رابط الحصة قبل الموعد بـ 5 دقائق عبر الحساب المدرسي الرسمي.`;
+    navigator.clipboard.writeText(header + body + footer);
+    setCopySuccessMsg('✅ تم نسخ جدول حصص التعلم عن بعد بالروابط بنجاح! يمكنك الآن لصقه وإرساله للطلاب عبر Teams أو الرسائل.');
+    setTimeout(() => setCopySuccessMsg(''), 5000);
+  };
 
   // Recalculate daysCount in form whenever fromDate or toDate changes
   const handleDateChange = (from: string, to: string) => {
@@ -552,6 +716,115 @@ export default function DistanceLearningPage({
         </div>
       </div>
 
+      {/* ─── Main Sub-Tab Switcher ────────────────────────────────────────── */}
+      <div
+        className="no-print"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '0.75rem',
+          marginBottom: '1.25rem',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('teacher_schedule')}
+          style={{
+            padding: '0.9rem 1.25rem',
+            borderRadius: '14px',
+            border: activeSubTab === 'teacher_schedule' ? '2px solid #4F46E5' : '1px solid #CBD5E1',
+            background:
+              activeSubTab === 'teacher_schedule'
+                ? 'linear-gradient(135deg, #0F2044 0%, #3730A3 100%)'
+                : '#FFFFFF',
+            color: activeSubTab === 'teacher_schedule' ? '#FFFFFF' : '#0F2044',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            textAlign: 'right',
+            boxShadow:
+              activeSubTab === 'teacher_schedule' ? '0 8px 20px rgba(79,70,229,0.22)' : '0 2px 6px rgba(0,0,0,0.03)',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 900 }}>
+              🎥 جدول حصص التعلم عن بعد للمعلمين (Link From Teams)
+            </div>
+            <div
+              style={{
+                fontSize: '0.74rem',
+                color: activeSubTab === 'teacher_schedule' ? '#C7D2FE' : '#64748B',
+                marginTop: '2px',
+              }}
+            >
+              روابط حصص Microsoft Teams المضافة من المعلمين لاستخراج تقرير الجدول وإرساله للطلاب
+            </div>
+          </div>
+          <span
+            style={{
+              background: activeSubTab === 'teacher_schedule' ? '#38BDF8' : '#EEF2FF',
+              color: activeSubTab === 'teacher_schedule' ? '#0F2044' : '#4338CA',
+              padding: '4px 12px',
+              borderRadius: '999px',
+              fontSize: '0.82rem',
+              fontWeight: 900,
+            }}
+          >
+            {teacherLessons.length} حصة
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab('student_cases')}
+          style={{
+            padding: '0.9rem 1.25rem',
+            borderRadius: '14px',
+            border: activeSubTab === 'student_cases' ? '2px solid #0284C7' : '1px solid #CBD5E1',
+            background:
+              activeSubTab === 'student_cases'
+                ? 'linear-gradient(135deg, #0F2044 0%, #0284C7 100%)'
+                : '#FFFFFF',
+            color: activeSubTab === 'student_cases' ? '#FFFFFF' : '#0F2044',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            textAlign: 'right',
+            boxShadow:
+              activeSubTab === 'student_cases' ? '0 8px 20px rgba(2,132,199,0.22)' : '0 2px 6px rgba(0,0,0,0.03)',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 900 }}>
+              👨‍🎓 سجل حالات الطلاب في التعلم عن بعد (الأعذار والمهام)
+            </div>
+            <div
+              style={{
+                fontSize: '0.74rem',
+                color: activeSubTab === 'student_cases' ? '#BAE6FD' : '#64748B',
+                marginTop: '2px',
+              }}
+            >
+              متابعة حضور الطلاب ذوي الأعذار الطبية والمشاركات والمسابقات الخارجية
+            </div>
+          </div>
+          <span
+            style={{
+              background: activeSubTab === 'student_cases' ? '#38BDF8' : '#E0F2FE',
+              color: activeSubTab === 'student_cases' ? '#0F2044' : '#0369A1',
+              padding: '4px 12px',
+              borderRadius: '999px',
+              fontSize: '0.82rem',
+              fontWeight: 900,
+            }}
+          >
+            {records.length} طالب
+          </span>
+        </button>
+      </div>
+
       {/* Viewer Mode Banner */}
       {!isAdmin && (
         <div
@@ -572,11 +845,777 @@ export default function DistanceLearningPage({
         >
           <span style={{ fontSize: '1.3rem' }}>🔒</span>
           <div>
-            <strong>وضع الاطلاع والمشاهدة فقط:</strong> سجلات التعلم عن بعد معتمدة للقراءة والاطلاع والطباعة وتصدير التقارير. التعديل والإضافة والحذف متاحة حصرياً لمدير النظام.
+            <strong>وضع الاطلاع والمشاهدة فقط:</strong> سجلات التعلم عن بعد معتمدة للقراءة والاطلاع والطباعة وتصدير التقارير. التعديل والإضافة والحذف متاحة حصرياً لمدير النظام (أو للمعلم من بوابته الخاصة).
           </div>
         </div>
       )}
 
+      {/* ═══════════════════════════════════════════════════════════════════════
+          SUB-TAB 1: TEACHER DISTANCE LEARNING SCHEDULE (TEAMS LINKS FOR STUDENTS)
+      ═══════════════════════════════════════════════════════════════════════ */}
+      {activeSubTab === 'teacher_schedule' && (
+        <div>
+          {copySuccessMsg && (
+            <div
+              className="no-print"
+              style={{
+                background: '#ECFDF5',
+                border: '1.5px solid #10B981',
+                color: '#065F46',
+                padding: '0.8rem 1.2rem',
+                borderRadius: '12px',
+                marginBottom: '1rem',
+                fontWeight: 800,
+                fontSize: '0.85rem',
+              }}
+            >
+              {copySuccessMsg}
+            </div>
+          )}
+
+          {/* KPI Cards for Teacher Teams Schedule */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+              gap: '0.85rem',
+              marginBottom: '1.25rem',
+            }}
+          >
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '14px',
+                padding: '1rem',
+                border: '1px solid #E2E8F0',
+                borderTop: '4px solid #4F46E5',
+              }}
+            >
+              <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 800 }}>إجمالي حصص Teams المضافة</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0F2044', marginTop: '4px' }}>
+                {filteredTeacherLessons.length}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#4F46E5', fontWeight: 700 }}>حصة تعلم عن بعد بروابط مباشرة</div>
+            </div>
+
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '14px',
+                padding: '1rem',
+                border: '1px solid #E2E8F0',
+                borderTop: '4px solid #0284C7',
+              }}
+            >
+              <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 800 }}>المعلمون المشاركون</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#0284C7', marginTop: '4px' }}>
+                {new Set(filteredTeacherLessons.map(l => l.teacherNameAr)).size}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 700 }}>معلماً أضاف روابط حصصه</div>
+            </div>
+
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '14px',
+                padding: '1rem',
+                border: '1px solid #E2E8F0',
+                borderTop: '4px solid #059669',
+              }}
+            >
+              <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 800 }}>الشعب والفصول المغطاة</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#059669', marginTop: '4px' }}>
+                {new Set(filteredTeacherLessons.map(l => l.gradeSection)).size}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 700 }}>شعبة دراسية</div>
+            </div>
+
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '14px',
+                padding: '1rem',
+                border: '1px solid #E2E8F0',
+                borderTop: '4px solid #D97706',
+              }}
+            >
+              <div style={{ fontSize: '0.76rem', color: '#64748B', fontWeight: 800 }}>المواد الدراسية</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: 900, color: '#D97706', marginTop: '4px' }}>
+                {new Set(filteredTeacherLessons.map(l => l.subject)).size}
+              </div>
+              <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: 700 }}>مادة تخصصية وأكاديمية</div>
+            </div>
+          </div>
+
+          {/* Admin Action & Extraction Toolbar for Student Schedule Report */}
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '16px',
+              padding: '1.15rem 1.25rem',
+              border: '1px solid #CBD5E1',
+              marginBottom: '1.25rem',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.75rem',
+                paddingBottom: '1rem',
+                marginBottom: '1rem',
+                borderBottom: '1px solid #E2E8F0',
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0F2044' }}>
+                  📋 استخراج تقرير جدول حصص التعلم عن بعد (Microsoft Teams) لإرساله للطلاب
+                </h3>
+                <p style={{ margin: '3px 0 0', fontSize: '0.76rem', color: '#64748B' }}>
+                  يمكنك تصفية الجدول حسب الصف أو الشعبة أو التاريخ ثم طباعة التقرير الرسمي المعتمد أو نسخه كرسالة جاهزة لإرسالها للطلاب.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const filterParts: string[] = [];
+                    if (schedGradeFilter !== 'all') filterParts.push(schedGradeFilter);
+                    if (schedSectionFilter !== 'all') filterParts.push(`شعبة ${schedSectionFilter}`);
+                    if (schedDateFilter) filterParts.push(`بتاريخ ${schedDateFilter}`);
+                    printTeacherDistanceLessonsScheduleReport(filteredTeacherLessons, {
+                      academicYear: selectedYear,
+                      filterLabel: filterParts.join(' - ') || 'جميع الصفوف والشعب',
+                    });
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #0F2044 0%, #4F46E5 100%)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '0.6rem 1.15rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: '0 4px 12px rgba(79,70,229,0.25)',
+                  }}
+                >
+                  <Printer size={16} />
+                  <span>🖨️ استخراج وطباعة جدول حصص التعلم عن بعد للطلاب</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyScheduleForStudents}
+                  style={{
+                    background: '#0284C7',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '10px',
+                    padding: '0.6rem 1rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                  }}
+                >
+                  <span>📲 نسخ الجدول بالروابط لإرساله للطلاب</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportTeacherScheduleExcel}
+                  style={{
+                    background: '#ECFDF5',
+                    color: '#065F46',
+                    border: '1px solid #A7F3D0',
+                    borderRadius: '10px',
+                    padding: '0.6rem 0.95rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                  }}
+                >
+                  <FileSpreadsheet size={16} />
+                  <span>تصدير الجدول Excel</span>
+                </button>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingTeacherLesson(null);
+                      setTlTeacherId(teachersList[0]?.id || '');
+                      setTlSubject(teachersList[0]?.subject || '');
+                      setTlLessonTitle('');
+                      setTlTeamsLink('');
+                      setTlStudentNotes('');
+                      setShowAddTeacherLessonModal(true);
+                    }}
+                    style={{
+                      background: '#10B981',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '0.6rem 1rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                    }}
+                  >
+                    <Plus size={16} />
+                    <span>إضافة حصة Teams</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Filters for Teacher Distance Learning Schedule */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))',
+                gap: '0.75rem',
+              }}
+            >
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
+                  بحث سريع (المعلم، المادة، الدرس)
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={schedSearch}
+                  onChange={e => setSchedSearch(e.target.value)}
+                  placeholder="ابحث..."
+                  style={{ padding: '0.45rem 0.7rem', fontSize: '0.78rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
+                  الصف الدراسي
+                </label>
+                <select
+                  className="form-input"
+                  value={schedGradeFilter}
+                  onChange={e => {
+                    setSchedGradeFilter(e.target.value);
+                    setSchedSectionFilter('all');
+                  }}
+                  style={{ padding: '0.45rem 0.65rem', fontSize: '0.78rem' }}
+                >
+                  <option value="all">جميع الصفوف</option>
+                  {GRADE_OPTIONS.map(g => (
+                    <option key={g} value={g}>
+                      {formatGradeLabel(g)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
+                  الشعبة
+                </label>
+                <select
+                  className="form-input"
+                  value={schedSectionFilter}
+                  onChange={e => setSchedSectionFilter(e.target.value)}
+                  style={{ padding: '0.45rem 0.65rem', fontSize: '0.78rem' }}
+                >
+                  <option value="all">جميع الشعب</option>
+                  {getSectionsForGrade(schedGradeFilter).map(s => (
+                    <option key={s.section} value={s.section}>
+                      شعبة {s.section}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
+                  التاريخ / اليوم
+                </label>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={schedDateFilter}
+                  onChange={e => setSchedDateFilter(e.target.value)}
+                  style={{ padding: '0.42rem 0.65rem', fontSize: '0.78rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
+                  المعلم
+                </label>
+                <select
+                  className="form-input"
+                  value={schedTeacherFilter}
+                  onChange={e => setSchedTeacherFilter(e.target.value)}
+                  style={{ padding: '0.45rem 0.65rem', fontSize: '0.78rem' }}
+                >
+                  <option value="all">جميع المعلمين</option>
+                  {teachersList.map(t => (
+                    <option key={t.id} value={t.id}>
+                      {t.nameAr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Schedule Table */}
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: '16px',
+              border: '1px solid #E2E8F0',
+              overflow: 'hidden',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
+            }}
+          >
+            {filteredTeacherLessons.length === 0 ? (
+              <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: '#64748B' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎥</div>
+                <div style={{ fontWeight: 900, fontSize: '1rem', color: '#0F2044', marginBottom: '0.3rem' }}>
+                  لا توجد حصص تعلم عن بعد (Microsoft Teams) مضافة ضمن هذا الفلتر حالياً
+                </div>
+                <p style={{ fontSize: '0.8rem', margin: 0 }}>
+                  يقوم المعلمون بالدخول من بوابة (المعلم) في صفحة الدخول ثم فتح تبويب <strong>Distance Learning</strong> وإضافة حصصهم وروابط Teams لتظهر هنا فوراً.
+                </p>
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr style={{ background: '#0F2044', color: '#FFFFFF' }}>
+                      {[
+                        '#',
+                        'اليوم والتاريخ',
+                        'الحصة والوقت',
+                        'الصف والشعبة',
+                        'المادة الدراسية',
+                        'اسم المعلم والقسم',
+                        'عنوان الدرس وملاحظات الطلاب',
+                        'رابط الحصة المباشر (Link From Teams)',
+                        'الحالة',
+                        ...(isAdmin ? ['الإجراءات'] : []),
+                      ].map(h => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: '0.75rem 0.7rem',
+                            textAlign: h === '#' || h === 'الإجراءات' ? 'center' : 'right',
+                            fontWeight: 800,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTeacherLessons.map((l, idx) => (
+                      <tr
+                        key={l.id}
+                        style={{
+                          background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC',
+                          borderBottom: '1px solid #E2E8F0',
+                        }}
+                      >
+                        <td style={{ padding: '0.65rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
+                        <td style={{ padding: '0.65rem' }}>
+                          <div style={{ fontWeight: 800, color: '#0F2044' }}>{l.dayName}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{l.date}</div>
+                        </td>
+                        <td style={{ padding: '0.65rem' }}>
+                          <div style={{ fontWeight: 800, color: '#0369A1' }}>{l.period}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#475569' }} dir="ltr">
+                            {l.startTime} - {l.endTime}
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.65rem' }}>
+                          <span
+                            style={{
+                              background: '#EFF6FF',
+                              color: '#1D4ED8',
+                              border: '1px solid #BFDBFE',
+                              padding: '3px 9px',
+                              borderRadius: '6px',
+                              fontWeight: 900,
+                              fontSize: '0.76rem',
+                            }}
+                          >
+                            {l.gradeSection}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.65rem', fontWeight: 800, color: '#0F2044' }}>{l.subject}</td>
+                        <td style={{ padding: '0.65rem' }}>
+                          <div style={{ fontWeight: 800, color: '#0F2044' }}>{l.teacherNameAr}</div>
+                          <div style={{ fontSize: '0.7rem', color: '#64748B' }}>{l.departmentName}</div>
+                        </td>
+                        <td style={{ padding: '0.65rem' }}>
+                          <div style={{ fontWeight: 800, color: '#1E293B' }}>{l.lessonTitle}</div>
+                          {l.studentNotes && (
+                            <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '2px' }}>
+                              📌 {l.studentNotes}
+                            </div>
+                          )}
+                        </td>
+                        <td style={{ padding: '0.65rem' }}>
+                          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <a
+                              href={l.teamsLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                background: '#4F46E5',
+                                color: '#fff',
+                                textDecoration: 'none',
+                                padding: '0.32rem 0.7rem',
+                                borderRadius: '6px',
+                                fontSize: '0.73rem',
+                                fontWeight: 800,
+                              }}
+                            >
+                              🎥 فتح الحصة (Teams)
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(l.teamsLink);
+                                setCopySuccessMsg(`✅ تم نسخ رابط حصة المعلم ${l.teacherNameAr}`);
+                                setTimeout(() => setCopySuccessMsg(''), 3000);
+                              }}
+                              style={{
+                                background: '#F1F5F9',
+                                color: '#334155',
+                                border: '1px solid #CBD5E1',
+                                padding: '0.3rem 0.55rem',
+                                borderRadius: '6px',
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              📋 نسخ الرابط
+                            </button>
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.65rem' }}>
+                          <span
+                            style={{
+                              background:
+                                l.status === 'تم التنفيذ'
+                                  ? '#DBEAFE'
+                                  : l.status === 'جارية الآن'
+                                  ? '#DCFCE7'
+                                  : '#FEF3C7',
+                              color:
+                                l.status === 'تم التنفيذ'
+                                  ? '#1E40AF'
+                                  : l.status === 'جارية الآن'
+                                  ? '#166534'
+                                  : '#92400E',
+                              padding: '2px 8px',
+                              borderRadius: '999px',
+                              fontSize: '0.7rem',
+                              fontWeight: 800,
+                            }}
+                          >
+                            {l.status}
+                          </span>
+                        </td>
+                        {isAdmin && (
+                          <td style={{ padding: '0.65rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                            <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingTeacherLesson(l);
+                                  setTlTeacherId(l.teacherId);
+                                  setTlLessonTitle(l.lessonTitle);
+                                  setTlSubject(l.subject);
+                                  setTlGrade(l.grade || 'الصف 10');
+                                  setTlSection(l.section || '1');
+                                  setTlDate(l.date);
+                                  setTlPeriod(l.period);
+                                  setTlStartTime(l.startTime);
+                                  setTlEndTime(l.endTime);
+                                  setTlTeamsLink(l.teamsLink);
+                                  setTlStudentNotes(l.studentNotes || '');
+                                  setTlStatus(l.status || 'مجدولة');
+                                  setShowAddTeacherLessonModal(true);
+                                }}
+                                style={{
+                                  background: '#EFF6FF',
+                                  color: '#1D4ED8',
+                                  border: '1px solid #BFDBFE',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                ✏️
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!window.confirm('هل أنت متأكد من حذف هذه الحصة من جدول التعلم عن بعد؟')) return;
+                                  const rem = await removeTeacherDistanceLesson(l.id);
+                                  setTeacherLessons(rem);
+                                }}
+                                style={{
+                                  background: '#FEE2E2',
+                                  color: '#991B1B',
+                                  border: '1px solid #FECACA',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Admin Add/Edit Teacher Distance Learning Lesson Modal */}
+      {showAddTeacherLessonModal && isAdmin && (
+        <div
+          className="no-print"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15,32,68,0.65)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '16px',
+              maxWidth: '640px',
+              width: '100%',
+              padding: '1.5rem',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0F2044' }}>
+                🎥 {editingTeacherLesson ? 'تعديل حصة التعلم عن بعد (Teams)' : 'إضافة حصة تعلم عن بعد (Link From Teams)'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddTeacherLessonModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAdminTeacherLesson}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                    المعلم *
+                  </label>
+                  <select
+                    className="form-input"
+                    value={tlTeacherId}
+                    onChange={e => {
+                      setTlTeacherId(e.target.value);
+                      const found = teachersList.find(t => t.id === e.target.value);
+                      if (found) setTlSubject(found.subject);
+                    }}
+                    required
+                  >
+                    <option value="">-- اختر المعلم --</option>
+                    {teachersList.map(t => (
+                      <option key={t.id} value={t.id}>
+                        {t.nameAr} ({t.subject})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                    المادة الدراسية *
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={tlSubject}
+                    onChange={e => setTlSubject(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                    عنوان الدرس / الحصة *
+                  </label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={tlLessonTitle}
+                    onChange={e => setTlLessonTitle(e.target.value)}
+                    placeholder="عنوان الدرس..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                    الصف *
+                  </label>
+                  <select className="form-input" value={tlGrade} onChange={e => setTlGrade(e.target.value)}>
+                    {GRADE_OPTIONS.map(g => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                    الشعبة *
+                  </label>
+                  <select className="form-input" value={tlSection} onChange={e => setTlSection(e.target.value)}>
+                    {getSectionsForGrade(tlGrade).map(s => (
+                      <option key={s.section} value={s.sectionNum}>
+                        شعبة {s.section}
+                      </option>
+                    ))}
+                    <option value="جميع الشعب">جميع شعب {tlGrade}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                    التاريخ ({getArabicDayName(tlDate)}) *
+                  </label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={tlDate}
+                    onChange={e => setTlDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                    الحصة *
+                  </label>
+                  <select
+                    className="form-input"
+                    value={tlPeriod}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setTlPeriod(val);
+                      const p = SCHOOL_PERIOD_OPTIONS.find(x => x.label === val);
+                      if (p) {
+                        setTlStartTime(p.startTime);
+                        setTlEndTime(p.endTime);
+                      }
+                    }}
+                  >
+                    {SCHOOL_PERIOD_OPTIONS.map(p => (
+                      <option key={p.id} value={p.label}>
+                        {p.label} ({p.startTime} - {p.endTime})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '0.75rem' }}>
+                <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                  رابط الحصة من مايكروسوفت تيمز (Link From Teams) *
+                </label>
+                <input
+                  type="url"
+                  className="form-input"
+                  value={tlTeamsLink}
+                  onChange={e => setTlTeamsLink(e.target.value)}
+                  placeholder="https://teams.microsoft.com/l/meetup-join/..."
+                  style={{ direction: 'ltr', textAlign: 'left' }}
+                  required
+                />
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                  ملاحظات للطلاب (اختياري)
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={tlStudentNotes}
+                  onChange={e => setTlStudentNotes(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddTeacherLessonModal(false)}
+                  className="btn btn-ghost"
+                >
+                  إلغاء
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  💾 حفظ الحصة والرابط
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {activeSubTab === 'student_cases' && (
+        <>
       {/* ─── KPI Cards ────────────────────────────────────────────────────── */}
       <div style={{
         display: 'grid',
@@ -2065,6 +3104,8 @@ export default function DistanceLearningPage({
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

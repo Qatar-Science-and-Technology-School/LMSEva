@@ -37,6 +37,8 @@ export const COLLECTIONS = {
   takreemSettings: 'takreem_settings',
   pdPlan: 'pd_plan',
   selfDevelopment: 'self_development',
+  teacherDistanceLessons: 'teacher_distance_lessons',
+  teacherFeedbacks: 'teacher_feedbacks',
 } as const;
 
 export const LEGACY_LOCAL_STORAGE_KEYS: Record<string, readonly string[]> = {
@@ -69,6 +71,10 @@ export const LEGACY_LOCAL_STORAGE_KEYS: Record<string, readonly string[]> = {
   pd_plan: ['qstss_custom_pd_plan_2627', 'pd_plan'],
   selfDevelopment: ['qstss_self_development_records_v1_2026-2027', 'qstss_self_development_v1', 'self_development'],
   self_development: ['qstss_self_development_records_v1_2026-2027', 'qstss_self_development_v1', 'self_development'],
+  teacherDistanceLessons: ['qstss_teacher_distance_lessons_v1', 'teacher_distance_lessons'],
+  teacher_distance_lessons: ['qstss_teacher_distance_lessons_v1', 'teacher_distance_lessons'],
+  teacherFeedbacks: ['qstss_teacher_feedbacks_v1', 'teacher_feedbacks'],
+  teacher_feedbacks: ['qstss_teacher_feedbacks_v1', 'teacher_feedbacks'],
 };
 
 type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS];
@@ -312,7 +318,7 @@ function sanitizeForFirestore(val: any): any {
  * is authorized to write, update, delete, or sync data to Firebase or local storage.
  * All other users are restricted to viewer mode.
  */
-export function isAuthorizedToSave(): boolean {
+export function isAuthorizedToSave(collectionName?: string): boolean {
   if (typeof window === 'undefined') return false;
   try {
     const raw = localStorage.getItem('qstss_current_user');
@@ -322,14 +328,29 @@ export function isAuthorizedToSave(): boolean {
     const username = (user?.username || '').trim().toLowerCase();
     const id = (user?.id || '').trim();
     const role = (user?.role || '').trim().toLowerCase();
-    return (
+    const isAdmin =
       email === 'a.tubaishat1704@education.qa' ||
       username === 'a.tubaishat1704' ||
       email === 'a.tubaishat@edu.gov.qa' ||
       username === 'a.tubaishat' ||
       id === 'u1' ||
-      role === 'admin'
-    );
+      role === 'admin';
+    if (isAdmin) return true;
+
+    // Teachers are authorized to save their Distance Learning Teams links and their opinions/feedback
+    if (role === 'teacher' || user?.teacherId) {
+      const resolved = collectionName ? resolveCollectionName(collectionName) : '';
+      const teacherAllowedCollections = new Set([
+        'teacher_distance_lessons',
+        'teacher_feedbacks',
+        'evaluations',
+        'model_lessons_evaluations',
+      ]);
+      if (!resolved || teacherAllowedCollections.has(resolved)) {
+        return true;
+      }
+    }
+    return false;
   } catch {
     return false;
   }
@@ -339,8 +360,8 @@ export async function saveCollection<T extends { id?: string }>(
   collectionName: CollectionName,
   data: T[]
 ): Promise<void> {
-  if (!isAuthorizedToSave()) {
-    console.warn(`[Permission Denied] Write operation on ${collectionName} was blocked. Only a.tubaishat1704@education.qa is permitted to edit or sync.`);
+  if (!isAuthorizedToSave(collectionName)) {
+    console.warn(`[Permission Denied] Write operation on ${collectionName} was blocked. Only authorized users are permitted to edit or sync.`);
     return;
   }
 
@@ -439,8 +460,8 @@ export async function saveDocument<T extends { id?: string }>(
   collectionName: CollectionName,
   item: T
 ): Promise<string> {
-  if (!isAuthorizedToSave()) {
-    console.warn(`[Permission Denied] Document save on ${collectionName} was blocked. Only a.tubaishat1704@education.qa is permitted to edit or sync.`);
+  if (!isAuthorizedToSave(collectionName)) {
+    console.warn(`[Permission Denied] Document save on ${collectionName} was blocked.`);
     return item.id || 'unauthorized';
   }
 
@@ -489,8 +510,8 @@ export async function deleteDocument(
   collectionName: CollectionName,
   docId: string
 ): Promise<void> {
-  if (!isAuthorizedToSave()) {
-    console.warn(`[Permission Denied] Document delete on ${collectionName} was blocked. Only a.tubaishat1704@education.qa is permitted to delete.`);
+  if (!isAuthorizedToSave(collectionName)) {
+    console.warn(`[Permission Denied] Document delete on ${collectionName} was blocked.`);
     return;
   }
 
@@ -607,8 +628,8 @@ export async function setSingleDocument<T extends object>(
   docId: string,
   data: T
 ): Promise<void> {
-  if (!isAuthorizedToSave()) {
-    console.warn(`[Permission Denied] setSingleDocument on ${collectionName}/${docId} was blocked. Only a.tubaishat1704@education.qa is permitted to edit or sync.`);
+  if (!isAuthorizedToSave(collectionName)) {
+    console.warn(`[Permission Denied] setSingleDocument on ${collectionName}/${docId} was blocked.`);
     return;
   }
 

@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { SCHOOL_NAME, ACADEMIC_YEARS, isSuperAdmin } from '@/lib/data';
+import { SCHOOL_NAME, ACADEMIC_YEARS, isSuperAdmin, isTeacherUser } from '@/lib/data';
 import type { User } from '@/lib/data';
 import Dashboard from './pages/Dashboard';
 import TeachersPage from './pages/TeachersPage';
@@ -18,54 +18,62 @@ import ClassSubjectAnalysisPage from './pages/ClassSubjectAnalysisPage';
 import EventsMeetingsPage from './pages/EventsMeetingsPage';
 import OperationalPlanPage from './pages/OperationalPlanPage';
 import DistanceLearningPage from './pages/DistanceLearningPage';
+import type { TeacherProfileTab } from './pages/TeacherProfilePage';
 
 type Page = 'dashboard'|'operational_plan'|'teachers'|'evaluation'|'class_analysis'|'model_lessons'|'events_meetings'|'distance_learning'|'profile'|'analytics'|'reports'|'settings'|'takreem'|'achievements'|'professional_development'|'elearning_sms';
 
 interface Props { user: User; onLogout: () => void; }
 
 export default function AppShell({ user, onLogout }: Props) {
-  const [page, setPage]             = useState<Page>('dashboard');
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string|null>(null);
+  const isTeacher = isTeacherUser(user);
+  const [page, setPage]             = useState<Page>(isTeacher ? 'profile' : 'dashboard');
+  const [teacherPortalTab, setTeacherPortalTab] = useState<TeacherProfileTab>('overview');
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string|null>(user.teacherId || null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>(ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1]);
 
-  const isAdmin     = isSuperAdmin(user);
-  const isEvaluator = false;
-  const isLeader    = false;
-  const isCoord     = false;
-  const isViewer    = !isAdmin;
+  const isAdmin = isSuperAdmin(user);
 
   const nav: { id: Page; label: string; icon: string; show: boolean }[] = [
-    { id:'dashboard',  label:'لوحة المؤشرات',  icon:'📊', show:true },
-    { id:'operational_plan', label:'الخطة الإجرائية', icon:'🎯', show:true },
-    { id:'teachers',   label:'إدارة المعلمين',  icon:'👨‍🏫', show:true },
-    { id:'evaluation', label:'تقييم نظام قطر للتعليم',  icon:'📝', show:true },
-    { id:'class_analysis', label:'تحليل الشعب والمواد', icon:'🏫', show:true },
-    { id:'model_lessons', label:'حصص التعليم الإلكتروني', icon:'💻', show:true },
-    { id:'events_meetings', label:'الفعاليات والاجتماعات', icon:'📅', show:true },
-    { id:'distance_learning', label:'التعلم عن بعد', icon:'🌐', show:true },
-    { id:'takreem',    label:'تكريم المعلمين',  icon:'🏆', show:true },
-    { id:'achievements',label:'الإنجازات',      icon:'🌟', show:true },
-    { id:'professional_development', label:'التطوير المهني', icon:'🎓', show:true },
-    { id:'elearning_sms', label:'E-Learning SMS', icon:'📱', show:true },
-    { id:'analytics',  label:'التحليلات',       icon:'📈', show:true },
-    { id:'reports',    label:'التقارير',        icon:'📋', show:true },
-    { id:'settings',   label:'الإعدادات',       icon:'⚙️', show:isAdmin },
+    { id:'dashboard',  label:'لوحة المؤشرات',  icon:'📊', show:!isTeacher },
+    { id:'operational_plan', label:'الخطة الإجرائية', icon:'🎯', show:!isTeacher },
+    { id:'teachers',   label:'إدارة المعلمين',  icon:'👨‍🏫', show:!isTeacher },
+    { id:'evaluation', label:'تقييم نظام قطر للتعليم',  icon:'📝', show:!isTeacher },
+    { id:'class_analysis', label:'تحليل الشعب والمواد', icon:'🏫', show:!isTeacher },
+    { id:'model_lessons', label:'حصص التعليم الإلكتروني', icon:'💻', show:!isTeacher },
+    { id:'events_meetings', label:'الفعاليات والاجتماعات', icon:'📅', show:!isTeacher },
+    { id:'distance_learning', label:'التعلم عن بعد', icon:'🌐', show:!isTeacher },
+    { id:'takreem',    label:'تكريم المعلمين',  icon:'🏆', show:!isTeacher },
+    { id:'achievements',label:'الإنجازات',      icon:'🌟', show:!isTeacher },
+    { id:'professional_development', label:'التطوير المهني', icon:'🎓', show:!isTeacher },
+    { id:'elearning_sms', label:'E-Learning SMS', icon:'📱', show:!isTeacher },
+    { id:'analytics',  label:'التحليلات',       icon:'📈', show:!isTeacher },
+    { id:'reports',    label:'التقارير',        icon:'📋', show:!isTeacher },
+    { id:'settings',   label:'الإعدادات',       icon:'⚙️', show:isAdmin && !isTeacher },
+  ];
+
+  // Teacher-dedicated sidebar items (only their own data & tabs)
+  const teacherNav: { id: TeacherProfileTab; label: string; icon: string }[] = [
+    { id: 'overview', label: 'إحصاءاتي وتقييماتي الشهرية', icon: '📊' },
+    { id: 'modellessons', label: 'حصصي في التعليم الإلكتروني', icon: '💻' },
+    { id: 'distance_learning', label: 'Distance Learning (Teams)', icon: '🌐' },
+    { id: 'feedback', label: 'إبداء الرأي والملاحظات', icon: '💬' },
+    { id: 'reports', label: 'تقاريري الخاصة والطباعة', icon: '🖨️' },
+    { id: 'pd', label: 'التطوير المهني وشهادة MEEE', icon: '🎓' },
+    { id: 'achievements', label: 'إنجازاتي ومسابقاتي', icon: '🌟' },
   ];
 
   function goProfile(tid: string) { setSelectedTeacherId(tid); setPage('profile'); }
 
-  const roleLabel: Record<string, string> = {
-    admin:'مدير النظام', evaluator:'منسق إلكتروني',
-    leader:'قيادة المدرسة', coordinator:'منسق قسم',
-    viewer:'أخصائي التعليم الإلكتروني'
-  };
+  const activeHeaderTitle = isTeacher
+    ? `بوابة المعلم الذاتية — ${teacherNav.find(t => t.id === teacherPortalTab)?.label || 'ملفي المهني'}`
+    : nav.find(n => n.id === page)?.label || 'ملف المعلم المهني';
 
   return (
     <div className="app-shell" style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl' }}>
       {/* Sidebar */}
       <aside className="no-print" style={{
-        width: sidebarOpen ? '240px' : '60px',
+        width: sidebarOpen ? '250px' : '60px',
         background:'linear-gradient(180deg,#0F2044 0%,#1a3a6b 100%)',
         display:'flex', flexDirection:'column',
         transition:'width 0.25s ease', overflow:'hidden', flexShrink:0,
@@ -78,35 +86,59 @@ export default function AppShell({ user, onLogout }: Props) {
               <img src="/school-logo.png" alt={SCHOOL_NAME}
                 style={{ height:'52px', width:'auto', maxWidth:'180px', objectFit:'contain',
                   filter:'brightness(10)' }} />
-              <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.4rem',
-                lineHeight:1.3, padding:'0 0.25rem' }}>
-                متابعة المعلمين
+              <p style={{ fontSize:'0.62rem', color:'rgba(255,255,255,0.65)', marginTop:'0.4rem',
+                lineHeight:1.3, padding:'0 0.25rem', fontWeight: 700 }}>
+                {isTeacher ? '👨‍🏫 بوابة المعلم الذاتية' : 'متابعة المعلمين'}
               </p>
             </div>
           ) : (
             <div style={{ display:'flex', justifyContent:'center' }}>
-              <span style={{ fontSize:'1.4rem' }}>🎓</span>
+              <span style={{ fontSize:'1.4rem' }}>{isTeacher ? '👨‍🏫' : '🎓'}</span>
             </div>
           )}
         </div>
 
         {/* Nav */}
         <nav style={{ flex:1, padding:'0.5rem 0', overflowY:'auto' }}>
-          {nav.filter(n => n.show).map(n => (
-            <button key={n.id} onClick={() => setPage(n.id)}
-              style={{
-                display:'flex', alignItems:'center', gap:'0.75rem',
-                width:'100%', padding:'0.75rem 1rem',
-                background: page === n.id ? 'rgba(0,180,216,0.2)' : 'transparent',
-                borderRight: page === n.id ? '3px solid #00B4D8' : '3px solid transparent',
-                color: page === n.id ? '#00B4D8' : 'rgba(255,255,255,0.75)',
-                border:'none', cursor:'pointer', textAlign:'right',
-                transition:'all 0.15s', fontSize:'0.85rem', fontWeight: page === n.id ? 700 : 400,
-              }}>
-              <span style={{ fontSize:'1.1rem', flexShrink:0 }}>{n.icon}</span>
-              {sidebarOpen && <span style={{ whiteSpace:'nowrap' }}>{n.label}</span>}
-            </button>
-          ))}
+          {isTeacher ? (
+            teacherNav.map(item => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setTeacherPortalTab(item.id);
+                  setPage('profile');
+                }}
+                style={{
+                  display:'flex', alignItems:'center', gap:'0.75rem',
+                  width:'100%', padding:'0.8rem 1rem',
+                  background: teacherPortalTab === item.id ? 'rgba(0,180,216,0.22)' : 'transparent',
+                  borderRight: teacherPortalTab === item.id ? '3px solid #00B4D8' : '3px solid transparent',
+                  color: teacherPortalTab === item.id ? '#00B4D8' : 'rgba(255,255,255,0.8)',
+                  border:'none', cursor:'pointer', textAlign:'right',
+                  transition:'all 0.15s', fontSize:'0.82rem', fontWeight: teacherPortalTab === item.id ? 800 : 500,
+                }}
+              >
+                <span style={{ fontSize:'1.1rem', flexShrink:0 }}>{item.icon}</span>
+                {sidebarOpen && <span style={{ whiteSpace:'nowrap' }}>{item.label}</span>}
+              </button>
+            ))
+          ) : (
+            nav.filter(n => n.show).map(n => (
+              <button key={n.id} onClick={() => setPage(n.id)}
+                style={{
+                  display:'flex', alignItems:'center', gap:'0.75rem',
+                  width:'100%', padding:'0.75rem 1rem',
+                  background: page === n.id ? 'rgba(0,180,216,0.2)' : 'transparent',
+                  borderRight: page === n.id ? '3px solid #00B4D8' : '3px solid transparent',
+                  color: page === n.id ? '#00B4D8' : 'rgba(255,255,255,0.75)',
+                  border:'none', cursor:'pointer', textAlign:'right',
+                  transition:'all 0.15s', fontSize:'0.85rem', fontWeight: page === n.id ? 700 : 400,
+                }}>
+                <span style={{ fontSize:'1.1rem', flexShrink:0 }}>{n.icon}</span>
+                {sidebarOpen && <span style={{ whiteSpace:'nowrap' }}>{n.label}</span>}
+              </button>
+            ))
+          )}
         </nav>
 
         {/* User info */}
@@ -114,8 +146,12 @@ export default function AppShell({ user, onLogout }: Props) {
           {sidebarOpen && (
             <div style={{ marginBottom:'0.5rem' }}>
               <p style={{ fontSize:'0.75rem', color:'#fff', fontWeight:700, margin:0 }}>{user.name}</p>
-              <p style={{ fontSize:'0.65rem', color: isAdmin ? '#90E0EF' : '#FDE68A', margin:'0.1rem 0 0', fontWeight: 700 }}>
-                {isAdmin ? 'مدير النظام (كامل الصلاحيات)' : 'وضع المشاهدة والاطلاع فقط (Viewer)'}
+              <p style={{ fontSize:'0.65rem', color: isAdmin ? '#90E0EF' : isTeacher ? '#7DD3FC' : '#FDE68A', margin:'0.1rem 0 0', fontWeight: 700 }}>
+                {isAdmin
+                  ? 'مدير النظام (كامل الصلاحيات)'
+                  : isTeacher
+                  ? `حساب المعلم الخاص (${user.subject || 'الهيئة التدريسية'})`
+                  : 'وضع المشاهدة والاطلاع فقط (Viewer)'}
               </p>
             </div>
           )}
@@ -145,7 +181,7 @@ export default function AppShell({ user, onLogout }: Props) {
 
           <div style={{ textAlign:'center' }}>
             <p style={{ fontWeight:800, fontSize:'0.9rem', color:'#0F2044', margin:0 }}>
-              {nav.find(n => n.id === page)?.label}
+              {activeHeaderTitle}
             </p>
             <p style={{ fontSize:'0.65rem', color:'#94A3B8', margin:0 }}>{SCHOOL_NAME}</p>
           </div>
@@ -195,27 +231,38 @@ export default function AppShell({ user, onLogout }: Props) {
 
         {/* Page content */}
         <main style={{ flex:1, overflow:'auto' }}>
-          {page === 'dashboard'  && <Dashboard  currentUser={user} onViewTeacher={goProfile} onNavigate={setPage} selectedYear={selectedYear} />}
-          {page === 'operational_plan' && <OperationalPlanPage currentUser={user} selectedYear={selectedYear} onNavigate={(p) => setPage(p as Page)} />}
-          {page === 'teachers'   && <TeachersPage currentUser={user} onViewTeacher={goProfile} selectedYear={selectedYear} />}
-          {page === 'evaluation' && <EvaluationPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
-          {page === 'class_analysis' && <ClassSubjectAnalysisPage currentUser={user} selectedYear={selectedYear} onNavigate={setPage} />}
-          {page === 'model_lessons' && <ModelLessonsEvaluationPage currentUser={user} selectedYear={selectedYear} />}
-          {page === 'events_meetings' && <EventsMeetingsPage currentUser={user} selectedYear={selectedYear} />}
-          {page === 'distance_learning' && <DistanceLearningPage currentUser={user} selectedYear={selectedYear} />}
-          {page === 'profile'    && selectedTeacherId && <TeacherProfilePage teacherId={selectedTeacherId} currentUser={user} onBack={() => setPage('teachers')} selectedYear={selectedYear} />}
-          {page === 'takreem'    && <TakreemPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
-          {page === 'analytics'  && <AnalyticsPage currentUser={user} selectedYear={selectedYear} onNavigate={setPage} />}
-          {page === 'reports'    && <ReportsPage currentUser={user} selectedYear={selectedYear} onNavigate={(p) => setPage(p as Page)} onViewTeacher={goProfile} />}
-          {page === 'achievements' && <AchievementsPage currentUser={user} onNavigate={setPage} selectedYear={selectedYear} />}
-          {page === 'professional_development' && <ProfessionalDevelopmentPage currentUser={user} selectedYear={selectedYear} />}
-          {page === 'elearning_sms' && <ElearningSmsPage currentUser={user} selectedYear={selectedYear} />}
-          {page === 'settings'   && isAdmin && <SettingsPage currentUser={user} />}
+          {isTeacher ? (
+            <TeacherProfilePage
+              teacherId={user.teacherId || selectedTeacherId || ''}
+              currentUser={user}
+              onBack={() => {}}
+              selectedYear={selectedYear}
+              activeTabProp={teacherPortalTab}
+              onTabChange={setTeacherPortalTab}
+              isTeacherPortal={true}
+            />
+          ) : (
+            <>
+              {page === 'dashboard'  && <Dashboard  currentUser={user} onViewTeacher={goProfile} onNavigate={setPage} selectedYear={selectedYear} />}
+              {page === 'operational_plan' && <OperationalPlanPage currentUser={user} selectedYear={selectedYear} onNavigate={(p) => setPage(p as Page)} />}
+              {page === 'teachers'   && <TeachersPage currentUser={user} onViewTeacher={goProfile} selectedYear={selectedYear} />}
+              {page === 'evaluation' && <EvaluationPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
+              {page === 'class_analysis' && <ClassSubjectAnalysisPage currentUser={user} selectedYear={selectedYear} onNavigate={setPage} />}
+              {page === 'model_lessons' && <ModelLessonsEvaluationPage currentUser={user} selectedYear={selectedYear} />}
+              {page === 'events_meetings' && <EventsMeetingsPage currentUser={user} selectedYear={selectedYear} />}
+              {page === 'distance_learning' && <DistanceLearningPage currentUser={user} selectedYear={selectedYear} />}
+              {page === 'profile'    && selectedTeacherId && <TeacherProfilePage teacherId={selectedTeacherId} currentUser={user} onBack={() => setPage('teachers')} selectedYear={selectedYear} />}
+              {page === 'takreem'    && <TakreemPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
+              {page === 'analytics'  && <AnalyticsPage currentUser={user} selectedYear={selectedYear} onNavigate={setPage} />}
+              {page === 'reports'    && <ReportsPage currentUser={user} selectedYear={selectedYear} onNavigate={(p) => setPage(p as Page)} onViewTeacher={goProfile} />}
+              {page === 'achievements' && <AchievementsPage currentUser={user} onNavigate={setPage} selectedYear={selectedYear} />}
+              {page === 'professional_development' && <ProfessionalDevelopmentPage currentUser={user} selectedYear={selectedYear} />}
+              {page === 'elearning_sms' && <ElearningSmsPage currentUser={user} selectedYear={selectedYear} />}
+              {page === 'settings'   && isAdmin && <SettingsPage currentUser={user} />}
+            </>
+          )}
         </main>
-
-
       </div>
     </div>
   );
 }
-

@@ -6,8 +6,10 @@
 
 import {
   DistanceLearningRecord,
+  TeacherDistanceLesson,
   REASON_CONFIG,
   STATUS_CONFIG,
+  sortTeacherDistanceLessons,
 } from './distanceLearningData';
 
 interface PrintReportOptions {
@@ -783,3 +785,369 @@ export function printStudentDistanceLearningCertificate(
     window.print();
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. طباعة تقرير جدول حصص التعلم عن بعد (روابط Microsoft Teams) لإرساله للطلاب
+// ─────────────────────────────────────────────────────────────────────────────
+export function printTeacherDistanceLessonsScheduleReport(
+  rawLessons: TeacherDistanceLesson[],
+  options: {
+    title?: string;
+    subtitle?: string;
+    academicYear?: string;
+    filterLabel?: string;
+    teacherOnlyName?: string;
+  } = {}
+): void {
+  if (typeof window === 'undefined') return;
+
+  const lessons = sortTeacherDistanceLessons(rawLessons);
+  const academicYear = options.academicYear || '2026-2027';
+  const reportDate = new Date().toLocaleDateString('ar-QA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const totalLessons = lessons.length;
+  const uniqueTeachers = new Set(lessons.map(l => l.teacherNameAr)).size;
+  const uniqueSections = new Set(lessons.map(l => l.gradeSection)).size;
+  const uniqueSubjects = new Set(lessons.map(l => l.subject)).size;
+
+  const reportTitle =
+    options.title ||
+    (options.teacherOnlyName
+      ? `جدول حصص التعلم عن بعد (Microsoft Teams) — المعلم: ${options.teacherOnlyName}`
+      : 'جدول حصص التعلم عن بعد المعتمد للطلاب (روابط Microsoft Teams)');
+
+  const reportSubtitle =
+    options.subtitle ||
+    `دليل روابط الحصص التفاعلية المباشرة عبر منصة Microsoft Teams — العام الأكاديمي ${academicYear}${
+      options.filterLabel ? ` (${options.filterLabel})` : ''
+    }`;
+
+  const rowsHtml = lessons
+    .map((l, idx) => {
+      const cleanLink = (l.teamsLink || '').trim();
+      const statusColor =
+        l.status === 'جارية الآن'
+          ? { bg: '#DCFCE7', text: '#166534', border: '#86EFAC' }
+          : l.status === 'تم التنفيذ'
+          ? { bg: '#DBEAFE', text: '#1E40AF', border: '#93C5FD' }
+          : l.status === 'ملغاة'
+          ? { bg: '#FEE2E2', text: '#991B1B', border: '#FCA5A5' }
+          : { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' };
+
+      return `
+      <tr>
+        <td class="text-center bold">${idx + 1}</td>
+        <td class="text-center">
+          <div class="bold" style="color:#0F2044;">${l.dayName || ''}</div>
+          <div class="font-num" style="font-size:8pt; color:#64748B;">${l.date || ''}</div>
+        </td>
+        <td class="text-center">
+          <div class="bold" style="color:#0369A1;">${l.period || ''}</div>
+          <div class="font-num" style="font-size:8pt; color:#475569;" dir="ltr">${l.startTime || ''} - ${l.endTime || ''}</div>
+        </td>
+        <td class="text-center">
+          <span class="grade-badge">${l.gradeSection || `${l.grade} / ${l.section}`}</span>
+        </td>
+        <td class="bold" style="color:#0F2044;">${l.subject || '-'}</td>
+        <td>
+          <div class="bold" style="color:#0F2044;">${l.teacherNameAr || '-'}</div>
+          <div style="font-size:7.5pt; color:#64748B;">${l.departmentName || ''}</div>
+        </td>
+        <td>
+          <div class="bold" style="color:#1E293B;">${l.lessonTitle || 'حصة تعلم عن بعد'}</div>
+          ${l.studentNotes ? `<div style="font-size:7.5pt; color:#475569; margin-top:2px;">📌 ${l.studentNotes}</div>` : ''}
+        </td>
+        <td class="text-center" style="min-width:190px;">
+          ${
+            cleanLink
+              ? `<a href="${cleanLink}" target="_blank" rel="noopener noreferrer" class="teams-btn">
+                   🎥 انقر هنا للدخول إلى الحصة (Teams)
+                 </a>
+                 <div class="link-url" dir="ltr">${cleanLink.length > 52 ? cleanLink.slice(0, 52) + '...' : cleanLink}</div>`
+              : `<span style="color:#94A3B8; font-size:8pt;">لم يتم إرفاق الرابط</span>`
+          }
+        </td>
+        <td class="text-center">
+          <span class="status-pill" style="background:${statusColor.bg}; color:${statusColor.text}; border:1px solid ${statusColor.border};">
+            ${l.status || 'مجدولة'}
+          </span>
+        </td>
+      </tr>
+    `;
+    })
+    .join('');
+
+  const html = `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="utf-8" />
+        <title>${reportTitle}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+        <style>
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          @page {
+            size: A4 landscape;
+            margin: 8mm !important;
+          }
+          body {
+            font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+            background: #ffffff;
+            color: #0F2044;
+            padding: 10px 14px;
+            direction: rtl;
+          }
+          .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #0F2044;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+          }
+          .header-center {
+            text-align: center;
+          }
+          .header-center .country { font-size: 10pt; font-weight: 800; color: #0F2044; }
+          .header-center .ministry { font-size: 9.5pt; font-weight: 800; color: #475569; }
+          .header-center .school { font-size: 12pt; font-weight: 900; color: #0F2044; margin-top: 2px; }
+          .header-center .dept { font-size: 8.5pt; font-weight: 700; color: #0284C7; margin-top: 2px; }
+          .title-banner {
+            background: linear-gradient(135deg, #0F2044 0%, #1E3A8A 60%, #4F46E5 100%);
+            color: #ffffff;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .title-banner h1 { font-size: 13pt; font-weight: 900; margin-bottom: 2px; }
+          .title-banner p { font-size: 8.5pt; color: #E0E7FF; font-weight: 600; }
+          .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+          }
+          .kpi-card {
+            background: #F8FAFC;
+            border: 1px solid #CBD5E1;
+            border-top: 3px solid #4F46E5;
+            border-radius: 8px;
+            padding: 6px 10px;
+            text-align: center;
+          }
+          .kpi-card .lbl { font-size: 7.5pt; font-weight: 800; color: #64748B; }
+          .kpi-card .val { font-size: 13pt; font-weight: 900; color: #0F2044; }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.5pt;
+            margin-bottom: 14px;
+          }
+          th {
+            background: #0F2044;
+            color: #ffffff;
+            font-weight: 800;
+            padding: 7px 6px;
+            border: 1px solid #0F2044;
+            text-align: center;
+          }
+          td {
+            padding: 6px 6px;
+            border: 1px solid #CBD5E1;
+            vertical-align: middle;
+          }
+          tr:nth-child(even) td { background: #F8FAFC; }
+          .text-center { text-align: center; }
+          .bold { font-weight: 800; }
+          .font-num { font-family: 'Cairo', monospace; }
+          .grade-badge {
+            display: inline-block;
+            background: #EFF6FF;
+            color: #1D4ED8;
+            border: 1px solid #BFDBFE;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 900;
+            font-size: 8.5pt;
+          }
+          .teams-btn {
+            display: inline-block;
+            background: #4F46E5;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 8pt;
+          }
+          .link-url {
+            font-size: 6.5pt;
+            color: #4F46E5;
+            margin-top: 2px;
+            word-break: break-all;
+          }
+          .status-pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 7.5pt;
+            font-weight: 800;
+          }
+          .student-notice {
+            background: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            border-right: 4px solid #2563EB;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 8pt;
+            color: #1E3A8A;
+            margin-bottom: 14px;
+          }
+          .signatures {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 2px dashed #CBD5E1;
+            text-align: center;
+            page-break-inside: avoid;
+          }
+          .sig-box {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 8px;
+          }
+          .sig-title { font-size: 7.5pt; color: #64748B; font-weight: 700; }
+          .sig-name { font-size: 9pt; color: #0F2044; font-weight: 900; margin: 2px 0; }
+          .sig-role { font-size: 7pt; color: #64748B; }
+          .sig-img { height: 34px; object-fit: contain; margin-top: 3px; }
+        </style>
+      </head>
+      <body>
+        <div class="header-bar">
+          <div><img src="/ministry-logo.png" alt="وزارة التربية والتعليم" style="height:64px; object-fit:contain;" onerror="this.style.display='none'" /></div>
+          <div class="header-center">
+            <div class="country">دولة قـطـر</div>
+            <div class="ministry">وزارة التربية والتعليم والتعليم العالي</div>
+            <div class="school">مدرسة قطر للعلوم والتكنولوجيا الإعدادية الثانوية للبنين - أم السنيم</div>
+            <div class="dept">قسم التعليم الإلكتروني والحلول الرقمية — منظومة التعلم عن بعد (Microsoft Teams)</div>
+          </div>
+          <div><img src="/school-logo.png" alt="شعار المدرسة" style="height:64px; object-fit:contain;" onerror="this.style.display='none'" /></div>
+        </div>
+
+        <div class="title-banner">
+          <div>
+            <h1>${reportTitle}</h1>
+            <p>${reportSubtitle}</p>
+          </div>
+          <div style="text-align:left; font-size:8pt;">
+            <div>تاريخ الإصدار: <strong>${reportDate}</strong></div>
+            <div>العام الأكاديمي: <strong>${academicYear}</strong></div>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="lbl">إجمالي حصص التعلم عن بعد</div>
+            <div class="val">${totalLessons} حصة</div>
+          </div>
+          <div class="kpi-card">
+            <div class="lbl">عدد المعلمين المشاركين</div>
+            <div class="val">${uniqueTeachers} معلم</div>
+          </div>
+          <div class="kpi-card">
+            <div class="lbl">عدد الشعب والفصول</div>
+            <div class="val">${uniqueSections} شعبة</div>
+          </div>
+          <div class="kpi-card">
+            <div class="lbl">المواد الدراسية</div>
+            <div class="val">${uniqueSubjects} مادة</div>
+          </div>
+        </div>
+
+        <div class="student-notice">
+          <strong>📢 إرشادات هامة للطلاب وأولياء الأمور:</strong>
+          يرجى الضغط على زر <strong>"انقر هنا للدخول إلى الحصة (Teams)"</strong> المقابل لكل حصة في الموعد المحدد، مع التأكد من تسجيل الدخول بحساب الطالب الرسمي في منصة Microsoft Teams قبل بدء الحصة بـ 5 دقائق.
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:32px;">#</th>
+              <th style="width:95px;">اليوم والتاريخ</th>
+              <th style="width:105px;">الحصة والوقت</th>
+              <th style="width:85px;">الصف والشعبة</th>
+              <th style="width:110px;">المادة الدراسية</th>
+              <th style="width:140px;">اسم المعلم</th>
+              <th>عنوان الدرس وملاحظات الطلاب</th>
+              <th style="width:210px;">رابط الحصة المباشر (Link From Teams)</th>
+              <th style="width:75px;">الحالة</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              rowsHtml ||
+              `<tr><td colspan="9" class="text-center" style="padding:20px; color:#64748B; font-weight:700;">لا توجد حصص تعلم عن بعد مسجلة حالياً ضمن هذا الفلتر.</td></tr>`
+            }
+          </tbody>
+        </table>
+
+        <div class="signatures">
+          <div class="sig-box">
+            <div class="sig-title">إعداد وتنسيق الجدول</div>
+            <div class="sig-name">م. أحمد عادل طبيشات</div>
+            <div class="sig-role">منسق المشاريع والتعليم الإلكتروني</div>
+            <img class="sig-img" src="/signature-ahmad.png" alt="توقيع المنسق" onerror="this.style.display='none'" />
+          </div>
+          <div class="sig-box">
+            <div class="sig-title">مراجعة وإشراف أكاديمي</div>
+            <div class="sig-name">د. راني التوم</div>
+            <div class="sig-role">النائب الأكاديمي للمدرسة</div>
+            <img class="sig-img" src="/signature-rani.png" alt="توقيع النائب الأكاديمي" onerror="this.style.display='none'" />
+          </div>
+          <div class="sig-box" style="border:1.5px solid #0F2044; background:#fff;">
+            <div class="sig-title">يعتمد، مدير المدرسة</div>
+            <div class="sig-name">محمد علي مندني العمادي</div>
+            <div class="sig-role">مدير مدرسة قطر للعلوم والتكنولوجيا</div>
+            <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة" onerror="this.style.display='none'" />
+          </div>
+        </div>
+
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+            }, 600);
+          };
+        </script>
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '_blank', 'width=1150,height=850');
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+  } else {
+    window.print();
+  }
+}
+
