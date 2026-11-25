@@ -667,7 +667,13 @@ export default function DistanceLearningPage({
           </button>
 
           <button
-            onClick={() => printComprehensiveDistanceLearningReport(filteredRecords, { academicYear: selectedYear })}
+            onClick={() => {
+              if (activeSubTab === 'teacher_schedule') {
+                printTeacherDistanceLessonsScheduleReport(filteredTeacherLessons, { academicYear: selectedYear });
+              } else {
+                printComprehensiveDistanceLearningReport(filteredRecords, { academicYear: selectedYear });
+              }
+            }}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -684,7 +690,7 @@ export default function DistanceLearningPage({
             }}
           >
             <Printer size={16} />
-            <span>طباعة التقرير الشامل A3</span>
+            <span>{activeSubTab === 'teacher_schedule' ? 'طباعة جدول حصص التعلم عن بعد' : 'طباعة التقرير الشامل A3'}</span>
           </button>
 
           {isAdmin && (

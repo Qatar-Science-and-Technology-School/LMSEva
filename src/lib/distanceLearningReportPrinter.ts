@@ -357,19 +357,6 @@ export function printComprehensiveDistanceLearningReport(
           </div>
         </div>
 
-        <!-- Meta / KPI Bar -->
-        <div class="stats-bar avoid-break">
-          <span class="stats-pill">📊 إجمالي السجلات: <strong>${totalRecords} حالة</strong></span>
-          <span class="stats-pill">👨‍🎓 إجمالي الطلاب: <strong>${uniqueStudents} طالب</strong></span>
-          <span class="stats-pill">🗓️ إجمالي أيام التعلم عن بعد: <strong>${totalDays} يوم</strong></span>
-          <span class="stats-pill" style="color: #DC2626;">🏥 عذر طبي: <strong>${medicalCount}</strong></span>
-          <span class="stats-pill" style="color: #D97706;">🏆 مسابقات: <strong>${competitionCount}</strong></span>
-          <span class="stats-pill" style="color: #2563EB;">🌐 مؤتمرات: <strong>${conferenceCount}</strong></span>
-          <span class="stats-pill" style="color: #059669;">💻 يوم التعلم عن بعد: <strong>${dlDayCount}</strong></span>
-          <span class="stats-pill" style="color: #0F2044;">📈 متوسط الالتزام: <strong>${avgCommitment}%</strong></span>
-          <span class="stats-pill" style="color: #64748B;">تاريخ الاستخراج: <strong>${reportDate}</strong></span>
-        </div>
-
         <!-- Official Table -->
         <table>
           <thead>
@@ -391,43 +378,6 @@ export function printComprehensiveDistanceLearningReport(
             ${rowsHtml}
           </tbody>
         </table>
-
-        <!-- Signatures Footer -->
-        <div class="signatures-container avoid-break">
-          <!-- 1. Coordinator -->
-          <div class="sig-box">
-            <div class="sig-title">إعداد وتوثيق السجل</div>
-            <div class="sig-name">م. أحمد عادل طبيشات</div>
-            <div class="sig-role">منسق المشاريع والتعليم الإلكتروني</div>
-            <div class="sig-img-container">
-              <img class="sig-img" src="/signature-ahmad.png" alt="توقيع م. أحمد عادل طبيشات" />
-            </div>
-          </div>
-
-          <!-- 2. Academic Vice Principal -->
-          <div class="sig-box">
-            <div class="sig-title">مراجعة وتدقيق</div>
-            <div class="sig-name">د. راني التوم</div>
-            <div class="sig-role">النائب الأكاديمي للمدرسة</div>
-            <div class="sig-img-container">
-              <img class="sig-img" src="/signature-rani.png" alt="توقيع د. راني التوم" />
-            </div>
-          </div>
-
-          <!-- 3. School Principal -->
-          <div class="sig-box" style="border: 1.5px solid #0F2044; background: #FFFFFF;">
-            <div class="sig-title">يعتمد، مدير المدرسة</div>
-            <div class="sig-name" style="font-size: 9pt; color: #0F2044;">محمد علي مندني العمادي</div>
-            <div class="sig-role">مدير مدرسة قطر للعلوم والتكنولوجيا</div>
-            <div class="sig-img-container">
-              <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة محمد علي مندني العمادي" />
-            </div>
-          </div>
-        </div>
-
-        <div class="footer-note">
-          وثيقة رسمية معتمدة صادرة عن مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين — وزارة التربية والتعليم والتعليم العالي
-        </div>
 
         <script>
           window.onload = function() {
@@ -920,12 +870,14 @@ export function printTeacherDistanceLessonsScheduleReport(
             padding: 12px 18px;
             border-radius: 10px;
             margin-bottom: 12px;
+            text-align: center;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
           }
-          .title-banner h1 { font-size: 13pt; font-weight: 900; margin-bottom: 2px; }
-          .title-banner p { font-size: 8.5pt; color: #E0E7FF; font-weight: 600; }
+          .title-banner h1 { font-size: 14pt; font-weight: 900; margin-bottom: 3px; text-align: center; }
+          .title-banner p { font-size: 8.5pt; color: #E0E7FF; font-weight: 600; text-align: center; }
           .kpi-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -1078,38 +1030,8 @@ export function printTeacherDistanceLessonsScheduleReport(
         </div>
 
         <div class="title-banner">
-          <div>
-            <h1>${reportTitle}</h1>
-            <p>${reportSubtitle}</p>
-          </div>
-          <div style="text-align:left; font-size:8pt;">
-            <div>تاريخ الإصدار: <strong>${reportDate}</strong></div>
-            <div>العام الأكاديمي: <strong>${academicYear}</strong></div>
-          </div>
-        </div>
-
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="lbl">إجمالي حصص التعلم عن بعد</div>
-            <div class="val">${totalLessons} حصة</div>
-          </div>
-          <div class="kpi-card">
-            <div class="lbl">عدد المعلمين المشاركين</div>
-            <div class="val">${uniqueTeachers} معلم</div>
-          </div>
-          <div class="kpi-card">
-            <div class="lbl">عدد الشعب والفصول</div>
-            <div class="val">${uniqueSections} شعبة</div>
-          </div>
-          <div class="kpi-card">
-            <div class="lbl">المواد الدراسية</div>
-            <div class="val">${uniqueSubjects} مادة</div>
-          </div>
-        </div>
-
-        <div class="student-notice">
-          <strong>📢 إرشادات هامة للطلاب وأولياء الأمور:</strong>
-          يرجى الضغط على زر <strong>"انقر هنا للدخول إلى الحصة (Teams)"</strong> المقابل لكل حصة في الموعد المحدد، مع التأكد من تسجيل الدخول بحساب الطالب الرسمي في منصة Microsoft Teams قبل بدء الحصة بـ 5 دقائق.
+          <h1>${reportTitle}</h1>
+          <p>${reportSubtitle} — تاريخ الإصدار: ${reportDate}</p>
         </div>
 
         <table class="dl-matrix" dir="ltr">
@@ -1129,27 +1051,6 @@ export function printTeacherDistanceLessonsScheduleReport(
             ${rowsHtml}
           </tbody>
         </table>
-
-        <div class="signatures">
-          <div class="sig-box">
-            <div class="sig-title">إعداد وتنسيق الجدول</div>
-            <div class="sig-name">م. أحمد عادل طبيشات</div>
-            <div class="sig-role">منسق المشاريع والتعليم الإلكتروني</div>
-            <img class="sig-img" src="/signature-ahmad.png" alt="توقيع المنسق" onerror="this.style.display='none'" />
-          </div>
-          <div class="sig-box">
-            <div class="sig-title">مراجعة وإشراف أكاديمي</div>
-            <div class="sig-name">د. راني التوم</div>
-            <div class="sig-role">النائب الأكاديمي للمدرسة</div>
-            <img class="sig-img" src="/signature-rani.png" alt="توقيع النائب الأكاديمي" onerror="this.style.display='none'" />
-          </div>
-          <div class="sig-box" style="border:1.5px solid #0F2044; background:#fff;">
-            <div class="sig-title">يعتمد، مدير المدرسة</div>
-            <div class="sig-name">محمد علي مندني العمادي</div>
-            <div class="sig-role">مدير مدرسة قطر للعلوم والتكنولوجيا</div>
-            <img class="sig-img" src="/principal-signature.png" alt="توقيع مدير المدرسة" onerror="this.style.display='none'" />
-          </div>
-        </div>
 
         <script>
           window.onload = function() {
