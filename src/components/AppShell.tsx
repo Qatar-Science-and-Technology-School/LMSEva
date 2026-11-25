@@ -57,10 +57,8 @@ export default function AppShell({ user, onLogout }: Props) {
     { id: 'overview', label: 'إحصاءاتي وتقييماتي الشهرية', icon: '📊' },
     { id: 'modellessons', label: 'حصصي في التعليم الإلكتروني', icon: '💻' },
     { id: 'distance_learning', label: 'Distance Learning (Teams)', icon: '🌐' },
-    { id: 'feedback', label: 'إبداء الرأي والملاحظات', icon: '💬' },
     { id: 'reports', label: 'تقاريري الخاصة والطباعة', icon: '🖨️' },
     { id: 'pd', label: 'التطوير المهني وشهادة MEEE', icon: '🎓' },
-    { id: 'achievements', label: 'إنجازاتي ومسابقاتي', icon: '🌟' },
   ];
 
   function goProfile(tid: string) { setSelectedTeacherId(tid); setPage('profile'); }

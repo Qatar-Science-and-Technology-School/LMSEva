@@ -893,21 +893,6 @@ export default function TeacherProfilePage({
               🌐 إضافة حصة Distance Learning (Teams)
             </button>
             <button
-              onClick={() => setActiveTab('feedback')}
-              style={{
-                background: 'rgba(255,255,255,0.16)',
-                color: '#fff',
-                border: '1px solid rgba(255,255,255,0.3)',
-                borderRadius: '10px',
-                padding: '0.55rem 1rem',
-                fontWeight: 800,
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-              }}
-            >
-              💬 إبداء الرأي والملاحظات
-            </button>
-            <button
               onClick={() => window.print()}
               style={{
                 background: '#10B981',
@@ -993,7 +978,6 @@ export default function TeacherProfilePage({
             label: '🌐 Distance Learning (Teams)',
             count: teacherDistanceLessons.length,
           },
-          { id: 'feedback', label: '💬 إبداء الرأي والملاحظات', count: teacherFeedbacks.length },
           {
             id: 'reports',
             label: '🖨️ تقاريري الخاصة والطباعة',
@@ -1004,7 +988,6 @@ export default function TeacherProfilePage({
             label: '🎓 التطوير المهني و MEEE',
             count: teacherPD.length + teacherWorkshops.length,
           },
-          { id: 'achievements', label: '🌟 الإنجازات', count: teacherAchievements.length },
         ].map(tab => (
           <button
             key={tab.id}
@@ -2082,220 +2065,6 @@ export default function TeacherProfilePage({
         </div>
       )}
 
-      {/* ──── TAB 4: TEACHER FEEDBACK, OPINIONS & NOTES ──── */}
-      {activeTab === 'feedback' && (
-        <div style={cardStyle}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '1rem',
-              flexWrap: 'wrap',
-              gap: '0.5rem',
-            }}
-          >
-            <div>
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>
-                💬 بوابة إبداء الرأي والملاحظات والتأمل المهني للمعلم
-              </h3>
-              <p style={{ fontSize: '0.74rem', color: '#64748B', margin: '2px 0 0' }}>
-                يمكنك تدوين رأيك وملاحظاتك على أي تقييم شهري أو حصة تعليم إلكتروني أو إضافة ملاحظة ومقترح عام.
-              </p>
-            </div>
-            {canTeacherAct && (
-              <button
-                onClick={() =>
-                  openFeedbackEditor(
-                    'general',
-                    `general_${Date.now()}`,
-                    `ملاحظة ورأي عام من المعلم — العام الأكاديمي ${activeYear}`,
-                    activeYear
-                  )
-                }
-                style={{
-                  background: 'linear-gradient(135deg, #0284C7 0%, #0F2044 100%)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '10px',
-                  padding: '0.55rem 1.1rem',
-                  fontSize: '0.78rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                }}
-              >
-                ➕ إضافة رأي أو ملاحظة جديدة
-              </button>
-            )}
-          </div>
-
-          {/* Quick Select Evaluation or Lesson to Comment On */}
-          {canTeacherAct && (
-            <div
-              style={{
-                background: '#F0F9FF',
-                border: '1px solid #BAE6FD',
-                borderRadius: '12px',
-                padding: '1rem',
-                marginBottom: '1.25rem',
-              }}
-            >
-              <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0F2044', marginBottom: '0.6rem' }}>
-                ⚡ اختر تقييماً شهرياً أو حصة تعليم إلكتروني لإبداء الرأي والملاحظات عليها مباشرة:
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {teacherEvals
-                  .filter(e => e.academicYear === activeYear)
-                  .map(ev => (
-                    <button
-                      key={ev.id}
-                      onClick={() =>
-                        openFeedbackEditor(
-                          'monthly_evaluation',
-                          ev.id,
-                          `تقييم نظام قطر للتعليم — شهر ${ev.month} (${ev.academicYear})`,
-                          ev.academicYear,
-                          ev.month,
-                          ev.teacherOpinion,
-                          ev.teacherNotes
-                        )
-                      }
-                      style={{
-                        background: '#fff',
-                        color: '#0369A1',
-                        border: '1px solid #7DD3FC',
-                        padding: '0.4rem 0.8rem',
-                        borderRadius: '8px',
-                        fontSize: '0.74rem',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      📝 تقييم شهر {ev.month} ({ev.totalScore}%)
-                    </button>
-                  ))}
-                {teacherModelLessons.map(ml => (
-                  <button
-                    key={ml.id}
-                    onClick={() =>
-                      openFeedbackEditor(
-                        'model_lesson',
-                        ml.id,
-                        `تقييم حصة التعليم الإلكتروني — بتاريخ ${ml.date} (الصف ${ml.classGrade})`,
-                        ml.academicYear || activeYear,
-                        ml.month,
-                        ml.teacherOpinion,
-                        ml.teacherNotes
-                      )
-                    }
-                    style={{
-                      background: '#fff',
-                      color: '#4338CA',
-                      border: '1px solid #C7D2FE',
-                      padding: '0.4rem 0.8rem',
-                      borderRadius: '8px',
-                      fontSize: '0.74rem',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    💻 حصة {ml.date} ({ml.overallScore}/10)
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* List of Teacher's Submitted Opinions & Notes */}
-          {teacherFeedbacks.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#64748B', background: '#F8FAFC', borderRadius: '10px' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.4rem' }}>💬</div>
-              <div style={{ fontWeight: 700 }}>لا توجد ملاحظات مسجلة حتى الآن. اضغط على أي تقييم أعلاه لتدوين رأيك وملاحظاتك.</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {teacherFeedbacks.map(fb => (
-                <div
-                  key={fb.id}
-                  style={{
-                    border: '1px solid #BAE6FD',
-                    background: '#F8FAFC',
-                    borderRadius: '12px',
-                    padding: '1rem',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '0.5rem',
-                      flexWrap: 'wrap',
-                      gap: '0.5rem',
-                    }}
-                  >
-                    <div style={{ fontWeight: 900, color: '#0F2044', fontSize: '0.85rem' }}>
-                      📌 {fb.targetTitle || 'رأي وملاحظة المعلم'}
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center' }}>
-                      {fb.acknowledged && (
-                        <span
-                          style={{
-                            background: '#DCFCE7',
-                            color: '#166534',
-                            padding: '2px 8px',
-                            borderRadius: '999px',
-                            fontSize: '0.68rem',
-                            fontWeight: 800,
-                          }}
-                        >
-                          ✓ تم الإقرار بالاطلاع
-                        </span>
-                      )}
-                      {canTeacherAct && (
-                        <button
-                          onClick={() =>
-                            openFeedbackEditor(
-                              fb.targetType,
-                              fb.targetId,
-                              fb.targetTitle,
-                              fb.academicYear,
-                              fb.month,
-                              fb.opinionText,
-                              fb.actionTaken
-                            )
-                          }
-                          style={{
-                            background: '#EFF6FF',
-                            color: '#1D4ED8',
-                            border: '1px solid #BFDBFE',
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          ✏️ تعديل
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: '#1E293B', fontWeight: 700, lineHeight: 1.6 }}>
-                    <strong>رأي وملاحظات المعلم:</strong> {fb.opinionText}
-                  </div>
-                  {fb.actionTaken && (
-                    <div style={{ fontSize: '0.76rem', color: '#0369A1', marginTop: '0.3rem', fontWeight: 600 }}>
-                      <strong>الإجراءات التطويرية المتخذة:</strong> {fb.actionTaken}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ──── TAB 5: TEACHER PERSONAL REPORTS & PRINTING ──── */}
       {activeTab === 'reports' && (
         <div style={cardStyle}>
@@ -2628,55 +2397,6 @@ export default function TeacherProfilePage({
                   >
                     {w.targetAudience || 'ورشة جماعية'}
                   </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ──── TAB 7: ACHIEVEMENTS & CONTRIBUTIONS ──── */}
-      {activeTab === 'achievements' && (
-        <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>
-              🌟 الإنجازات والمسابقات المرتبطة بالمعلم والقسم
-            </h3>
-            <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700 }}>
-              {teacherAchievements.length} إنجاز مسجل
-            </span>
-          </div>
-
-          {teacherAchievements.length === 0 ? (
-            <div style={{ padding: '2.5rem', textAlign: 'center', color: '#94A3B8' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🌟</div>
-              <div>لا توجد إنجازات مسجلة لهذا المعلم أو قسمه بعد.</div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {teacherAchievements.map(ach => (
-                <div
-                  key={ach.id}
-                  style={{ border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.85rem', background: '#F8FAFC' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                    <span style={{ fontWeight: 800, color: '#0F2044', fontSize: '0.85rem' }}>🏆 {ach.achievementName}</span>
-                    <span
-                      style={{
-                        background: '#ECFDF5',
-                        color: '#065F46',
-                        padding: '2px 8px',
-                        borderRadius: '10px',
-                        fontSize: '0.72rem',
-                        fontWeight: 800,
-                      }}
-                    >
-                      {ach.result || 'مشاركة متميزة'}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
-                    العام الأكاديمي: {ach.academicYear} | المستوى: {ach.level || 'محلي'} | الجهة المنظمة: {ach.organizer || '-'}
-                  </div>
                 </div>
               ))}
             </div>
