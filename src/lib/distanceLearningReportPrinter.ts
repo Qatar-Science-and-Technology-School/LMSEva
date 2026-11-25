@@ -839,75 +839,80 @@ export function printTeacherDistanceLessonsScheduleReport(
             print-color-adjust: exact !important;
           }
           @page {
-            size: A4 landscape;
-            margin: 8mm !important;
+            size: A4 portrait;
+            margin: 5mm !important;
           }
-          body {
+          html, body {
             font-family: 'Cairo', system-ui, -apple-system, sans-serif;
             background: #ffffff;
             color: #0F2044;
-            padding: 10px 14px;
+            padding: 0;
+            margin: 0;
             direction: rtl;
+            width: 100%;
+          }
+          .single-page-wrapper {
+            width: 100%;
+            max-width: 100%;
+            padding: 2px 4px;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
           }
           .header-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 3px solid #0F2044;
-            padding-bottom: 10px;
-            margin-bottom: 12px;
+            border-bottom: 2px solid #0F2044;
+            padding-bottom: 4px;
+            margin-bottom: 5px;
           }
           .header-center {
             text-align: center;
+            line-height: 1.15;
           }
-          .header-center .country { font-size: 10pt; font-weight: 800; color: #0F2044; }
-          .header-center .ministry { font-size: 9.5pt; font-weight: 800; color: #475569; }
-          .header-center .school { font-size: 12pt; font-weight: 900; color: #0F2044; margin-top: 2px; }
-          .header-center .dept { font-size: 8.5pt; font-weight: 700; color: #0284C7; margin-top: 2px; }
+          .header-center .country { font-size: 8.5pt; font-weight: 800; color: #0F2044; }
+          .header-center .ministry { font-size: 8pt; font-weight: 800; color: #475569; }
+          .header-center .school { font-size: 10pt; font-weight: 900; color: #0F2044; margin-top: 1px; }
+          .header-center .dept { font-size: 7.5pt; font-weight: 700; color: #0284C7; margin-top: 1px; }
           .title-banner {
             background: linear-gradient(135deg, #0F2044 0%, #1E3A8A 60%, #4F46E5 100%);
             color: #ffffff;
-            padding: 12px 18px;
-            border-radius: 10px;
-            margin-bottom: 12px;
+            padding: 5px 12px;
+            border-radius: 7px;
+            margin-bottom: 5px;
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
           }
-          .title-banner h1 { font-size: 14pt; font-weight: 900; margin-bottom: 3px; text-align: center; }
-          .title-banner p { font-size: 8.5pt; color: #E0E7FF; font-weight: 600; text-align: center; }
-          .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-bottom: 12px;
-          }
-          .kpi-card {
-            background: #F8FAFC;
-            border: 1px solid #CBD5E1;
-            border-top: 3px solid #4F46E5;
-            border-radius: 8px;
-            padding: 6px 10px;
-            text-align: center;
-          }
-          .kpi-card .lbl { font-size: 7.5pt; font-weight: 800; color: #64748B; }
-          .kpi-card .val { font-size: 13pt; font-weight: 900; color: #0F2044; }
+          .title-banner h1 { font-size: 11.5pt; font-weight: 900; margin-bottom: 1px; text-align: center; line-height: 1.2; }
+          .title-banner p { font-size: 7.5pt; color: #E0E7FF; font-weight: 600; text-align: center; line-height: 1.15; }
           table.dl-matrix {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
             font-family: 'Segoe UI', 'Calibri', 'Cairo', sans-serif;
             direction: ltr;
-            margin-bottom: 12px;
-            border: 2px solid #0B1F41;
+            margin-bottom: 0;
+            border: 1.5px solid #0B1F41;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          table.dl-matrix tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           table.dl-matrix th {
             background: #0B1F41 !important;
             color: #ffffff !important;
             font-weight: 800;
-            font-size: 10pt;
-            padding: 5px 6px;
+            font-size: 8.5pt;
+            padding: 2px 3px;
+            height: 17px;
+            line-height: 1.05;
             border: 1px solid #1E3A5F;
             text-align: center;
           }
@@ -915,24 +920,29 @@ export function printTeacherDistanceLessonsScheduleReport(
             background: #0B1F41 !important;
             color: #ffffff !important;
             font-weight: 800;
-            font-size: 9.5pt;
+            font-size: 8.2pt;
             text-align: center;
             vertical-align: middle;
             border: 1px solid #1E3A5F;
             border-bottom: 1.5px solid #000000;
-            width: 65px;
-            padding: 3px 4px;
+            width: 50px;
+            padding: 1px 2px;
+            line-height: 1.05;
           }
           table.dl-matrix td.subj-cell {
             background: #D9D9D9 !important;
             color: #000000 !important;
             font-weight: 800;
-            font-size: 8.5pt;
+            font-size: 7.5pt;
             text-align: center;
             vertical-align: middle;
             border: 1px solid #333333;
-            padding: 2.5px 4px;
-            height: 20px;
+            padding: 1px 2px;
+            height: 13.5px;
+            line-height: 1.05;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
           table.dl-matrix td.link-cell {
             background: #FFFFFF !important;
@@ -940,123 +950,61 @@ export function printTeacherDistanceLessonsScheduleReport(
             vertical-align: middle;
             border: 1px solid #333333;
             border-bottom: 1.5px solid #111111;
-            padding: 2.5px 4px;
-            height: 20px;
+            padding: 1px 2px;
+            height: 13.5px;
+            line-height: 1.05;
           }
           a.lesson-link {
             color: #2B547E !important;
             text-decoration: underline !important;
-            font-weight: 600;
-            font-size: 8.5pt;
+            font-weight: 700;
+            font-size: 7.2pt;
+            line-height: 1;
           }
-          .text-center { text-align: center; }
-          .bold { font-weight: 800; }
-          .font-num { font-family: 'Cairo', monospace; }
-          .grade-badge {
-            display: inline-block;
-            background: #EFF6FF;
-            color: #1D4ED8;
-            border: 1px solid #BFDBFE;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-weight: 900;
-            font-size: 8.5pt;
-          }
-          .teams-btn {
-            display: inline-block;
-            background: #4F46E5;
-            color: #ffffff !important;
-            text-decoration: none;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-weight: 800;
-            font-size: 8pt;
-          }
-          .link-url {
-            font-size: 6.5pt;
-            color: #4F46E5;
-            margin-top: 2px;
-            word-break: break-all;
-          }
-          .status-pill {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 999px;
-            font-size: 7.5pt;
-            font-weight: 800;
-          }
-          .student-notice {
-            background: #EFF6FF;
-            border: 1px solid #BFDBFE;
-            border-right: 4px solid #2563EB;
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 8pt;
-            color: #1E3A8A;
-            margin-bottom: 14px;
-          }
-          .signatures {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-top: 12px;
-            padding-top: 10px;
-            border-top: 2px dashed #CBD5E1;
-            text-align: center;
-            page-break-inside: avoid;
-          }
-          .sig-box {
-            background: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            border-radius: 8px;
-            padding: 8px;
-          }
-          .sig-title { font-size: 7.5pt; color: #64748B; font-weight: 700; }
-          .sig-name { font-size: 9pt; color: #0F2044; font-weight: 900; margin: 2px 0; }
-          .sig-role { font-size: 7pt; color: #64748B; }
-          .sig-img { height: 34px; object-fit: contain; margin-top: 3px; }
         </style>
       </head>
       <body>
-        <div class="header-bar">
-          <div><img src="/ministry-logo.png" alt="وزارة التربية والتعليم" style="height:64px; object-fit:contain;" onerror="this.style.display='none'" /></div>
-          <div class="header-center">
-            <div class="country">دولة قـطـر</div>
-            <div class="ministry">وزارة التربية والتعليم والتعليم العالي</div>
-            <div class="school">مدرسة قطر للعلوم والتكنولوجيا الإعدادية الثانوية للبنين - أم السنيم</div>
-            <div class="dept">قسم التعليم الإلكتروني والحلول الرقمية — منظومة التعلم عن بعد (Microsoft Teams)</div>
+        <div class="single-page-wrapper" id="single-page-report">
+          <div class="header-bar">
+            <div><img src="/ministry-logo.png" alt="وزارة التربية والتعليم" style="height:44px; object-fit:contain;" onerror="this.style.display='none'" /></div>
+            <div class="header-center">
+              <div class="country">دولة قـطـر</div>
+              <div class="ministry">وزارة التربية والتعليم والتعليم العالي</div>
+              <div class="school">مدرسة قطر للعلوم والتكنولوجيا الإعدادية الثانوية للبنين - أم السنيم</div>
+              <div class="dept">قسم التعليم الإلكتروني والحلول الرقمية — منظومة التعلم عن بعد (Microsoft Teams)</div>
+            </div>
+            <div><img src="/school-logo.png" alt="شعار المدرسة" style="height:44px; object-fit:contain;" onerror="this.style.display='none'" /></div>
           </div>
-          <div><img src="/school-logo.png" alt="شعار المدرسة" style="height:64px; object-fit:contain;" onerror="this.style.display='none'" /></div>
-        </div>
 
-        <div class="title-banner">
-          <h1>${reportTitle}</h1>
-          <p>${reportSubtitle} — تاريخ الإصدار: ${reportDate}</p>
-        </div>
+          <div class="title-banner">
+            <h1>${reportTitle}</h1>
+            <p>${reportSubtitle} — تاريخ الإصدار: ${reportDate}</p>
+          </div>
 
-        <table class="dl-matrix" dir="ltr">
-          <thead>
-            <tr>
-              <th style="width:65px;"></th>
-              <th>1</th>
-              <th>2</th>
-              <th>3</th>
-              <th>4</th>
-              <th>5</th>
-              <th>6</th>
-              <th>7</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
+          <table class="dl-matrix" dir="ltr">
+            <thead>
+              <tr>
+                <th style="width:50px;"></th>
+                <th>1</th>
+                <th>2</th>
+                <th>3</th>
+                <th>4</th>
+                <th>5</th>
+                <th>6</th>
+                <th>7</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
 
         <script>
           window.onload = function() {
             setTimeout(function() {
               window.print();
-            }, 600);
+            }, 400);
           };
         </script>
       </body>
