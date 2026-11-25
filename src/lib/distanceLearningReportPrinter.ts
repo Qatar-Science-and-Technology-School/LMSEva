@@ -836,42 +836,36 @@ export function printTeacherDistanceLessonsScheduleReport(
 
   const rowsHtml = finalClasses
     .map(cls => {
-      const periodCells = DISTANCE_LEARNING_PERIODS.map(p => {
-        const cellLessons = lessons.filter(
+      const subjectCells = DISTANCE_LEARNING_PERIODS.map(p => {
+        const cellLesson = lessons.find(
           l =>
             l.gradeSection === cls &&
             (String(l.period) === p || String(l.period).replace(/\D/g, '') === p)
         );
-        if (cellLessons.length === 0) {
-          return `<td class="text-center" style="color:#CBD5E1; font-weight:700;">—</td>`;
-        }
-        const itemsHtml = cellLessons
-          .map(l => {
-            const cleanLink = (l.teamsLink || '').trim();
-            return `
-              <div style="background:#EEF2FF; border:1px solid #A5B4FC; border-radius:6px; padding:4px 5px; margin-bottom:3px; text-align:center;">
-                <div class="bold" style="color:#0F2044; font-size:7.5pt;">${l.teacherNameAr || ''}</div>
-                <div style="color:#0369A1; font-size:7pt; font-weight:700; margin-bottom:2px;">${l.subject || ''}</div>
-                ${
-                  cleanLink
-                    ? `<a href="${cleanLink}" target="_blank" rel="noopener noreferrer" class="teams-btn" style="padding:2px 7px; font-size:7pt;">
-                         🎥 رابط الحصة (Teams)
-                       </a>`
-                    : ''
-                }
-              </div>
-            `;
-          })
-          .join('');
-        return `<td class="text-center">${itemsHtml}</td>`;
+        return `<td class="subj-cell">${cellLesson ? cellLesson.subject || '' : ''}</td>`;
+      }).join('');
+
+      const linkCells = DISTANCE_LEARNING_PERIODS.map(p => {
+        const cellLesson = lessons.find(
+          l =>
+            l.gradeSection === cls &&
+            (String(l.period) === p || String(l.period).replace(/\D/g, '') === p)
+        );
+        const cleanLink = (cellLesson?.teamsLink || '').trim();
+        return `<td class="link-cell">${
+          cleanLink
+            ? `<a href="${cleanLink}" target="_blank" rel="noopener noreferrer" class="lesson-link">Lesson Link</a>`
+            : ''
+        }</td>`;
       }).join('');
 
       return `
       <tr>
-        <td class="text-center bold" style="background:#EFF6FF;">
-          <span class="grade-badge" style="background:#0F2044; color:#fff; border:none;">${cls}</span>
-        </td>
-        ${periodCells}
+        <td rowspan="2" class="class-cell">${cls}</td>
+        ${subjectCells}
+      </tr>
+      <tr>
+        ${linkCells}
       </tr>
     `;
     })
@@ -948,26 +942,61 @@ export function printTeacherDistanceLessonsScheduleReport(
           }
           .kpi-card .lbl { font-size: 7.5pt; font-weight: 800; color: #64748B; }
           .kpi-card .val { font-size: 13pt; font-weight: 900; color: #0F2044; }
-          table {
+          table.dl-matrix {
             width: 100%;
             border-collapse: collapse;
-            font-size: 8.5pt;
-            margin-bottom: 14px;
+            font-family: 'Segoe UI', 'Calibri', 'Cairo', sans-serif;
+            direction: ltr;
+            margin-bottom: 12px;
+            border: 2px solid #0B1F41;
           }
-          th {
-            background: #0F2044;
-            color: #ffffff;
+          table.dl-matrix th {
+            background: #0B1F41 !important;
+            color: #ffffff !important;
             font-weight: 800;
-            padding: 7px 6px;
-            border: 1px solid #0F2044;
+            font-size: 10pt;
+            padding: 5px 6px;
+            border: 1px solid #1E3A5F;
             text-align: center;
           }
-          td {
-            padding: 6px 6px;
-            border: 1px solid #CBD5E1;
+          table.dl-matrix td.class-cell {
+            background: #0B1F41 !important;
+            color: #ffffff !important;
+            font-weight: 800;
+            font-size: 9.5pt;
+            text-align: center;
             vertical-align: middle;
+            border: 1px solid #1E3A5F;
+            border-bottom: 1.5px solid #000000;
+            width: 65px;
+            padding: 3px 4px;
           }
-          tr:nth-child(even) td { background: #F8FAFC; }
+          table.dl-matrix td.subj-cell {
+            background: #D9D9D9 !important;
+            color: #000000 !important;
+            font-weight: 800;
+            font-size: 8.5pt;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #333333;
+            padding: 2.5px 4px;
+            height: 20px;
+          }
+          table.dl-matrix td.link-cell {
+            background: #FFFFFF !important;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #333333;
+            border-bottom: 1.5px solid #111111;
+            padding: 2.5px 4px;
+            height: 20px;
+          }
+          a.lesson-link {
+            color: #2B547E !important;
+            text-decoration: underline !important;
+            font-weight: 600;
+            font-size: 8.5pt;
+          }
           .text-center { text-align: center; }
           .bold { font-weight: 800; }
           .font-num { font-family: 'Cairo', monospace; }
@@ -1083,17 +1112,17 @@ export function printTeacherDistanceLessonsScheduleReport(
           يرجى الضغط على زر <strong>"انقر هنا للدخول إلى الحصة (Teams)"</strong> المقابل لكل حصة في الموعد المحدد، مع التأكد من تسجيل الدخول بحساب الطالب الرسمي في منصة Microsoft Teams قبل بدء الحصة بـ 5 دقائق.
         </div>
 
-        <table>
+        <table class="dl-matrix" dir="ltr">
           <thead>
             <tr>
-              <th style="width:75px;">الصف</th>
-              <th>الحصة الأولى (1)</th>
-              <th>الحصة الثانية (2)</th>
-              <th>الحصة الثالثة (3)</th>
-              <th>الحصة الرابعة (4)</th>
-              <th>الحصة الخامسة (5)</th>
-              <th>الحصة السادسة (6)</th>
-              <th>الحصة السابعة (7)</th>
+              <th style="width:65px;"></th>
+              <th>1</th>
+              <th>2</th>
+              <th>3</th>
+              <th>4</th>
+              <th>5</th>
+              <th>6</th>
+              <th>7</th>
             </tr>
           </thead>
           <tbody>
