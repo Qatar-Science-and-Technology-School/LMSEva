@@ -7,6 +7,8 @@
 import {
   DistanceLearningRecord,
   TeacherDistanceLesson,
+  DISTANCE_LEARNING_CLASSES,
+  DISTANCE_LEARNING_PERIODS,
   REASON_CONFIG,
   STATUS_CONFIG,
   sortTeacherDistanceLessons,
@@ -826,36 +828,50 @@ export function printTeacherDistanceLessonsScheduleReport(
       options.filterLabel ? ` (${options.filterLabel})` : ''
     }`;
 
-  const rowsHtml = lessons
-    .map((l, idx) => {
-      const cleanLink = (l.teamsLink || '').trim();
+  const classesToRender = options.teacherOnlyName
+    ? DISTANCE_LEARNING_CLASSES.filter(cls => lessons.some(l => l.gradeSection === cls))
+    : [...DISTANCE_LEARNING_CLASSES];
+
+  const finalClasses = classesToRender.length > 0 ? classesToRender : [...DISTANCE_LEARNING_CLASSES];
+
+  const rowsHtml = finalClasses
+    .map(cls => {
+      const periodCells = DISTANCE_LEARNING_PERIODS.map(p => {
+        const cellLessons = lessons.filter(
+          l =>
+            l.gradeSection === cls &&
+            (String(l.period) === p || String(l.period).replace(/\D/g, '') === p)
+        );
+        if (cellLessons.length === 0) {
+          return `<td class="text-center" style="color:#CBD5E1; font-weight:700;">—</td>`;
+        }
+        const itemsHtml = cellLessons
+          .map(l => {
+            const cleanLink = (l.teamsLink || '').trim();
+            return `
+              <div style="background:#EEF2FF; border:1px solid #A5B4FC; border-radius:6px; padding:4px 5px; margin-bottom:3px; text-align:center;">
+                <div class="bold" style="color:#0F2044; font-size:7.5pt;">${l.teacherNameAr || ''}</div>
+                <div style="color:#0369A1; font-size:7pt; font-weight:700; margin-bottom:2px;">${l.subject || ''}</div>
+                ${
+                  cleanLink
+                    ? `<a href="${cleanLink}" target="_blank" rel="noopener noreferrer" class="teams-btn" style="padding:2px 7px; font-size:7pt;">
+                         🎥 رابط الحصة (Teams)
+                       </a>`
+                    : ''
+                }
+              </div>
+            `;
+          })
+          .join('');
+        return `<td class="text-center">${itemsHtml}</td>`;
+      }).join('');
+
       return `
       <tr>
-        <td class="text-center bold">${idx + 1}</td>
-        <td class="text-center">
-          <div class="bold" style="color:#0F2044;">${l.dayName || ''}</div>
-          <div class="font-num" style="font-size:8pt; color:#64748B;">${l.date || ''}</div>
+        <td class="text-center bold" style="background:#EFF6FF;">
+          <span class="grade-badge" style="background:#0F2044; color:#fff; border:none;">${cls}</span>
         </td>
-        <td class="text-center">
-          <span class="grade-badge">${l.gradeSection || ''}</span>
-        </td>
-        <td class="text-center">
-          <div class="bold" style="color:#0369A1; font-size:10pt;">${l.period || ''}</div>
-        </td>
-        <td>
-          <div class="bold" style="color:#0F2044;">${l.teacherNameAr || '-'}</div>
-          <div style="font-size:7.5pt; color:#64748B;">${l.subject || ''} ${l.departmentName ? `— ${l.departmentName}` : ''}</div>
-        </td>
-        <td class="text-center" style="min-width:230px;">
-          ${
-            cleanLink
-              ? `<a href="${cleanLink}" target="_blank" rel="noopener noreferrer" class="teams-btn">
-                   🎥 انقر هنا للدخول إلى الحصة (Teams)
-                 </a>
-                 <div class="link-url" dir="ltr">${cleanLink}</div>`
-              : `<span style="color:#94A3B8; font-size:8pt;">لم يتم إرفاق الرابط</span>`
-          }
-        </td>
+        ${periodCells}
       </tr>
     `;
     })
@@ -1070,19 +1086,18 @@ export function printTeacherDistanceLessonsScheduleReport(
         <table>
           <thead>
             <tr>
-              <th style="width:36px;">#</th>
-              <th style="width:120px;">اليوم والتاريخ</th>
-              <th style="width:95px;">الصف</th>
-              <th style="width:85px;">الحصة</th>
-              <th style="width:180px;">اسم المعلم والمادة</th>
-              <th>الرابط (Link From Teams)</th>
+              <th style="width:75px;">الصف</th>
+              <th>الحصة الأولى (1)</th>
+              <th>الحصة الثانية (2)</th>
+              <th>الحصة الثالثة (3)</th>
+              <th>الحصة الرابعة (4)</th>
+              <th>الحصة الخامسة (5)</th>
+              <th>الحصة السادسة (6)</th>
+              <th>الحصة السابعة (7)</th>
             </tr>
           </thead>
           <tbody>
-            ${
-              rowsHtml ||
-              `<tr><td colspan="6" class="text-center" style="padding:20px; color:#64748B; font-weight:700;">لا توجد حصص تعلم عن بعد مسجلة حالياً ضمن هذا الفلتر.</td></tr>`
-            }
+            ${rowsHtml}
           </tbody>
         </table>
 

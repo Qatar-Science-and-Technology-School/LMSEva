@@ -254,16 +254,29 @@ export default function DistanceLearningPage({
   };
 
   const handleExportTeacherScheduleExcel = () => {
-    const rows = filteredTeacherLessons.map((l, i) => ({
-      '#': i + 1,
-      'اليوم': l.dayName,
-      'التاريخ': l.date,
-      'الصف': l.gradeSection,
-      'الحصة': l.period,
-      'اسم المعلم': l.teacherNameAr,
-      'المادة الدراسية': l.subject,
-      'الرابط (Link From Teams)': l.teamsLink,
-    }));
+    const classesToRender =
+      schedClassFilter === 'all' ? [...DISTANCE_LEARNING_CLASSES] : [schedClassFilter];
+    const periodHeaders: Record<string, string> = {
+      '1': 'الحصة الأولى',
+      '2': 'الحصة الثانية',
+      '3': 'الحصة الثالثة',
+      '4': 'الحصة الرابعة',
+      '5': 'الحصة الخامسة',
+      '6': 'الحصة السادسة',
+      '7': 'الحصة السابعة',
+    };
+    const rows = classesToRender.map(cls => {
+      const rowObj: Record<string, string> = { 'الصف': cls };
+      DISTANCE_LEARNING_PERIODS.forEach(p => {
+        const cellLessons = filteredTeacherLessons.filter(
+          l => l.gradeSection === cls && String(l.period).replace(/\D/g, '') === p
+        );
+        rowObj[periodHeaders[p] || `الحصة ${p}`] = cellLessons
+          .map(l => `${l.teacherNameAr} (${l.subject}): ${l.teamsLink}`)
+          .join(' | ');
+      });
+      return rowObj;
+    });
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'جدول حصص التعلم عن بعد');
@@ -1164,7 +1177,7 @@ export default function DistanceLearningPage({
             </div>
           </div>
 
-          {/* Schedule Table */}
+          {/* 2D Matrix Timetable: Rows = Classes (7A..12E), Columns = Periods (1..7) with Teams Links inside */}
           <div
             style={{
               background: '#FFFFFF',
@@ -1174,181 +1187,313 @@ export default function DistanceLearningPage({
               boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
             }}
           >
-            {filteredTeacherLessons.length === 0 ? (
-              <div style={{ padding: '3rem 1.5rem', textAlign: 'center', color: '#64748B' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎥</div>
-                <div style={{ fontWeight: 900, fontSize: '1rem', color: '#0F2044', marginBottom: '0.3rem' }}>
-                  لا توجد حصص تعلم عن بعد (Microsoft Teams) مضافة ضمن هذا الفلتر حالياً
-                </div>
-                <p style={{ fontSize: '0.8rem', margin: 0 }}>
-                  يقوم المعلمون بالدخول من بوابة (المعلم) في صفحة الدخول ثم فتح تبويب <strong>Distance Learning</strong> وإضافة حصصهم وروابط Teams لتظهر هنا فوراً.
-                </p>
-              </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                  <thead>
-                    <tr style={{ background: '#0F2044', color: '#FFFFFF' }}>
-                      {[
-                        '#',
-                        'اليوم والتاريخ',
-                        'الصف',
-                        'الحصة',
-                        'اسم المعلم والمادة',
-                        'الرابط (Link From Teams)',
-                        ...(isAdmin ? ['الإجراءات'] : []),
-                      ].map(h => (
-                        <th
-                          key={h}
-                          style={{
-                            padding: '0.75rem 0.7rem',
-                            textAlign: h === '#' || h === 'الإجراءات' || h === 'الصف' || h === 'الحصة' ? 'center' : 'right',
-                            fontWeight: 800,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {h}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTeacherLessons.map((l, idx) => (
-                      <tr
-                        key={l.id}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', minWidth: '1050px' }}>
+                <thead>
+                  <tr style={{ background: '#0F2044', color: '#FFFFFF' }}>
+                    <th
+                      style={{
+                        padding: '0.85rem 0.75rem',
+                        textAlign: 'center',
+                        fontWeight: 900,
+                        fontSize: '0.88rem',
+                        border: '1px solid #1E3A8A',
+                        width: '85px',
+                        background: '#09152E',
+                        position: 'sticky',
+                        right: 0,
+                        zIndex: 2,
+                      }}
+                    >
+                      الصف
+                    </th>
+                    {[
+                      { p: '1', label: 'الحصة الأولى' },
+                      { p: '2', label: 'الحصة الثانية' },
+                      { p: '3', label: 'الحصة الثالثة' },
+                      { p: '4', label: 'الحصة الرابعة' },
+                      { p: '5', label: 'الحصة الخامسة' },
+                      { p: '6', label: 'الحصة السادسة' },
+                      { p: '7', label: 'الحصة السابعة' },
+                    ].map(col => (
+                      <th
+                        key={col.p}
                         style={{
-                          background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC',
-                          borderBottom: '1px solid #E2E8F0',
+                          padding: '0.75rem 0.5rem',
+                          textAlign: 'center',
+                          fontWeight: 800,
+                          border: '1px solid #1E3A8A',
+                          minWidth: '130px',
                         }}
                       >
-                        <td style={{ padding: '0.65rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
-                        <td style={{ padding: '0.65rem' }}>
-                          <span style={{ fontWeight: 800, color: '#0F2044' }}>{l.dayName}</span>
-                          <span style={{ fontSize: '0.75rem', color: '#64748B', marginRight: '0.35rem' }}>({l.date})</span>
-                        </td>
-                        <td style={{ padding: '0.65rem', textAlign: 'center' }}>
-                          <span
+                        <div style={{ fontSize: '0.84rem', fontWeight: 900 }}>{col.label}</div>
+                        <div style={{ fontSize: '0.68rem', color: '#93C5FD', marginTop: '2px' }}>
+                          الحصة ({col.p})
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(schedClassFilter === 'all' ? DISTANCE_LEARNING_CLASSES : [schedClassFilter]).map((cls, rIdx) => (
+                    <tr
+                      key={cls}
+                      style={{
+                        background: rIdx % 2 === 0 ? '#FFFFFF' : '#F8FAFC',
+                        borderBottom: '1px solid #CBD5E1',
+                      }}
+                    >
+                      {/* Class Column */}
+                      <td
+                        style={{
+                          padding: '0.75rem 0.5rem',
+                          textAlign: 'center',
+                          border: '1px solid #CBD5E1',
+                          background: rIdx % 2 === 0 ? '#EFF6FF' : '#E0F2FE',
+                          fontWeight: 900,
+                          fontSize: '0.92rem',
+                          color: '#0F2044',
+                          position: 'sticky',
+                          right: 0,
+                          zIndex: 1,
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            background: '#0F2044',
+                            color: '#FFFFFF',
+                            padding: '4px 10px',
+                            borderRadius: '8px',
+                            fontWeight: 900,
+                            fontSize: '0.84rem',
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          {cls}
+                        </span>
+                      </td>
+
+                      {/* Periods 1 to 7 Columns */}
+                      {DISTANCE_LEARNING_PERIODS.map(p => {
+                        const cellLessons = filteredTeacherLessons.filter(
+                          l =>
+                            l.gradeSection === cls &&
+                            (String(l.period) === p || String(l.period).replace(/\D/g, '') === p)
+                        );
+
+                        return (
+                          <td
+                            key={p}
                             style={{
-                              background: '#EFF6FF',
-                              color: '#1D4ED8',
-                              border: '1px solid #BFDBFE',
-                              padding: '3px 10px',
-                              borderRadius: '6px',
-                              fontWeight: 900,
-                              fontSize: '0.8rem',
+                              padding: '0.45rem',
+                              border: '1px solid #CBD5E1',
+                              verticalAlign: 'middle',
+                              textAlign: 'center',
                             }}
                           >
-                            {l.gradeSection}
-                          </span>
-                        </td>
-                        <td style={{ padding: '0.65rem', textAlign: 'center', fontWeight: 900, color: '#0369A1', fontSize: '0.88rem' }}>
-                          {l.period}
-                        </td>
-                        <td style={{ padding: '0.65rem' }}>
-                          <div style={{ fontWeight: 800, color: '#0F2044' }}>{l.teacherNameAr}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
-                            {l.subject} · {l.departmentName}
-                          </div>
-                        </td>
-                        <td style={{ padding: '0.65rem' }}>
-                          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <a
-                              href={l.teamsLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                background: '#4F46E5',
-                                color: '#fff',
-                                textDecoration: 'none',
-                                padding: '0.32rem 0.75rem',
-                                borderRadius: '6px',
-                                fontSize: '0.74rem',
-                                fontWeight: 800,
-                              }}
-                            >
-                              🎥 فتح الحصة (Teams)
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(l.teamsLink);
-                                setCopySuccessMsg(`✅ تم نسخ رابط حصة المعلم ${l.teacherNameAr}`);
-                                setTimeout(() => setCopySuccessMsg(''), 3000);
-                              }}
-                              style={{
-                                background: '#F1F5F9',
-                                color: '#334155',
-                                border: '1px solid #CBD5E1',
-                                padding: '0.3rem 0.55rem',
-                                borderRadius: '6px',
-                                fontSize: '0.7rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              📋 نسخ الرابط
-                            </button>
-                          </div>
-                        </td>
-                        {isAdmin && (
-                          <td style={{ padding: '0.65rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                            <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingTeacherLesson(l);
-                                  setTlTeacherId(l.teacherId);
-                                  setTlDate(l.date);
-                                  setTlClassCode(
-                                    DISTANCE_LEARNING_CLASSES.includes(l.gradeSection as any) ? l.gradeSection : '7A'
-                                  );
-                                  const pDig = String(l.period || '1').replace(/\D/g, '');
-                                  setTlPeriod(pDig && ['1', '2', '3', '4', '5', '6', '7'].includes(pDig) ? pDig : '1');
-                                  setTlTeamsLink(l.teamsLink);
-                                  setShowAddTeacherLessonModal(true);
-                                }}
+                            {cellLessons.length === 0 ? (
+                              <div
                                 style={{
-                                  background: '#EFF6FF',
-                                  color: '#1D4ED8',
-                                  border: '1px solid #BFDBFE',
-                                  padding: '0.25rem 0.5rem',
-                                  borderRadius: '6px',
-                                  fontSize: '0.7rem',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  minHeight: '56px',
+                                  gap: '0.25rem',
                                 }}
                               >
-                                ✏️
-                              </button>
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  if (!window.confirm('هل أنت متأكد من حذف هذه الحصة من جدول التعلم عن بعد؟')) return;
-                                  const rem = await removeTeacherDistanceLesson(l.id);
-                                  setTeacherLessons(rem);
-                                }}
-                                style={{
-                                  background: '#FEE2E2',
-                                  color: '#991B1B',
-                                  border: '1px solid #FECACA',
-                                  padding: '0.25rem 0.5rem',
-                                  borderRadius: '6px',
-                                  fontSize: '0.7rem',
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                🗑️
-                              </button>
-                            </div>
+                                <span style={{ color: '#CBD5E1', fontSize: '0.72rem', fontWeight: 700 }}>—</span>
+                                {isAdmin && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingTeacherLesson(null);
+                                      setTlTeacherId(teachersList[0]?.id || '');
+                                      setTlClassCode(cls);
+                                      setTlPeriod(p);
+                                      if (schedDateFilter) setTlDate(schedDateFilter);
+                                      setTlTeamsLink('');
+                                      setShowAddTeacherLessonModal(true);
+                                    }}
+                                    style={{
+                                      background: '#F1F5F9',
+                                      color: '#64748B',
+                                      border: '1px dashed #CBD5E1',
+                                      borderRadius: '6px',
+                                      padding: '2px 7px',
+                                      fontSize: '0.65rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                    }}
+                                    title={`إضافة رابط حصة للصف ${cls} - الحصة ${p}`}
+                                  >
+                                    + إضافة رابط
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                {cellLessons.map(l => (
+                                  <div
+                                    key={l.id}
+                                    style={{
+                                      background: 'linear-gradient(135deg, #EEF2FF 0%, #E0F2FE 100%)',
+                                      border: '1px solid #A5B4FC',
+                                      borderRadius: '10px',
+                                      padding: '0.45rem 0.5rem',
+                                      textAlign: 'center',
+                                      boxShadow: '0 1px 3px rgba(79,70,229,0.08)',
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontWeight: 900,
+                                        color: '#0F2044',
+                                        fontSize: '0.73rem',
+                                        lineHeight: 1.3,
+                                      }}
+                                    >
+                                      {l.teacherNameAr}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: '0.67rem',
+                                        color: '#0369A1',
+                                        fontWeight: 800,
+                                        marginBottom: '0.2rem',
+                                      }}
+                                    >
+                                      {l.subject}
+                                    </div>
+                                    {!schedDateFilter && l.date && (
+                                      <div
+                                        style={{
+                                          fontSize: '0.62rem',
+                                          color: '#64748B',
+                                          marginBottom: '0.3rem',
+                                          fontWeight: 700,
+                                        }}
+                                      >
+                                        {l.dayName} ({l.date})
+                                      </div>
+                                    )}
+
+                                    <div
+                                      style={{
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        gap: '0.25rem',
+                                        flexWrap: 'wrap',
+                                      }}
+                                    >
+                                      <a
+                                        href={l.teamsLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                          background: '#4F46E5',
+                                          color: '#FFFFFF',
+                                          textDecoration: 'none',
+                                          padding: '0.25rem 0.55rem',
+                                          borderRadius: '6px',
+                                          fontSize: '0.68rem',
+                                          fontWeight: 800,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '0.2rem',
+                                        }}
+                                        title={l.teamsLink}
+                                      >
+                                        🎥 رابط الحصة
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(l.teamsLink);
+                                          setCopySuccessMsg(`✅ تم نسخ رابط حصة الصف ${cls} (الحصة ${p})`);
+                                          setTimeout(() => setCopySuccessMsg(''), 3000);
+                                        }}
+                                        style={{
+                                          background: '#FFFFFF',
+                                          color: '#334155',
+                                          border: '1px solid #CBD5E1',
+                                          padding: '0.22rem 0.4rem',
+                                          borderRadius: '5px',
+                                          fontSize: '0.65rem',
+                                          fontWeight: 800,
+                                          cursor: 'pointer',
+                                        }}
+                                        title="نسخ الرابط"
+                                      >
+                                        📋
+                                      </button>
+                                      {isAdmin && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingTeacherLesson(l);
+                                              setTlTeacherId(l.teacherId);
+                                              setTlDate(l.date);
+                                              setTlClassCode(
+                                                DISTANCE_LEARNING_CLASSES.includes(l.gradeSection as any)
+                                                  ? l.gradeSection
+                                                  : cls
+                                              );
+                                              setTlPeriod(p);
+                                              setTlTeamsLink(l.teamsLink);
+                                              setShowAddTeacherLessonModal(true);
+                                            }}
+                                            style={{
+                                              background: '#EFF6FF',
+                                              color: '#1D4ED8',
+                                              border: '1px solid #BFDBFE',
+                                              padding: '0.2rem 0.35rem',
+                                              borderRadius: '5px',
+                                              fontSize: '0.64rem',
+                                              cursor: 'pointer',
+                                            }}
+                                            title="تعديل"
+                                          >
+                                            ✏️
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={async () => {
+                                              if (!window.confirm('هل أنت متأكد من حذف هذا الرابط؟')) return;
+                                              const rem = await removeTeacherDistanceLesson(l.id);
+                                              setTeacherLessons(rem);
+                                            }}
+                                            style={{
+                                              background: '#FEE2E2',
+                                              color: '#991B1B',
+                                              border: '1px solid #FECACA',
+                                              padding: '0.2rem 0.35rem',
+                                              borderRadius: '5px',
+                                              fontSize: '0.64rem',
+                                              cursor: 'pointer',
+                                            }}
+                                            title="حذف"
+                                          >
+                                            🗑️
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
