@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SCHOOL_NAME, ACADEMIC_YEARS, isSuperAdmin, isTeacherUser } from '@/lib/data';
 import type { User } from '@/lib/data';
 import Dashboard from './pages/Dashboard';
@@ -31,7 +31,31 @@ export default function AppShell({ user, onLogout }: Props) {
   const [selectedTeacherId, setSelectedTeacherId] = useState<string|null>(user.teacherId || null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedYear, setSelectedYear] = useState<string>(ACADEMIC_YEARS[ACADEMIC_YEARS.length - 1]);
+  const [teacherLang, setTeacherLang] = useState<'ar' | 'en'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('qstss_teacher_lang') === 'en' ? 'en' : 'ar';
+    }
+    return 'ar';
+  });
 
+  useEffect(() => {
+    const syncLang = () => {
+      const saved = localStorage.getItem('qstss_teacher_lang');
+      if (saved === 'en' || saved === 'ar') setTeacherLang(saved);
+    };
+    window.addEventListener('qstss_teacher_lang_changed', syncLang);
+    return () => window.removeEventListener('qstss_teacher_lang_changed', syncLang);
+  }, []);
+
+  const handleToggleTeacherLang = (nextLang: 'ar' | 'en') => {
+    setTeacherLang(nextLang);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('qstss_teacher_lang', nextLang);
+      window.dispatchEvent(new Event('qstss_teacher_lang_changed'));
+    }
+  };
+
+  const isEnTeacher = (isTeacher || page === 'profile') && teacherLang === 'en';
   const isAdmin = isSuperAdmin(user);
 
   const nav: { id: Page; label: string; icon: string; show: boolean }[] = [
@@ -53,22 +77,27 @@ export default function AppShell({ user, onLogout }: Props) {
   ];
 
   // Teacher-dedicated sidebar items (only their own data & tabs)
-  const teacherNav: { id: TeacherProfileTab; label: string; icon: string }[] = [
-    { id: 'overview', label: 'إحصاءاتي وتقييماتي الشهرية', icon: '📊' },
-    { id: 'modellessons', label: 'حصصي في التعليم الإلكتروني', icon: '💻' },
-    { id: 'distance_learning', label: 'Distance Learning (Teams)', icon: '🌐' },
-    { id: 'reports', label: 'تقاريري الخاصة والطباعة', icon: '🖨️' },
-    { id: 'pd', label: 'التطوير المهني وشهادة MEEE', icon: '🎓' },
+  const teacherNav: { id: TeacherProfileTab; label: string; labelEn: string; icon: string }[] = [
+    { id: 'overview', label: 'إحصاءاتي وتقييماتي الشهرية', labelEn: 'My Stats & Monthly Evaluations', icon: '📊' },
+    { id: 'modellessons', label: 'حصصي في التعليم الإلكتروني', labelEn: 'My E-Learning Lessons', icon: '💻' },
+    { id: 'distance_learning', label: 'Distance Learning (Teams)', labelEn: 'Distance Learning (Teams)', icon: '🌐' },
+    { id: 'reports', label: 'تقاريري الخاصة والطباعة', labelEn: 'My Reports & Printing', icon: '🖨️' },
+    { id: 'pd', label: 'التطوير المهني وشهادة MEEE', labelEn: 'Professional Development & MEEE', icon: '🎓' },
   ];
 
   function goProfile(tid: string) { setSelectedTeacherId(tid); setPage('profile'); }
 
+  const activeTeacherTabObj = teacherNav.find(t => t.id === teacherPortalTab);
   const activeHeaderTitle = isTeacher
-    ? `بوابة المعلم الذاتية — ${teacherNav.find(t => t.id === teacherPortalTab)?.label || 'ملفي المهني'}`
+    ? isEnTeacher
+      ? `Teacher Self-Service Portal — ${activeTeacherTabObj?.labelEn || 'My Portfolio'}`
+      : `بوابة المعلم الذاتية — ${activeTeacherTabObj?.label || 'ملفي المهني'}`
+    : page === 'profile' && isEnTeacher
+    ? 'Teacher Professional Portfolio'
     : nav.find(n => n.id === page)?.label || 'ملف المعلم المهني';
 
   return (
-    <div className="app-shell" style={{ display:'flex', height:'100vh', overflow:'hidden', direction:'rtl' }}>
+    <div className="app-shell" style={{ display:'flex', height:'100vh', overflow:'hidden', direction: isTeacher && isEnTeacher ? 'ltr' : 'rtl' }}>
       {/* Sidebar */}
       <aside className="no-print" style={{
         width: sidebarOpen ? '250px' : '60px',
@@ -86,7 +115,7 @@ export default function AppShell({ user, onLogout }: Props) {
                   filter:'brightness(10)' }} />
               <p style={{ fontSize:'0.62rem', color:'rgba(255,255,255,0.65)', marginTop:'0.4rem',
                 lineHeight:1.3, padding:'0 0.25rem', fontWeight: 700 }}>
-                {isTeacher ? '👨‍🏫 بوابة المعلم الذاتية' : 'متابعة المعلمين'}
+                {isTeacher ? (isEnTeacher ? '👨‍🏫 Teacher Self-Service Portal' : '👨‍🏫 بوابة المعلم الذاتية') : 'متابعة المعلمين'}
               </p>
             </div>
           ) : (
@@ -110,14 +139,15 @@ export default function AppShell({ user, onLogout }: Props) {
                   display:'flex', alignItems:'center', gap:'0.75rem',
                   width:'100%', padding:'0.8rem 1rem',
                   background: teacherPortalTab === item.id ? 'rgba(0,180,216,0.22)' : 'transparent',
-                  borderRight: teacherPortalTab === item.id ? '3px solid #00B4D8' : '3px solid transparent',
+                  borderRight: !isEnTeacher ? (teacherPortalTab === item.id ? '3px solid #00B4D8' : '3px solid transparent') : 'none',
+                  borderLeft: isEnTeacher ? (teacherPortalTab === item.id ? '3px solid #00B4D8' : '3px solid transparent') : 'none',
                   color: teacherPortalTab === item.id ? '#00B4D8' : 'rgba(255,255,255,0.8)',
-                  border:'none', cursor:'pointer', textAlign:'right',
+                  borderTop:'none', borderBottom:'none', cursor:'pointer', textAlign: isEnTeacher ? 'left' : 'right',
                   transition:'all 0.15s', fontSize:'0.82rem', fontWeight: teacherPortalTab === item.id ? 800 : 500,
                 }}
               >
                 <span style={{ fontSize:'1.1rem', flexShrink:0 }}>{item.icon}</span>
-                {sidebarOpen && <span style={{ whiteSpace:'nowrap' }}>{item.label}</span>}
+                {sidebarOpen && <span style={{ whiteSpace:'nowrap' }}>{isEnTeacher ? item.labelEn : item.label}</span>}
               </button>
             ))
           ) : (
@@ -143,12 +173,14 @@ export default function AppShell({ user, onLogout }: Props) {
         <div style={{ padding:'0.75rem', borderTop:'1px solid rgba(255,255,255,0.1)' }}>
           {sidebarOpen && (
             <div style={{ marginBottom:'0.5rem' }}>
-              <p style={{ fontSize:'0.75rem', color:'#fff', fontWeight:700, margin:0 }}>{user.name}</p>
+              <p style={{ fontSize:'0.75rem', color:'#fff', fontWeight:700, margin:0 }}>{isTeacher && isEnTeacher ? (user.nameEn || user.name) : user.name}</p>
               <p style={{ fontSize:'0.65rem', color: isAdmin ? '#90E0EF' : isTeacher ? '#7DD3FC' : '#FDE68A', margin:'0.1rem 0 0', fontWeight: 700 }}>
                 {isAdmin
                   ? 'مدير النظام (كامل الصلاحيات)'
                   : isTeacher
-                  ? `حساب المعلم الخاص (${user.subject || 'الهيئة التدريسية'})`
+                  ? isEnTeacher
+                    ? `Teacher Account (${user.subject || 'Faculty'})`
+                    : `حساب المعلم الخاص (${user.subject || 'الهيئة التدريسية'})`
                   : 'وضع المشاهدة والاطلاع فقط (Viewer)'}
               </p>
             </div>
@@ -159,7 +191,7 @@ export default function AppShell({ user, onLogout }: Props) {
             border:'1px solid rgba(239,68,68,0.3)', cursor:'pointer', fontSize:'0.75rem',
             display:'flex', alignItems:'center', justifyContent:'center', gap:'0.4rem'
           }}>
-            <span>🚪</span>{sidebarOpen && 'تسجيل الخروج'}
+            <span>🚪</span>{sidebarOpen && (isTeacher && isEnTeacher ? 'Sign Out' : 'تسجيل الخروج')}
           </button>
         </div>
       </aside>
@@ -181,11 +213,60 @@ export default function AppShell({ user, onLogout }: Props) {
             <p style={{ fontWeight:800, fontSize:'0.9rem', color:'#0F2044', margin:0 }}>
               {activeHeaderTitle}
             </p>
-            <p style={{ fontSize:'0.65rem', color:'#94A3B8', margin:0 }}>{SCHOOL_NAME}</p>
+            <p style={{ fontSize:'0.65rem', color:'#94A3B8', margin:0 }}>
+              {isEnTeacher ? 'Qatar Science & Technology Secondary School for Boys' : SCHOOL_NAME}
+            </p>
           </div>
 
-          {/* Global Year Selector */}
-          <div style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
+          {/* Global Year Selector & Teacher Language Switcher */}
+          <div style={{ display:'flex', alignItems:'center', gap:'0.6rem' }}>
+            {(isTeacher || page === 'profile') && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  background: '#F1F5F9',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '10px',
+                  padding: '2px',
+                }}
+                title="تغيير لغة صفحة المعلم / Switch Language"
+              >
+                <button
+                  type="button"
+                  onClick={() => handleToggleTeacherLang('ar')}
+                  style={{
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.28rem 0.65rem',
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    background: teacherLang === 'ar' ? '#0F2044' : 'transparent',
+                    color: teacherLang === 'ar' ? '#fff' : '#475569',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  العربية
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleTeacherLang('en')}
+                  style={{
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '0.28rem 0.65rem',
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    background: teacherLang === 'en' ? '#0284C7' : 'transparent',
+                    color: teacherLang === 'en' ? '#fff' : '#475569',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  English
+                </button>
+              </div>
+            )}
             <div style={{
               display:'flex', alignItems:'center', gap:'0.5rem',
               background:'linear-gradient(135deg, #0F2044 0%, #1a3a6b 100%)',
@@ -193,7 +274,7 @@ export default function AppShell({ user, onLogout }: Props) {
               boxShadow:'0 2px 8px rgba(15,32,68,0.25)'
             }}>
               <span style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.7)', fontWeight:600, whiteSpace:'nowrap' }}>
-                📅 العام الدراسي
+                {isEnTeacher ? '📅 Academic Year' : '📅 العام الدراسي'}
               </span>
               <select
                 value={selectedYear}
@@ -222,7 +303,7 @@ export default function AppShell({ user, onLogout }: Props) {
               display:'flex', alignItems:'center', justifyContent:'center',
               color:'#fff', fontSize:'0.75rem', fontWeight:700
             }}>
-              {user.name.charAt(0)}
+              {(isEnTeacher && user.nameEn ? user.nameEn : user.name).charAt(0)}
             </div>
           </div>
         </header>
@@ -238,6 +319,8 @@ export default function AppShell({ user, onLogout }: Props) {
               activeTabProp={teacherPortalTab}
               onTabChange={setTeacherPortalTab}
               isTeacherPortal={true}
+              langProp={teacherLang}
+              onLangChange={handleToggleTeacherLang}
             />
           ) : (
             <>
@@ -249,7 +332,7 @@ export default function AppShell({ user, onLogout }: Props) {
               {page === 'model_lessons' && <ModelLessonsEvaluationPage currentUser={user} selectedYear={selectedYear} />}
               {page === 'events_meetings' && <EventsMeetingsPage currentUser={user} selectedYear={selectedYear} />}
               {page === 'distance_learning' && <DistanceLearningPage currentUser={user} selectedYear={selectedYear} />}
-              {page === 'profile'    && selectedTeacherId && <TeacherProfilePage teacherId={selectedTeacherId} currentUser={user} onBack={() => setPage('teachers')} selectedYear={selectedYear} />}
+              {page === 'profile'    && selectedTeacherId && <TeacherProfilePage teacherId={selectedTeacherId} currentUser={user} onBack={() => setPage('teachers')} selectedYear={selectedYear} langProp={teacherLang} onLangChange={handleToggleTeacherLang} />}
               {page === 'takreem'    && <TakreemPage currentUser={user} selectedYear={selectedYear} onNavigateToPage={(p) => setPage(p as Page)} />}
               {page === 'analytics'  && <AnalyticsPage currentUser={user} selectedYear={selectedYear} onNavigate={setPage} />}
               {page === 'reports'    && <ReportsPage currentUser={user} selectedYear={selectedYear} onNavigate={(p) => setPage(p as Page)} onViewTeacher={goProfile} />}

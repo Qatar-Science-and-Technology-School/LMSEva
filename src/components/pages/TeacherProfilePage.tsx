@@ -73,6 +73,46 @@ export type TeacherProfileTab =
   | 'pd'
   | 'achievements';
 
+const AR_TO_EN_MONTH: Record<string, string> = {
+  'يناير': 'January',
+  'فبراير': 'February',
+  'مارس': 'March',
+  'أبريل': 'April',
+  'مايو': 'May',
+  'يونيو': 'June',
+  'يوليو': 'July',
+  'أغسطس': 'August',
+  'سبتمبر': 'September',
+  'أكتوبر': 'October',
+  'نوفمبر': 'November',
+  'ديسمبر': 'December',
+};
+
+const AR_TO_EN_DAY: Record<string, string> = {
+  'الأحد': 'Sunday',
+  'الإثنين': 'Monday',
+  'الاثنين': 'Monday',
+  'الثلاثاء': 'Tuesday',
+  'الأربعاء': 'Wednesday',
+  'الاربعاء': 'Wednesday',
+  'الخميس': 'Thursday',
+  'الجمعة': 'Friday',
+  'السبت': 'Saturday',
+};
+
+const AR_TO_EN_PERF: Record<string, string> = {
+  'متميز': 'Distinguished',
+  'متقدم جدًا': 'Very Advanced',
+  'يحتاج إلى متابعة وخطة تحسين': 'Needs Follow-up & Improvement',
+};
+
+const AR_TO_EN_MEEE_STATUS: Record<string, string> = {
+  'حصل على الشهادة': 'Certified (MIEE)',
+  'تم التقديم': 'Application Submitted',
+  'لم يتم التقديم بعد': 'Not Applied Yet',
+  'لم يتقدم بعد': 'Not Applied Yet',
+};
+
 interface Props {
   teacherId: string;
   currentUser: User;
@@ -81,6 +121,8 @@ interface Props {
   activeTabProp?: TeacherProfileTab;
   onTabChange?: (tab: TeacherProfileTab) => void;
   isTeacherPortal?: boolean;
+  langProp?: 'ar' | 'en';
+  onLangChange?: (lang: 'ar' | 'en') => void;
 }
 
 export default function TeacherProfilePage({
@@ -91,10 +133,45 @@ export default function TeacherProfilePage({
   activeTabProp,
   onTabChange,
   isTeacherPortal = false,
+  langProp,
+  onLangChange,
 }: Props) {
   const isAdmin = isSuperAdmin(currentUser);
   const isOwnTeacherAccount = isTeacherUser(currentUser) && currentUser.teacherId === teacherId;
   const canTeacherAct = isOwnTeacherAccount || isAdmin;
+
+  const [internalLang, setInternalLang] = useState<'ar' | 'en'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('qstss_teacher_lang') === 'en' ? 'en' : 'ar';
+    }
+    return 'ar';
+  });
+
+  useEffect(() => {
+    const sync = () => {
+      const saved = localStorage.getItem('qstss_teacher_lang');
+      if (saved === 'en' || saved === 'ar') setInternalLang(saved);
+    };
+    window.addEventListener('qstss_teacher_lang_changed', sync);
+    return () => window.removeEventListener('qstss_teacher_lang_changed', sync);
+  }, []);
+
+  const lang: 'ar' | 'en' = langProp || internalLang;
+  const isEn = lang === 'en';
+  const tr = (ar: string, en: string) => (isEn ? en : ar);
+  const trMonth = (m?: string) => (m ? (isEn ? AR_TO_EN_MONTH[m] || m : m) : '-');
+  const trDay = (d?: string) => (d ? (isEn ? AR_TO_EN_DAY[d] || d : d) : '');
+  const trPerf = (lbl?: string) => (lbl ? (isEn ? AR_TO_EN_PERF[lbl] || lbl : lbl) : '-');
+  const trMeee = (st?: string) => (st ? (isEn ? AR_TO_EN_MEEE_STATUS[st] || st : st) : tr('لم يتقدم بعد', 'Not Applied Yet'));
+
+  const handleSetLang = (next: 'ar' | 'en') => {
+    setInternalLang(next);
+    if (onLangChange) onLangChange(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('qstss_teacher_lang', next);
+      window.dispatchEvent(new Event('qstss_teacher_lang_changed'));
+    }
+  };
 
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -303,21 +380,24 @@ export default function TeacherProfilePage({
 
   if (loading) {
     return (
-      <div style={{ padding: '3rem', textAlign: 'center', direction: 'rtl', color: '#64748B' }}>
-        ⏳ جاري تحميل بيانات وملف المعلم الخاص...
+      <div style={{ padding: '3rem', textAlign: 'center', direction: isEn ? 'ltr' : 'rtl', color: '#64748B' }}>
+        {tr('⏳ جاري تحميل بيانات وملف المعلم الخاص...', '⏳ Loading teacher profile and analytics...')}
       </div>
     );
   }
 
   if (!teacher) {
-    return <div style={{ padding: '2rem', textAlign: 'center' }}>معلم غير موجود</div>;
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>{tr('معلم غير موجود', 'Teacher not found')}</div>;
   }
 
   const teacherEvals = evaluations.filter(e => e.teacherId === teacherId);
   const deptEvals = evaluations.filter(
     e => teachers.find(t => t.id === e.teacherId)?.departmentId === teacher.departmentId
   );
-  const deptName = getDeptName(teacher.departmentId, departments);
+  const deptObj = departments.find(d => d.id === teacher.departmentId);
+  const deptNameAr = getDeptName(teacher.departmentId, departments);
+  const deptName = isEn ? (deptObj?.nameEn || deptNameAr) : deptNameAr;
+  const displayTeacherName = isEn ? (teacher.nameEn || teacher.nameAr) : teacher.nameAr;
 
   // Stats
   const allScores = teacherEvals.map(e => e.totalScore);
@@ -337,13 +417,19 @@ export default function TeacherProfilePage({
   const perf = getPerformanceLevel(currentAvg || avgAll);
 
   // Monthly trend for current year
+  const teacherSeriesKey = tr('المعلم', 'Teacher');
+  const deptSeriesKey = tr('القسم', 'Department');
   const monthlyTrend = MONTHS.map(m => {
     const ev = teacherEvals.find(e => e.month === m && e.academicYear === activeYear);
     const deptEv = deptEvals.filter(e => e.month === m && e.academicYear === activeYear);
     const deptAvg = deptEv.length
       ? Math.round((deptEv.reduce((s, e) => s + e.totalScore, 0) / deptEv.length) * 10) / 10
       : 0;
-    return { name: m, المعلم: ev?.totalScore ?? null, القسم: deptAvg || null };
+    return {
+      name: trMonth(m),
+      [teacherSeriesKey]: ev?.totalScore ?? null,
+      [deptSeriesKey]: deptAvg || null,
+    };
   });
 
   // Helper to get feedback for a specific evaluation or lesson
@@ -812,11 +898,61 @@ export default function TeacherProfilePage({
   const latestEval = [...teacherEvals].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
   const radarData = latestEval
     ? EVALUATION_CRITERIA.map((_, i) => ({
-        subject: `معيار ${i + 1}`,
+        subject: isEn ? `Criterion ${i + 1}` : `معيار ${i + 1}`,
         value: latestEval.criteria[i]?.score ?? 0,
         fullMark: 20,
       }))
     : [];
+
+  const languageSwitcherPill = (darkBg = false) => (
+    <div
+      className="no-print"
+      style={{
+        display: 'inline-flex',
+        background: darkBg ? 'rgba(255,255,255,0.14)' : '#F1F5F9',
+        border: darkBg ? '1px solid rgba(255,255,255,0.28)' : '1px solid #CBD5E1',
+        borderRadius: '10px',
+        padding: '3px',
+        gap: '2px',
+      }}
+      title="تغيير لغة الصفحة / Switch Language"
+    >
+      <button
+        type="button"
+        onClick={() => handleSetLang('ar')}
+        style={{
+          border: 'none',
+          borderRadius: '7px',
+          padding: '0.32rem 0.7rem',
+          fontSize: '0.75rem',
+          fontWeight: 900,
+          cursor: 'pointer',
+          background: !isEn ? (darkBg ? '#38BDF8' : '#0F2044') : 'transparent',
+          color: !isEn ? (darkBg ? '#0F2044' : '#fff') : darkBg ? '#E0F2FE' : '#475569',
+          transition: 'all 0.15s',
+        }}
+      >
+        🌐 العربية
+      </button>
+      <button
+        type="button"
+        onClick={() => handleSetLang('en')}
+        style={{
+          border: 'none',
+          borderRadius: '7px',
+          padding: '0.32rem 0.7rem',
+          fontSize: '0.75rem',
+          fontWeight: 900,
+          cursor: 'pointer',
+          background: isEn ? (darkBg ? '#38BDF8' : '#0284C7') : 'transparent',
+          color: isEn ? (darkBg ? '#0F2044' : '#fff') : darkBg ? '#E0F2FE' : '#475569',
+          transition: 'all 0.15s',
+        }}
+      >
+        🌐 English
+      </button>
+    </div>
+  );
 
   const cardStyle = {
     background: '#fff',
@@ -844,7 +980,7 @@ export default function TeacherProfilePage({
   );
 
   return (
-    <div style={{ padding: '1.5rem', direction: 'rtl', maxWidth: '1180px', margin: '0 auto' }}>
+    <div style={{ padding: '1.5rem', direction: isEn ? 'ltr' : 'rtl', maxWidth: '1180px', margin: '0 auto' }}>
       {toast && (
         <div
           className="no-print"
@@ -867,8 +1003,8 @@ export default function TeacherProfilePage({
       )}
 
       <PrintHeader
-        title="التقرير الرسمي الشامل لملف وإحصاءات المعلم (Teacher Portfolio)"
-        subtitle={`${teacher.nameAr} | ${deptName} | ${teacher.subject}`}
+        title={tr('التقرير الرسمي الشامل لملف وإحصاءات المعلم (Teacher Portfolio)', 'Comprehensive Official Teacher Portfolio & Analytics Report')}
+        subtitle={`${displayTeacherName} | ${deptName} | ${teacher.subject}`}
       />
 
       {/* Welcome Banner for Logged-In Teacher */}
@@ -891,16 +1027,20 @@ export default function TeacherProfilePage({
         >
           <div>
             <div style={{ fontSize: '0.75rem', color: '#7DD3FC', fontWeight: 800, marginBottom: '0.2rem' }}>
-              👨‍🏫 بوابة المعلم الذاتية الخاصة — بياناتك وإحصاءاتك وتقاريرك الخاصة فقط
+              {tr(
+                '👨‍🏫 بوابة المعلم الذاتية الخاصة — بياناتك وإحصاءاتك وتقاريرك الخاصة فقط',
+                '👨‍🏫 Teacher Self-Service Portal — Your Personal Lessons, Evaluations & Reports Only'
+              )}
             </div>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 900, margin: 0 }}>
-              مرحباً بك أ. {teacher.nameAr}
+              {tr(`مرحباً بك أ. ${teacher.nameAr}`, `Welcome, ${teacher.nameEn || teacher.nameAr}`)}
             </h2>
             <p style={{ fontSize: '0.78rem', color: '#E0F2FE', margin: '0.25rem 0 0' }}>
-              {deptName} · المادة: {teacher.subject} · البريد الرسمي: {teacher.email}
+              {deptName} · {tr('المادة:', 'Subject:')} {teacher.subject} · {tr('البريد الرسمي:', 'Email:')} {teacher.email}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {languageSwitcherPill(true)}
             <button
               onClick={() => setActiveTab('distance_learning')}
               style={{
@@ -917,7 +1057,7 @@ export default function TeacherProfilePage({
                 gap: '0.35rem',
               }}
             >
-              🌐 إضافة حصة Distance Learning (Teams)
+              {tr('🌐 إضافة حصة Distance Learning (Teams)', '🌐 Add Distance Learning (Teams) Class')}
             </button>
             <button
               onClick={() => window.print()}
@@ -932,7 +1072,7 @@ export default function TeacherProfilePage({
                 cursor: 'pointer',
               }}
             >
-              🖨️ طباعة ملفي وتقاريري
+              {tr('🖨️ طباعة ملفي وتقاريري', '🖨️ Print My Profile & Reports')}
             </button>
           </div>
         </div>
@@ -948,15 +1088,16 @@ export default function TeacherProfilePage({
             onClick={onBack}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0.2rem' }}
           >
-            →
+            {isEn ? '←' : '→'}
           </button>
           <div>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>{teacher.nameAr}</h2>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>{displayTeacherName}</h2>
             <p style={{ fontSize: '0.75rem', color: '#64748B', margin: '0.1rem 0 0' }}>
-              {teacher.nameEn} · {deptName} · {teacher.subject}
+              {isEn ? teacher.nameAr : teacher.nameEn} · {deptName} · {teacher.subject}
             </p>
           </div>
-          <div style={{ marginRight: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ [isEn ? 'marginLeft' : 'marginRight']: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            {languageSwitcherPill(false)}
             {isOfficialHonoree && (
               <span
                 style={{
@@ -969,11 +1110,11 @@ export default function TeacherProfilePage({
                   fontWeight: 900,
                 }}
               >
-                🏆 معلم مكرم على مستوى القسم والمدرسة
+                {tr('🏆 معلم مكرم على مستوى القسم والمدرسة', '🏆 Honored Teacher (Department & School Champion)')}
               </span>
             )}
             <button onClick={() => window.print()} className="btn btn-primary" style={{ fontSize: '0.8rem' }}>
-              🖨️ طباعة الملف
+              {tr('🖨️ طباعة الملف', '🖨️ Print Portfolio')}
             </button>
             <span
               style={{
@@ -985,7 +1126,7 @@ export default function TeacherProfilePage({
                 fontWeight: 700,
               }}
             >
-              {perf.label}
+              {trPerf(perf.label)}
             </span>
           </div>
         </div>
@@ -994,10 +1135,10 @@ export default function TeacherProfilePage({
       {/* Navigation Sub-Tabs */}
       <div className="no-print" style={{ display: 'flex', gap: '0.45rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
         {[
-          { id: 'overview', label: '📊 إحصاءاتي وتقييماتي الشهرية', count: teacherEvals.length },
+          { id: 'overview', label: tr('📊 إحصاءاتي وتقييماتي الشهرية', '📊 My Stats & Monthly Evaluations'), count: teacherEvals.length },
           {
             id: 'modellessons',
-            label: '💻 حصصي في التعليم الإلكتروني',
+            label: tr('💻 حصصي في التعليم الإلكتروني', '💻 My E-Learning Lessons'),
             count: teacherModelLessons.length + teacherScheduledLessons.length,
           },
           {
@@ -1007,12 +1148,12 @@ export default function TeacherProfilePage({
           },
           {
             id: 'reports',
-            label: '🖨️ تقاريري الخاصة والطباعة',
-            count: teacherEvals.length + teacherModelLessons.length + 2,
+            label: tr('🖨️ تقاريري الخاصة والطباعة', '🖨️ My Reports & Printing'),
+            count: teacherEvals.length + teacherModelLessons.length + 3,
           },
           {
             id: 'pd',
-            label: '🎓 التطوير المهني و MEEE',
+            label: tr('🎓 التطوير المهني و MEEE', '🎓 Professional Development & MEEE'),
             count: teacherPD.length + teacherWorkshops.length,
           },
         ].map(tab => (
@@ -1062,14 +1203,14 @@ export default function TeacherProfilePage({
         }}
       >
         {[
-          ['اسم المعلم', teacher.nameAr],
-          ['الرقم الوظيفي', teacher.employeeId],
-          ['البريد الإلكتروني', teacher.email],
-          ['المادة الدراسية', teacher.subject],
-          ['القسم الأكاديمي', deptName],
-          ['شهادة MEEE', teacherMeee ? teacherMeee.status : 'لم يتقدم بعد'],
+          [tr('اسم المعلم', 'Teacher Name'), displayTeacherName],
+          [tr('الرقم الوظيفي', 'Employee ID'), teacher.employeeId],
+          [tr('البريد الإلكتروني', 'Official Email'), teacher.email],
+          [tr('المادة الدراسية', 'Subject'), teacher.subject],
+          [tr('القسم الأكاديمي', 'Department'), deptName],
+          [tr('شهادة MEEE', 'MEEE Status'), trMeee(teacherMeee?.status)],
         ].map(([l, v]) => (
-          <div key={l}>
+          <div key={String(l)}>
             <p style={{ fontSize: '0.65rem', color: '#94A3B8', margin: 0, fontWeight: 700 }}>{l}</p>
             <p style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0F2044', margin: '0.15rem 0 0' }}>{v}</p>
           </div>
@@ -1088,14 +1229,14 @@ export default function TeacherProfilePage({
               marginBottom: '1rem',
             }}
           >
-            {statBox('متوسط العام الحالي', `${currentAvg}%`, activeYear, '#0284C7')}
-            {statBox('متوسط الأداء الكلي', `${avgAll}%`, 'جميع الأعوام', perf.color)}
-            {statBox('أعلى تقييم شهري', `${best}%`, bestMonth?.month || '-')}
-            {statBox('التقييمات الشهرية', teacherEvals.length, 'تقييم معتمد')}
-            {statBox('حصص التعليم الإلكتروني', teacherModelLessons.length, 'حصة مقيمة', '#4338CA')}
-            {statBox('حصص التعلم عن بعد', teacherDistanceLessons.length, 'Microsoft Teams', '#059669')}
-            {statBox('التدريب الفردي والذاتي', teacherPD.length, 'جلسة وبرنامج موثق', '#00B4D8')}
-            {statBox('ملاحظاتي وآرائي', teacherFeedbacks.length, 'إقرار وملاحظة', '#D97706')}
+            {statBox(tr('متوسط العام الحالي', 'Current Year Average'), `${currentAvg}%`, activeYear, '#0284C7')}
+            {statBox(tr('متوسط الأداء الكلي', 'Overall Average'), `${avgAll}%`, tr('جميع الأعوام', 'All Years'), perf.color)}
+            {statBox(tr('أعلى تقييم شهري', 'Highest Monthly Score'), `${best}%`, trMonth(bestMonth?.month))}
+            {statBox(tr('التقييمات الشهرية', 'Monthly Evaluations'), teacherEvals.length, tr('تقييم معتمد', 'Verified Evals'))}
+            {statBox(tr('حصص التعليم الإلكتروني', 'E-Learning Lessons'), teacherModelLessons.length, tr('حصة مقيمة', 'Evaluated Lessons'), '#4338CA')}
+            {statBox(tr('حصص التعلم عن بعد', 'Distance Learning'), teacherDistanceLessons.length, 'Microsoft Teams', '#059669')}
+            {statBox(tr('التدريب الفردي والذاتي', 'Individual & Self PD'), teacherPD.length, tr('جلسة وبرنامج موثق', 'Verified Sessions'), '#00B4D8')}
+            {statBox(tr('ملاحظاتي وآرائي', 'My Opinions & Notes'), teacherFeedbacks.length, tr('إقرار وملاحظة', 'Acknowledged Notes'), '#D97706')}
           </div>
 
           {/* Recognition History Card */}
@@ -1114,7 +1255,7 @@ export default function TeacherProfilePage({
               <div style={{ fontSize: '2.5rem' }}>🏆</div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#0369A1', margin: '0 0 0.5rem 0' }}>
-                  🏅 سجل التميز والتكريم الخاص بالمعلم
+                  {tr('🏅 سجل التميز والتكريم الخاص بالمعلم', '🏅 Teacher Excellence & Recognition History')}
                 </h3>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   {recognitionHistory.map((h, i) => (
@@ -1130,14 +1271,14 @@ export default function TeacherProfilePage({
                         color: '#0369A1',
                       }}
                     >
-                      {h.month} {h.academicYear} ({h.totalScore}%)
+                      {trMonth(h.month)} {h.academicYear} ({h.totalScore}%)
                     </div>
                   ))}
                 </div>
               </div>
-              <div style={{ textAlign: 'center', padding: '0 1rem', borderRight: '1px solid #B9E6FE' }}>
+              <div style={{ textAlign: 'center', padding: '0 1rem', [isEn ? 'borderLeft' : 'borderRight']: '1px solid #B9E6FE' }}>
                 <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0369A1' }}>{recognitionHistory.length}</div>
-                <div style={{ fontSize: '0.65rem', color: '#64748B' }}>مرات التكريم</div>
+                <div style={{ fontSize: '0.65rem', color: '#64748B' }}>{tr('مرات التكريم', 'Times Honored')}</div>
               </div>
             </div>
           )}
@@ -1146,7 +1287,10 @@ export default function TeacherProfilePage({
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
             <div style={darkCardStyle}>
               <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: '0.75rem' }}>
-                📈 منحنى تطور أدائي الشهري في نظام قطر للتعليم ({activeYear})
+                {tr(
+                  `📈 منحنى تطور أدائي الشهري في نظام قطر للتعليم (${activeYear})`,
+                  `📈 My Monthly Performance Trend in QES LMS (${activeYear})`
+                )}
               </h3>
               <ResponsiveContainer width="100%" height={210}>
                 <LineChart data={monthlyTrend}>
@@ -1155,26 +1299,31 @@ export default function TeacherProfilePage({
                   <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: '#fff' }} />
                   <Tooltip contentStyle={{ background: '#1a3a6b', border: 'none', borderRadius: '8px', color: '#fff' }} />
                   <Legend wrapperStyle={{ color: '#fff' }} />
-                  <Line type="monotone" dataKey="المعلم" stroke="#38BDF8" strokeWidth={3} dot={{ r: 4, fill: '#fff' }} connectNulls />
-                  <Line type="monotone" dataKey="القسم" stroke="#94A3B8" strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls />
+                  <Line type="monotone" dataKey={teacherSeriesKey} stroke="#38BDF8" strokeWidth={3} dot={{ r: 4, fill: '#fff' }} connectNulls />
+                  <Line type="monotone" dataKey={deptSeriesKey} stroke="#94A3B8" strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls />
                 </LineChart>
               </ResponsiveContainer>
             </div>
             <div style={darkCardStyle}>
               <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff', marginBottom: '0.75rem' }}>
-                🕸️ تحليل معايير التقييم الخاصة بي (آخر تقييم شهري)
+                {tr(
+                  '🕸️ تحليل معايير التقييم الخاصة بي (آخر تقييم شهري)',
+                  '🕸️ My Evaluation Criteria Breakdown (Latest Monthly Evaluation)'
+                )}
               </h3>
               {radarData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={210}>
                   <RadarChart data={radarData}>
                     <PolarGrid stroke="rgba(255,255,255,0.2)" />
                     <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: '#fff' }} />
-                    <Radar name="الدرجة من 20" dataKey="value" stroke="#00B4D8" fill="#00B4D8" fillOpacity={0.45} />
+                    <Radar name={tr('الدرجة من 20', 'Score out of 20')} dataKey="value" stroke="#00B4D8" fill="#00B4D8" fillOpacity={0.45} />
                     <Tooltip contentStyle={{ background: '#1a3a6b', border: 'none', borderRadius: '8px', color: '#fff' }} />
                   </RadarChart>
                 </ResponsiveContainer>
               ) : (
-                <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>لا توجد بيانات</p>
+                <p style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}>
+                  {tr('لا توجد بيانات', 'No evaluation data available')}
+                </p>
               )}
             </div>
           </div>
@@ -1193,10 +1342,13 @@ export default function TeacherProfilePage({
             >
               <div>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>
-                  📋 سجل تقييماتي الشهرية في نظام قطر للتعليم (LMS)
+                  {tr('📋 سجل تقييماتي الشهرية في نظام قطر للتعليم (LMS)', '📋 My Monthly QES LMS Evaluations Log')}
                 </h3>
                 <p style={{ fontSize: '0.73rem', color: '#64748B', margin: '2px 0 0' }}>
-                  يمكنك طباعة أي تقييم شهري أو الضغط على <strong>"💬 إبداء الرأي والملاحظات"</strong> لتسجيل رأيك وإقرارك بالاطلاع.
+                  {tr(
+                    'يمكنك طباعة أي تقييم شهري أو الضغط على "💬 إبداء الرأي والملاحظات" لتسجيل رأيك وإقرارك بالاطلاع.',
+                    'You can print any monthly evaluation or click "💬 Add Opinion & Notes" to record your reflection and acknowledgment.'
+                  )}
                 </p>
               </div>
               <button
@@ -1213,7 +1365,7 @@ export default function TeacherProfilePage({
                   cursor: 'pointer',
                 }}
               >
-                🖨️ طباعة سجل التقييمات الكامل
+                {tr('🖨️ طباعة سجل التقييمات الكامل', '🖨️ Print Full Evaluations Log')}
               </button>
             </div>
 
@@ -1222,19 +1374,19 @@ export default function TeacherProfilePage({
                 <thead>
                   <tr style={{ borderBottom: '2px solid #E2E8F0', background: '#0F2044', color: '#fff' }}>
                     {[
-                      'الشهر',
-                      'العام الأكاديمي',
-                      'الدرجة',
-                      'مستوى الأداء',
-                      'نقاط القوة والتوصيات',
-                      'رأي وملاحظات المعلم',
-                      'الإجراءات والطباعة',
-                    ].map(h => (
+                      tr('الشهر', 'Month'),
+                      tr('العام الأكاديمي', 'Academic Year'),
+                      tr('الدرجة', 'Score'),
+                      tr('مستوى الأداء', 'Performance Level'),
+                      tr('نقاط القوة والتوصيات', 'Strengths & Recommendations'),
+                      tr('رأي وملاحظات المعلم', 'Teacher Opinion & Notes'),
+                      tr('الإجراءات والطباعة', 'Actions & Print'),
+                    ].map((h, hIdx) => (
                       <th
                         key={h}
                         style={{
                           padding: '0.6rem 0.75rem',
-                          textAlign: h === 'الإجراءات والطباعة' ? 'center' : 'right',
+                          textAlign: hIdx === 6 ? 'center' : isEn ? 'left' : 'right',
                           fontWeight: 800,
                           whiteSpace: 'nowrap',
                         }}
@@ -1259,7 +1411,7 @@ export default function TeacherProfilePage({
                           key={ev.id}
                           style={{ background: i % 2 === 0 ? '#fff' : '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}
                         >
-                          <td style={{ padding: '0.6rem 0.75rem', fontWeight: 800, color: '#0F2044' }}>{ev.month}</td>
+                          <td style={{ padding: '0.6rem 0.75rem', fontWeight: 800, color: '#0F2044' }}>{trMonth(ev.month)}</td>
                           <td style={{ padding: '0.6rem 0.75rem', color: '#64748B', fontWeight: 600 }}>{ev.academicYear}</td>
                           <td style={{ padding: '0.6rem 0.75rem', fontWeight: 900, color: '#0369A1' }}>
                             {ev.totalScore}/100
@@ -1275,7 +1427,7 @@ export default function TeacherProfilePage({
                                 fontWeight: 800,
                               }}
                             >
-                              {p.label}
+                              {trPerf(p.label)}
                             </span>
                           </td>
                           <td style={{ padding: '0.6rem 0.75rem', color: '#334155', maxWidth: '210px' }}>
@@ -1303,12 +1455,12 @@ export default function TeacherProfilePage({
                                 <div style={{ fontWeight: 800 }}>{fb.opinionText}</div>
                                 {fb.acknowledged && (
                                   <span style={{ fontSize: '0.64rem', color: '#059669', fontWeight: 800 }}>
-                                    ✓ تم الإقرار بالاطلاع
+                                    {tr('✓ تم الإقرار بالاطلاع', '✓ Acknowledged')}
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>لم يُسجل رأي بعد</span>
+                              <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>{tr('لم يُسجل رأي بعد', 'No opinion recorded yet')}</span>
                             )}
                           </td>
                           <td style={{ padding: '0.6rem 0.75rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
@@ -1325,9 +1477,9 @@ export default function TeacherProfilePage({
                                   fontWeight: 800,
                                   cursor: 'pointer',
                                 }}
-                                title="طباعة التقرير الرسمي لهذا التقييم"
+                                title={tr('طباعة التقرير الرسمي لهذا التقييم', 'Print official evaluation report')}
                               >
-                                🖨️ طباعة
+                                {tr('🖨️ طباعة', '🖨️ Print')}
                               </button>
                               {canTeacherAct && (
                                 <button
@@ -1335,7 +1487,10 @@ export default function TeacherProfilePage({
                                     openFeedbackEditor(
                                       'monthly_evaluation',
                                       ev.id,
-                                      `تقييم نظام قطر للتعليم — شهر ${ev.month} (${ev.academicYear})`,
+                                      tr(
+                                        `تقييم نظام قطر للتعليم — شهر ${ev.month} (${ev.academicYear})`,
+                                        `QES LMS Evaluation — ${trMonth(ev.month)} (${ev.academicYear})`
+                                      ),
                                       ev.academicYear,
                                       ev.month,
                                       ev.teacherOpinion,
@@ -1353,7 +1508,7 @@ export default function TeacherProfilePage({
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  💬 {fb?.opinionText ? 'تعديل الرأي' : 'إبداء الرأي'}
+                                  💬 {fb?.opinionText ? tr('تعديل الرأي', 'Edit Opinion') : tr('إبداء الرأي', 'Add Opinion')}
                                 </button>
                               )}
                               {isAdmin && (
@@ -1381,7 +1536,7 @@ export default function TeacherProfilePage({
                   {teacherEvals.length === 0 && (
                     <tr>
                       <td colSpan={7} style={{ textAlign: 'center', padding: '1.5rem', color: '#94A3B8' }}>
-                        لا توجد تقييمات شهرية مسجلة
+                        {tr('لا توجد تقييمات شهرية مسجلة', 'No monthly evaluations recorded')}
                       </td>
                     </tr>
                   )}
@@ -1407,10 +1562,13 @@ export default function TeacherProfilePage({
           >
             <div>
               <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>
-                💻 حصصي في التعليم الإلكتروني (الحصص المقيمة والمجدولة)
+                {tr('💻 حصصي في التعليم الإلكتروني (الحصص المقيمة والمجدولة)', '💻 My E-Learning Lessons (Evaluated & Scheduled)')}
               </h3>
               <p style={{ fontSize: '0.74rem', color: '#64748B', margin: '2px 0 0' }}>
-                اطلع على تفاصيل تقييمات حصصك في التعليم الإلكتروني، وقم بطباعتها أو تدوين رأيك وملاحظاتك عليها.
+                {tr(
+                  'اطلع على تفاصيل تقييمات حصصك في التعليم الإلكتروني، وقم بطباعتها أو تدوين رأيك وملاحظاتك عليها.',
+                  'View details of your evaluated E-Learning lessons, print official reports, or record your opinion and reflection.'
+                )}
               </p>
             </div>
             <span
@@ -1423,14 +1581,14 @@ export default function TeacherProfilePage({
                 fontWeight: 800,
               }}
             >
-              إجمالي الحصص المقيمة: {teacherModelLessons.length}
+              {tr(`إجمالي الحصص المقيمة: ${teacherModelLessons.length}`, `Evaluated Lessons: ${teacherModelLessons.length}`)}
             </span>
           </div>
 
           {teacherModelLessons.length === 0 ? (
             <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748B' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>💻</div>
-              <div>لم يتم تسجيل تقييم حصص تعليم إلكتروني لهذا المعلم حتى الآن.</div>
+              <div>{tr('لم يتم تسجيل تقييم حصص تعليم إلكتروني لهذا المعلم حتى الآن.', 'No evaluated E-Learning lessons recorded for this teacher yet.')}</div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -1460,10 +1618,10 @@ export default function TeacherProfilePage({
                     >
                       <div>
                         <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#0F2044' }}>
-                          📅 تاريخ الحصة: {ml.date}
+                          📅 {tr('تاريخ الحصة:', 'Lesson Date:')} {ml.date}
                         </span>
-                        <span style={{ fontSize: '0.78rem', color: '#475569', marginRight: '1rem', fontWeight: 700 }}>
-                          الحصة: {ml.period} | الصف والشعبة: {ml.classGrade}
+                        <span style={{ fontSize: '0.78rem', color: '#475569', [isEn ? 'marginLeft' : 'marginRight']: '1rem', fontWeight: 700 }}>
+                          {tr(`الحصة: ${ml.period} | الصف والشعبة: ${ml.classGrade}`, `Period: ${ml.period} | Class: ${ml.classGrade}`)}
                         </span>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
@@ -1478,7 +1636,7 @@ export default function TeacherProfilePage({
                             fontWeight: 900,
                           }}
                         >
-                          الدرجة: {ml.overallScore} / 10
+                          {tr(`الدرجة: ${ml.overallScore} / 10`, `Score: ${ml.overallScore} / 10`)}
                         </span>
                         <button
                           onClick={() => printSingleModelLesson(ml)}
@@ -1493,7 +1651,7 @@ export default function TeacherProfilePage({
                             cursor: 'pointer',
                           }}
                         >
-                          🖨️ طباعة تقرير الحصة
+                          {tr('🖨️ طباعة تقرير الحصة', '🖨️ Print Lesson Report')}
                         </button>
                         {canTeacherAct && (
                           <button
@@ -1501,7 +1659,10 @@ export default function TeacherProfilePage({
                               openFeedbackEditor(
                                 'model_lesson',
                                 ml.id,
-                                `تقييم حصة التعليم الإلكتروني — بتاريخ ${ml.date} (الصف ${ml.classGrade} / الحصة ${ml.period})`,
+                                tr(
+                                  `تقييم حصة التعليم الإلكتروني — بتاريخ ${ml.date} (الصف ${ml.classGrade} / الحصة ${ml.period})`,
+                                  `E-Learning Lesson Evaluation — ${ml.date} (Class ${ml.classGrade} / Period ${ml.period})`
+                                ),
                                 ml.academicYear || activeYear,
                                 ml.month,
                                 ml.teacherOpinion,
@@ -1519,7 +1680,7 @@ export default function TeacherProfilePage({
                               cursor: 'pointer',
                             }}
                           >
-                            💬 إبداء الرأي والملاحظات
+                            {tr('💬 إبداء الرأي والملاحظات', '💬 Add Opinion & Notes')}
                           </button>
                         )}
                         {isAdmin && (
@@ -1536,7 +1697,7 @@ export default function TeacherProfilePage({
                               cursor: 'pointer',
                             }}
                           >
-                            🗑️ حذف
+                            {tr('🗑️ حذف', '🗑️ Delete')}
                           </button>
                         )}
                       </div>
@@ -1552,12 +1713,12 @@ export default function TeacherProfilePage({
                       }}
                     >
                       {[
-                        ['التقويم والتغذية الراجعة', ml.scoreAssessmentFeedback],
-                        ['عمق توظيف التقنية', ml.scoreTechDepth],
-                        ['تنظيم LMS ووضوح المواد', ml.scoreLmsClarity],
-                        ['إدارة الصف رقمياً', ml.scoreClassroomMgmt],
-                        ['تفاعل ومشاركة الطلاب', ml.scoreStudentEngagement],
-                        ['تمكن المعلم من الأدوات', ml.scoreTeacherTools],
+                        [tr('التقويم والتغذية الراجعة', 'Assessment & Feedback'), ml.scoreAssessmentFeedback],
+                        [tr('عمق توظيف التقنية', 'Tech Integration Depth'), ml.scoreTechDepth],
+                        [tr('تنظيم LMS ووضوح المواد', 'LMS Clarity & Structure'), ml.scoreLmsClarity],
+                        [tr('إدارة الصف رقمياً', 'Digital Classroom Mgmt'), ml.scoreClassroomMgmt],
+                        [tr('تفاعل ومشاركة الطلاب', 'Student Engagement'), ml.scoreStudentEngagement],
+                        [tr('تمكن المعلم من الأدوات', 'Digital Tools Mastery'), ml.scoreTeacherTools],
                       ].map(([lbl, sc]) => (
                         <div
                           key={String(lbl)}
@@ -1588,21 +1749,21 @@ export default function TeacherProfilePage({
                       }}
                     >
                       <div>
-                        <b>الأدوات الرقمية الموظفة:</b> <span style={{ color: '#0369A1', fontWeight: 700 }}>{ml.toolsUsed || '-'}</span>
+                        <b>{tr('الأدوات الرقمية الموظفة:', 'Digital Tools Used:')}</b> <span style={{ color: '#0369A1', fontWeight: 700 }}>{ml.toolsUsed || '-'}</span>
                       </div>
                       <div>
-                        <b>الحضور:</b> {ml.attendees || '-'}
+                        <b>{tr('الحضور:', 'Attendees:')}</b> {ml.attendees || '-'}
                       </div>
                       {ml.lessonPlanUrl && (
                         <div>
-                          <b>رابط خطة الدرس والأدلة:</b>{' '}
+                          <b>{tr('رابط خطة الدرس والأدلة:', 'Lesson Plan & Evidence:')}</b>{' '}
                           <a
                             href={ml.lessonPlanUrl}
                             target="_blank"
                             rel="noreferrer"
                             style={{ color: '#00B4D8', textDecoration: 'underline', fontWeight: 700 }}
                           >
-                            🔗 فتح الرابط
+                            {tr('🔗 فتح الرابط', '🔗 Open Link')}
                           </a>
                         </div>
                       )}
@@ -1621,17 +1782,17 @@ export default function TeacherProfilePage({
                         }}
                       >
                         <div style={{ color: '#065F46' }}>
-                          <b>✅ نقاط القوة:</b>
+                          <b>{tr('✅ نقاط القوة:', '✅ Strengths:')}</b>
                           <br />
                           {ml.strengths || '-'}
                         </div>
                         <div style={{ color: '#B45309' }}>
-                          <b>🔧 جوانب التحسين:</b>
+                          <b>{tr('🔧 جوانب التحسين:', '🔧 Areas for Improvement:')}</b>
                           <br />
                           {ml.improvements || '-'}
                         </div>
                         <div style={{ color: '#1E40AF' }}>
-                          <b>💡 التوصيات:</b>
+                          <b>{tr('💡 التوصيات:', '💡 Recommendations:')}</b>
                           <br />
                           {ml.recommendations || '-'}
                         </div>
@@ -1650,11 +1811,11 @@ export default function TeacherProfilePage({
                           fontSize: '0.75rem',
                         }}
                       >
-                        <div style={{ fontWeight: 800, color: '#0369A1' }}>💬 رأي المعلم وملاحظاته على الحصة:</div>
+                        <div style={{ fontWeight: 800, color: '#0369A1' }}>{tr('💬 رأي المعلم وملاحظاته على الحصة:', '💬 Teacher Opinion & Notes on Lesson:')}</div>
                         <div style={{ color: '#0F2044', marginTop: '2px', fontWeight: 600 }}>{fb.opinionText}</div>
                         {fb.actionTaken && (
                           <div style={{ color: '#475569', marginTop: '2px', fontSize: '0.72rem' }}>
-                            <b>الإجراءات التطويرية:</b> {fb.actionTaken}
+                            <b>{tr('الإجراءات التطويرية:', 'Action Taken:')}</b> {fb.actionTaken}
                           </div>
                         )}
                       </div>
@@ -1669,7 +1830,7 @@ export default function TeacherProfilePage({
           {teacherScheduledLessons.length > 0 && (
             <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #E2E8F0' }}>
               <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F2044', margin: '0 0 0.75rem' }}>
-                📅 حصص التعليم الإلكتروني المجدولة ({teacherScheduledLessons.length})
+                {tr(`📅 حصص التعليم الإلكتروني المجدولة (${teacherScheduledLessons.length})`, `📅 Scheduled E-Learning Lessons (${teacherScheduledLessons.length})`)}
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {teacherScheduledLessons.map((sl, i) => (
@@ -1689,10 +1850,10 @@ export default function TeacherProfilePage({
                   >
                     <div>
                       <div style={{ fontWeight: 800, fontSize: '0.8rem', color: '#0369A1' }}>
-                        {sl.lessonTopic || 'حصة تعليم إلكتروني مجدولة'}
+                        {sl.lessonTopic || tr('حصة تعليم إلكتروني مجدولة', 'Scheduled E-Learning Lesson')}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#475569' }}>
-                        📅 {sl.date} | الحصة: {sl.period} | الصف: {sl.classGrade}
+                        📅 {sl.date} | {tr('الحصة:', 'Period:')} {sl.period} | {tr('الصف:', 'Class:')} {sl.classGrade}
                       </div>
                     </div>
                     <span
@@ -1705,7 +1866,7 @@ export default function TeacherProfilePage({
                         fontWeight: 800,
                       }}
                     >
-                      {sl.status || 'مجدولة'}
+                      {isEn && sl.status === 'مجدولة' ? 'Scheduled' : isEn && sl.status === 'تم التنفيذ' ? 'Completed' : (sl.status || tr('مجدولة', 'Scheduled'))}
                     </span>
                   </div>
                 ))}
@@ -1740,10 +1901,16 @@ export default function TeacherProfilePage({
               >
                 <div>
                   <h3 style={{ fontSize: '1.02rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
-                    🌐 {editingDlLesson ? 'تعديل حصة Distance Learning' : 'إضافة حصة Distance Learning (Link From Teams)'}
+                    🌐{' '}
+                    {editingDlLesson
+                      ? tr('تعديل حصة Distance Learning', 'Edit Distance Learning Class')
+                      : tr('إضافة حصة Distance Learning (Link From Teams)', 'Add Distance Learning Class (Link From Teams)')}
                   </h3>
                   <p style={{ fontSize: '0.75rem', color: '#0369A1', margin: '0.2rem 0 0', fontWeight: 600 }}>
-                    اختر اليوم والتاريخ، الصف، الحصة، وأضف الرابط من Microsoft Teams.
+                    {tr(
+                      'اختر اليوم والتاريخ، الصف، الحصة، وأضف الرابط من Microsoft Teams.',
+                      'Select the Day & Date, Class, Period, and paste the link from Microsoft Teams.'
+                    )}
                   </p>
                 </div>
                 {editingDlLesson && (
@@ -1764,7 +1931,7 @@ export default function TeacherProfilePage({
                       cursor: 'pointer',
                     }}
                   >
-                    ✕ إلغاء التعديل
+                    {tr('✕ إلغاء التعديل', '✕ Cancel Edit')}
                   </button>
                 )}
               </div>
@@ -1781,7 +1948,7 @@ export default function TeacherProfilePage({
                   {/* 1. اليوم والتاريخ */}
                   <div>
                     <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0F2044' }}>
-                      اليوم والتاريخ ({getArabicDayName(dlDate)}) *
+                      {tr(`اليوم والتاريخ (${getArabicDayName(dlDate)}) *`, `Day & Date (${trDay(getArabicDayName(dlDate))}) *`)}
                     </label>
                     <input
                       type="date"
@@ -1796,7 +1963,7 @@ export default function TeacherProfilePage({
                   {/* 2. الصف (7A..12E) */}
                   <div>
                     <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0F2044' }}>
-                      الصف *
+                      {tr('الصف *', 'Class *')}
                     </label>
                     <select
                       className="form-input"
@@ -1816,7 +1983,7 @@ export default function TeacherProfilePage({
                   {/* 3. الحصة (1..7) */}
                   <div>
                     <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0F2044' }}>
-                      الحصة *
+                      {tr('الحصة *', 'Period *')}
                     </label>
                     <select
                       className="form-input"
@@ -1838,7 +2005,7 @@ export default function TeacherProfilePage({
                 <div style={{ marginBottom: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
                     <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 900, color: '#1E3A8A', margin: 0 }}>
-                      الرابط (Link From Teams) : *
+                      {tr('الرابط (Link From Teams) : *', 'Link (Link From Teams) : *')}
                     </label>
                     <button
                       type="button"
@@ -1861,7 +2028,7 @@ export default function TeacherProfilePage({
                         cursor: 'pointer',
                       }}
                     >
-                      📋 لصق الرابط
+                      {tr('📋 لصق الرابط', '📋 Paste Link')}
                     </button>
                   </div>
                   <input
@@ -1892,10 +2059,10 @@ export default function TeacherProfilePage({
                     }}
                   >
                     {savingDl
-                      ? '⏳ جاري الحفظ...'
+                      ? tr('⏳ جاري الحفظ...', '⏳ Saving...')
                       : editingDlLesson
-                      ? '💾 حفظ التعديل'
-                      : '➕ إضافة الحصة والرابط'}
+                      ? tr('💾 حفظ التعديل', '💾 Save Changes')
+                      : tr('➕ إضافة الحصة والرابط', '➕ Add Class & Link')}
                   </button>
                 </div>
               </form>
@@ -1916,7 +2083,10 @@ export default function TeacherProfilePage({
             >
               <div>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>
-                  📅 جدول حصص Distance Learning الخاصة بالمعلم ({teacherDistanceLessons.length})
+                  {tr(
+                    `📅 جدول حصص Distance Learning الخاصة بالمعلم (${teacherDistanceLessons.length})`,
+                    `📅 Teacher's Distance Learning Classes Schedule (${teacherDistanceLessons.length})`
+                  )}
                 </h3>
               </div>
               {teacherDistanceLessons.length > 0 && (
@@ -1924,7 +2094,7 @@ export default function TeacherProfilePage({
                   onClick={() =>
                     printTeacherDistanceLessonsScheduleReport(teacherDistanceLessons, {
                       academicYear: activeYear,
-                      teacherOnlyName: teacher.nameAr,
+                      teacherOnlyName: displayTeacherName,
                     })
                   }
                   style={{
@@ -1938,7 +2108,7 @@ export default function TeacherProfilePage({
                     cursor: 'pointer',
                   }}
                 >
-                  🖨️ طباعة جدول حصصي عن بعد (Teams)
+                  {tr('🖨️ طباعة جدول حصصي عن بعد (Teams)', '🖨️ Print My Teams Schedule')}
                 </button>
               )}
             </div>
@@ -1947,10 +2117,13 @@ export default function TeacherProfilePage({
               <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748B', background: '#F8FAFC', borderRadius: '12px' }}>
                 <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>🎥</div>
                 <div style={{ fontWeight: 800, color: '#0F2044', marginBottom: '0.25rem' }}>
-                  لم تقم بإضافة حصص Distance Learning حتى الآن
+                  {tr('لم تقم بإضافة حصص Distance Learning حتى الآن', 'No Distance Learning classes added yet')}
                 </div>
                 <div style={{ fontSize: '0.76rem' }}>
-                  اختر اليوم والتاريخ، الصف، الحصة، وأضف الرابط أعلاه ليتم إدراجها في جدول الطلاب.
+                  {tr(
+                    'اختر اليوم والتاريخ، الصف، الحصة، وأضف الرابط أعلاه ليتم إدراجها في جدول الطلاب.',
+                    'Select the Day & Date, Class, Period, and add the link above to include it in the students timetable.'
+                  )}
                 </div>
               </div>
             ) : (
@@ -1958,12 +2131,19 @@ export default function TeacherProfilePage({
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                   <thead>
                     <tr style={{ background: '#0F2044', color: '#fff' }}>
-                      {['#', 'اليوم والتاريخ', 'الصف', 'الحصة', 'الرابط (Link From Teams)', 'الإجراءات'].map(h => (
+                      {[
+                        '#',
+                        tr('اليوم والتاريخ', 'Day & Date'),
+                        tr('الصف', 'Class'),
+                        tr('الحصة', 'Period'),
+                        tr('الرابط (Link From Teams)', 'Link (Link From Teams)'),
+                        tr('الإجراءات', 'Actions'),
+                      ].map((h, hIdx) => (
                         <th
                           key={h}
                           style={{
                             padding: '0.65rem 0.75rem',
-                            textAlign: h === 'الإجراءات' || h === '#' || h === 'الصف' || h === 'الحصة' ? 'center' : 'right',
+                            textAlign: hIdx === 0 || hIdx === 2 || hIdx === 3 || hIdx === 5 ? 'center' : isEn ? 'left' : 'right',
                             fontWeight: 800,
                             whiteSpace: 'nowrap',
                           }}
@@ -1984,8 +2164,8 @@ export default function TeacherProfilePage({
                       >
                         <td style={{ padding: '0.65rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
                         <td style={{ padding: '0.65rem' }}>
-                          <span style={{ fontWeight: 800, color: '#0F2044' }}>{l.dayName}</span>
-                          <span style={{ fontSize: '0.76rem', color: '#64748B', marginRight: '0.4rem' }}>({l.date})</span>
+                          <span style={{ fontWeight: 800, color: '#0F2044' }}>{trDay(l.dayName)}</span>
+                          <span style={{ fontSize: '0.76rem', color: '#64748B', [isEn ? 'marginLeft' : 'marginRight']: '0.4rem' }}>({l.date})</span>
                         </td>
                         <td style={{ padding: '0.65rem', textAlign: 'center' }}>
                           <span
@@ -2024,13 +2204,13 @@ export default function TeacherProfilePage({
                                 gap: '0.3rem',
                               }}
                             >
-                              🎥 فتح الرابط (Teams)
+                              {tr('🎥 فتح الرابط (Teams)', '🎥 Open Link (Teams)')}
                             </a>
                             <button
                               type="button"
                               onClick={() => {
                                 navigator.clipboard.writeText(l.teamsLink);
-                                showToast('📋 تم نسخ الرابط');
+                                showToast(tr('📋 تم نسخ الرابط', '📋 Link copied to clipboard'));
                               }}
                               style={{
                                 background: '#F1F5F9',
@@ -2043,7 +2223,7 @@ export default function TeacherProfilePage({
                                 cursor: 'pointer',
                               }}
                             >
-                              📋 نسخ
+                              {tr('📋 نسخ', '📋 Copy')}
                             </button>
                           </div>
                         </td>
@@ -2063,7 +2243,7 @@ export default function TeacherProfilePage({
                                   cursor: 'pointer',
                                 }}
                               >
-                                ✏️ تعديل
+                                {tr('✏️ تعديل', '✏️ Edit')}
                               </button>
                               <button
                                 onClick={() => handleDeleteDlLesson(l.id)}
@@ -2078,7 +2258,7 @@ export default function TeacherProfilePage({
                                   cursor: 'pointer',
                                 }}
                               >
-                                🗑️ حذف
+                                {tr('🗑️ حذف', '🗑️ Delete')}
                               </button>
                             </div>
                           )}
@@ -2098,10 +2278,13 @@ export default function TeacherProfilePage({
         <div style={cardStyle}>
           <div style={{ marginBottom: '1.25rem' }}>
             <h3 style={{ fontSize: '1rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
-              🖨️ مركز التقارير الفردية الخاصة بالمعلم: {teacher.nameAr}
+              {tr(`🖨️ مركز التقارير الفردية الخاصة بالمعلم: ${teacher.nameAr}`, `🖨️ Personal Reports & Printing Center: ${displayTeacherName}`)}
             </h3>
             <p style={{ fontSize: '0.76rem', color: '#64748B', margin: '0.25rem 0 0' }}>
-              جميع التقارير أدناه مخصصة للمعلم فقط وتحتوي على إحصاءاته وتقييماته وحصصه وملاحظاته المعتمدة مع الترويسة الرسمية.
+              {tr(
+                'جميع التقارير أدناه مخصصة للمعلم فقط وتحتوي على إحصاءاته وتقييماته وحصصه وملاحظاته المعتمدة مع الترويسة الرسمية.',
+                'All reports below are dedicated to the teacher only and include verified statistics, evaluations, lessons, and official headers.'
+              )}
             </p>
           </div>
 
@@ -2129,10 +2312,13 @@ export default function TeacherProfilePage({
               <div>
                 <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>📊</div>
                 <div style={{ fontWeight: 900, fontSize: '0.9rem', color: '#0F2044' }}>
-                  التقرير الشامل لإحصاءات وملف إنجاز المعلم (360° Portfolio)
+                  {tr('التقرير الشامل لإحصاءات وملف إنجاز المعلم (360° Portfolio)', 'Comprehensive Teacher Statistics & Portfolio Report (360°)')}
                 </div>
                 <p style={{ fontSize: '0.73rem', color: '#64748B', margin: '0.3rem 0 0', lineHeight: 1.5 }}>
-                  يشمل كافة مؤشرات الأداء، المنحنى الشهري، سجل التقييمات الشهرية، والورش التدريبية الخاصة بالمعلم.
+                  {tr(
+                    'يشمل كافة مؤشرات الأداء، المنحنى الشهري، سجل التقييمات الشهرية، والورش التدريبية الخاصة بالمعلم.',
+                    'Includes all KPIs, monthly performance trend, monthly evaluations log, and professional development records.'
+                  )}
                 </p>
               </div>
               <button
@@ -2151,7 +2337,7 @@ export default function TeacherProfilePage({
                   cursor: 'pointer',
                 }}
               >
-                🖨️ طباعة التقرير الشامل للمعلم
+                {tr('🖨️ طباعة التقرير الشامل للمعلم', '🖨️ Print Comprehensive Portfolio')}
               </button>
             </div>
 
@@ -2171,17 +2357,20 @@ export default function TeacherProfilePage({
               <div>
                 <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>🌐</div>
                 <div style={{ fontWeight: 900, fontSize: '0.9rem', color: '#0369A1' }}>
-                  تقرير جدول حصص التعلم عن بعد (Microsoft Teams) الخاص بالمعلم
+                  {tr('تقرير جدول حصص التعلم عن بعد (Microsoft Teams) الخاص بالمعلم', 'Teacher Distance Learning (Microsoft Teams) Schedule Report')}
                 </div>
                 <p style={{ fontSize: '0.73rem', color: '#475569', margin: '0.3rem 0 0', lineHeight: 1.5 }}>
-                  طباعة جدول الحصص والروابط التفاعلية التي قام المعلم بإضافتها في تبويب Distance Learning ({teacherDistanceLessons.length} حصة).
+                  {tr(
+                    `طباعة جدول الحصص والروابط التفاعلية التي قام المعلم بإضافتها في تبويب Distance Learning (${teacherDistanceLessons.length} حصة).`,
+                    `Print the timetable and interactive Teams links added in the Distance Learning tab (${teacherDistanceLessons.length} classes).`
+                  )}
                 </p>
               </div>
               <button
                 onClick={() =>
                   printTeacherDistanceLessonsScheduleReport(teacherDistanceLessons, {
                     academicYear: activeYear,
-                    teacherOnlyName: teacher.nameAr,
+                    teacherOnlyName: displayTeacherName,
                   })
                 }
                 style={{
@@ -2195,7 +2384,7 @@ export default function TeacherProfilePage({
                   cursor: 'pointer',
                 }}
               >
-                🖨️ طباعة جدول حصص Teams الخاص بي
+                {tr('🖨️ طباعة جدول حصص Teams الخاص بي', '🖨️ Print My Teams Schedule')}
               </button>
             </div>
 
@@ -2215,10 +2404,13 @@ export default function TeacherProfilePage({
               <div>
                 <div style={{ fontSize: '1.4rem', marginBottom: '0.3rem' }}>🎓</div>
                 <div style={{ fontWeight: 900, fontSize: '0.9rem', color: '#065F46' }}>
-                  سجل التدريب الفردي والتدريب الذاتي والشهادات المهنية للمعلم
+                  {tr('سجل التدريب الفردي والتدريب الذاتي والشهادات المهنية للمعلم', 'Individual & Self-Training PD & Certifications Log')}
                 </div>
                 <p style={{ fontSize: '0.73rem', color: '#475569', margin: '0.3rem 0 0', lineHeight: 1.5 }}>
-                  طباعة كشف رسمي معتمد بجميع جلسات التدريب الفردي وبرامج التعلم الذاتي وشهادة MEEE المرتبطة بصفحة المعلم ({teacherPD.length} سجل تدريبي).
+                  {tr(
+                    `طباعة كشف رسمي معتمد بجميع جلسات التدريب الفردي وبرامج التعلم الذاتي وشهادة MEEE المرتبطة بصفحة المعلم (${teacherPD.length} سجل تدريبي).`,
+                    `Print an official verified log of all individual training sessions, self-learning programs, and MEEE certification (${teacherPD.length} records).`
+                  )}
                 </p>
               </div>
               <button
@@ -2237,14 +2429,14 @@ export default function TeacherProfilePage({
                   cursor: 'pointer',
                 }}
               >
-                🖨️ طباعة سجل التدريب الفردي والذاتي
+                {tr('🖨️ طباعة سجل التدريب الفردي والذاتي', '🖨️ Print Individual & Self-PD Log')}
               </button>
             </div>
           </div>
 
           {/* Individual Monthly Evaluation Printable Reports */}
           <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F2044', marginBottom: '0.65rem' }}>
-            📝 طباعة تقارير تقييمات نظام قطر للتعليم الشهرية (منفصلة لكل شهر):
+            {tr('📝 طباعة تقارير تقييمات نظام قطر للتعليم الشهرية (منفصلة لكل شهر):', '📝 Print Individual Monthly QES LMS Evaluation Reports:')}
           </h4>
           <div
             style={{
@@ -2269,10 +2461,10 @@ export default function TeacherProfilePage({
               >
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '0.82rem', color: '#0F2044' }}>
-                    شهر {ev.month} ({ev.academicYear})
+                    {tr(`شهر ${ev.month} (${ev.academicYear})`, `${trMonth(ev.month)} (${ev.academicYear})`)}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#0369A1', fontWeight: 800 }}>
-                    الدرجة: {ev.totalScore}%
+                    {tr(`الدرجة: ${ev.totalScore}%`, `Score: ${ev.totalScore}%`)}
                   </div>
                 </div>
                 <button
@@ -2288,7 +2480,7 @@ export default function TeacherProfilePage({
                     cursor: 'pointer',
                   }}
                 >
-                  🖨️ طباعة
+                  {tr('🖨️ طباعة', '🖨️ Print')}
                 </button>
               </div>
             ))}
@@ -2298,7 +2490,7 @@ export default function TeacherProfilePage({
           {teacherModelLessons.length > 0 && (
             <>
               <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F2044', marginBottom: '0.65rem' }}>
-                💻 طباعة تقارير حصص التعليم الإلكتروني المقيمة:
+                {tr('💻 طباعة تقارير حصص التعليم الإلكتروني المقيمة:', '💻 Print Evaluated E-Learning Lesson Reports:')}
               </h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.75rem' }}>
                 {teacherModelLessons.map(ml => (
@@ -2316,10 +2508,10 @@ export default function TeacherProfilePage({
                   >
                     <div>
                       <div style={{ fontWeight: 800, fontSize: '0.8rem', color: '#0F2044' }}>
-                        حصة {ml.date} (الصف {ml.classGrade})
+                        {tr(`حصة ${ml.date} (الصف ${ml.classGrade})`, `Lesson ${ml.date} (Class ${ml.classGrade})`)}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 800 }}>
-                        التقييم: {ml.overallScore} / 10
+                        {tr(`التقييم: ${ml.overallScore} / 10`, `Score: ${ml.overallScore} / 10`)}
                       </div>
                     </div>
                     <button
@@ -2335,7 +2527,7 @@ export default function TeacherProfilePage({
                         cursor: 'pointer',
                       }}
                     >
-                      🖨️ طباعة
+                      {tr('🖨️ طباعة', '🖨️ Print')}
                     </button>
                   </div>
                 ))}
@@ -2351,10 +2543,16 @@ export default function TeacherProfilePage({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
             <div>
               <h3 style={{ fontSize: '0.98rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
-                🎓 التطوير المهني، التدريب الفردي والذاتي، والشهادات المعتمدة الخاصة بالمعلم
+                {tr(
+                  '🎓 التطوير المهني، التدريب الفردي والذاتي، والشهادات المعتمدة الخاصة بالمعلم',
+                  '🎓 Professional Development, Individual & Self-Training, and Certifications'
+                )}
               </h3>
               <p style={{ fontSize: '0.75rem', color: '#64748B', margin: '0.2rem 0 0', fontWeight: 600 }}>
-                جميع سجلات التدريب الفردي وبرامج التعلم الذاتي والورش المرتبطة بملف المعلم أ. {teacher.nameAr} ({deptName})
+                {tr(
+                  `جميع سجلات التدريب الفردي وبرامج التعلم الذاتي والورش المرتبطة بملف المعلم أ. ${teacher.nameAr} (${deptName})`,
+                  `All individual training sessions, self-learning programs, and workshops linked to ${displayTeacherName} (${deptName})`
+                )}
               </p>
             </div>
             <button
@@ -2371,7 +2569,7 @@ export default function TeacherProfilePage({
                 cursor: 'pointer',
               }}
             >
-              🖨️ طباعة سجل التطوير المهني والتدريب الذاتي
+              {tr('🖨️ طباعة سجل التطوير المهني والتدريب الذاتي', '🖨️ Print PD & Self-Training Log')}
             </button>
           </div>
 
@@ -2385,30 +2583,47 @@ export default function TeacherProfilePage({
             }}
           >
             <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: '10px', padding: '0.85rem' }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0369A1' }}>إجمالي التدريب الفردي والذاتي</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0369A1' }}>
+                {tr('إجمالي التدريب الفردي والذاتي', 'Total Individual & Self PD')}
+              </div>
               <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0F2044', marginTop: '0.2rem' }}>
-                {teacherPD.length} <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>سجل موثق</span>
+                {teacherPD.length}{' '}
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>
+                  {tr('سجل موثق', 'verified records')}
+                </span>
               </div>
             </div>
             <div style={{ background: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '10px', padding: '0.85rem' }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#4338CA' }}>برامج التدريب والتعلم الذاتي</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#4338CA' }}>
+                {tr('برامج التدريب والتعلم الذاتي', 'Self-Learning Programs')}
+              </div>
               <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#4338CA', marginTop: '0.2rem' }}>
                 {teacherPD.filter(r => r.trainingType === 'برنامج تعلم ذاتي / تطوير مهني خارجي').length}{' '}
-                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>برنامج</span>
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>
+                  {tr('برنامج', 'programs')}
+                </span>
               </div>
             </div>
             <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '10px', padding: '0.85rem' }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#065F46' }}>جلسات التدريب والدعم الفردي</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#065F46' }}>
+                {tr('جلسات التدريب والدعم الفردي', 'Individual Training Sessions')}
+              </div>
               <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#065F46', marginTop: '0.2rem' }}>
                 {teacherPD.filter(r => r.trainingType !== 'برنامج تعلم ذاتي / تطوير مهني خارجي').length}{' '}
-                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>جلسة</span>
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>
+                  {tr('جلسة', 'sessions')}
+                </span>
               </div>
             </div>
             <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: '10px', padding: '0.85rem' }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#92400E' }}>إجمالي دقائق التدريب الفردي والذاتي</div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#92400E' }}>
+                {tr('إجمالي دقائق التدريب الفردي والذاتي', 'Total Training Minutes')}
+              </div>
               <div style={{ fontSize: '1.45rem', fontWeight: 900, color: '#92400E', marginTop: '0.2rem' }}>
                 {teacherPD.reduce((sum, r) => sum + (r.durationMinutes || 20), 0)}{' '}
-                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>دقيقة</span>
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#64748B' }}>
+                  {tr('دقيقة', 'mins')}
+                </span>
               </div>
             </div>
           </div>
@@ -2428,37 +2643,52 @@ export default function TeacherProfilePage({
           >
             <div>
               <h4 style={{ margin: '0 0 0.25rem', color: '#0F2044', fontSize: '0.88rem', fontWeight: 800 }}>
-                🏅 شهادة معلم مايكروسوفت الخبير (MEEE)
+                {tr('🏅 شهادة معلم مايكروسوفت الخبير (MEEE)', '🏅 Microsoft Innovative Educator Expert (MEEE)')}
               </h4>
               <p style={{ margin: 0, fontSize: '0.75rem', color: '#475569' }}>
-                الحالة:{' '}
+                {tr('الحالة:', 'Status:')}{' '}
                 <strong style={{ color: teacherMeee?.status === 'حصل على الشهادة' ? '#065F46' : '#0369A1' }}>
-                  {teacherMeee?.status || 'لم يتم التقديم بعد'}
+                  {trMeee(teacherMeee?.status)}
                 </strong>
-                {teacherMeee?.certificationDate && ` | تاريخ الاعتماد: ${teacherMeee.certificationDate}`}
+                {teacherMeee?.certificationDate &&
+                  (isEn
+                    ? ` | Certification Date: ${teacherMeee.certificationDate}`
+                    : ` | تاريخ الاعتماد: ${teacherMeee.certificationDate}`)}
               </p>
             </div>
             <span style={{ fontSize: '2rem' }}>{teacherMeee?.status === 'حصل على الشهادة' ? '🎖️' : '⏳'}</span>
           </div>
 
           <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F2044', marginBottom: '0.75rem' }}>
-            📋 سجلات التدريب الفردي والتدريب الذاتي المرتبطة بالمعلم ({teacherPD.length})
+            {tr(
+              `📋 سجلات التدريب الفردي والتدريب الذاتي المرتبطة بالمعلم (${teacherPD.length})`,
+              `📋 Individual & Self-Training Records Linked to Teacher (${teacherPD.length})`
+            )}
           </h4>
           {teacherPD.length === 0 ? (
             <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.8rem', background: '#F8FAFC', borderRadius: '10px' }}>
-              لا توجد سجلات تطوير مهني فردية أو ذاتية مسجلة لهذا المعلم حتى الآن
+              {tr('لا توجد سجلات تطوير مهني فردية أو ذاتية مسجلة لهذا المعلم حتى الآن', 'No individual or self-training PD records registered for this teacher yet')}
             </div>
           ) : (
             <div style={{ overflowX: 'auto', marginBottom: '1.25rem' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
                 <thead>
                   <tr style={{ background: '#0F2044', color: '#fff' }}>
-                    {['#', 'التاريخ والعام', 'المهارة / البرنامج التدريبي', 'التصنيف', 'نوع التدريب', 'المدرب / الجهة', 'المدة', 'الحالة'].map(h => (
+                    {[
+                      '#',
+                      tr('التاريخ والعام', 'Date & Year'),
+                      tr('المهارة / البرنامج التدريبي', 'Skill / Training Program'),
+                      tr('التصنيف', 'Category'),
+                      tr('نوع التدريب', 'Training Type'),
+                      tr('المدرب / الجهة', 'Trainer / Organizer'),
+                      tr('المدة', 'Duration'),
+                      tr('الحالة', 'Status'),
+                    ].map((h, hIdx) => (
                       <th
                         key={h}
                         style={{
                           padding: '0.6rem 0.75rem',
-                          textAlign: h === '#' || h === 'المدة' || h === 'الحالة' ? 'center' : 'right',
+                          textAlign: hIdx === 0 || hIdx === 6 || hIdx === 7 ? 'center' : isEn ? 'left' : 'right',
                           fontWeight: 800,
                           whiteSpace: 'nowrap',
                         }}
@@ -2482,14 +2712,14 @@ export default function TeacherProfilePage({
                         <td style={{ padding: '0.6rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
                         <td style={{ padding: '0.6rem', whiteSpace: 'nowrap' }}>
                           <div style={{ fontWeight: 800, color: '#0F2044' }}>{pd.trainingDate}</div>
-                          <div style={{ fontSize: '0.68rem', color: '#64748B' }}>{pd.month} ({pd.academicYear})</div>
+                          <div style={{ fontSize: '0.68rem', color: '#64748B' }}>{trMonth(pd.month)} ({pd.academicYear})</div>
                         </td>
                         <td style={{ padding: '0.6rem', fontWeight: 800, color: '#0369A1' }}>
-                          {pd.skillProvided || 'تدريب فردي'}
+                          {pd.skillProvided || tr('تدريب فردي', 'Individual Training')}
                         </td>
                         <td style={{ padding: '0.6rem' }}>
                           <span style={{ background: '#F1F5F9', color: '#334155', padding: '2px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>
-                            {pd.skillCategory || 'نظام قطر للتعليم'}
+                            {pd.skillCategory || tr('نظام قطر للتعليم', 'QES LMS')}
                           </span>
                         </td>
                         <td style={{ padding: '0.6rem' }}>
@@ -2504,14 +2734,18 @@ export default function TeacherProfilePage({
                               fontWeight: 800,
                             }}
                           >
-                            {isSelfLearning ? '🎓 تدريب ذاتي / خارجي' : pd.trainingType || '👤 تدريب فردي'}
+                            {isSelfLearning
+                              ? tr('🎓 تدريب ذاتي / خارجي', '🎓 Self-Learning / External')
+                              : isEn
+                              ? '👤 Individual Training'
+                              : pd.trainingType || '👤 تدريب فردي'}
                           </span>
                         </td>
                         <td style={{ padding: '0.6rem', fontWeight: 700, color: '#334155' }}>
-                          {pd.trainerName || 'أحمد طبيشات'}
+                          {pd.trainerName || tr('أحمد طبيشات', 'Ahmad Tubaishat')}
                         </td>
                         <td style={{ padding: '0.6rem', textAlign: 'center', fontWeight: 800, color: '#0F2044' }}>
-                          {pd.durationMinutes || 20} د
+                          {pd.durationMinutes || 20} {tr('د', 'min')}
                         </td>
                         <td style={{ padding: '0.6rem', textAlign: 'center' }}>
                           <span
@@ -2524,7 +2758,9 @@ export default function TeacherProfilePage({
                               fontWeight: 800,
                             }}
                           >
-                            {pd.signatureStatus || 'موثق'}
+                            {pd.signatureStatus === 'تم التوقيع'
+                              ? tr('تم التوقيع', 'Signed / Verified')
+                              : tr(pd.signatureStatus || 'موثق', 'Verified')}
                           </span>
                         </td>
                       </tr>
@@ -2536,11 +2772,11 @@ export default function TeacherProfilePage({
           )}
 
           <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F2044', margin: '1rem 0 0.75rem' }}>
-            🏫 الورش التدريبية الجماعية المشارك بها ({teacherWorkshops.length})
+            {tr(`🏫 الورش التدريبية الجماعية المشارك بها (${teacherWorkshops.length})`, `🏫 Collective Workshops Attended (${teacherWorkshops.length})`)}
           </h4>
           {teacherWorkshops.length === 0 ? (
             <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.8rem' }}>
-              لا توجد ورش جماعية مسجلة باسم المعلم مباشرة
+              {tr('لا توجد ورش جماعية مسجلة باسم المعلم مباشرة', 'No collective workshops directly registered under this teacher')}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -2558,9 +2794,11 @@ export default function TeacherProfilePage({
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#065F46' }}>{w.titleAr || w.nameAr}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.8rem', color: '#065F46' }}>
+                      {isEn ? (w.titleEn || w.nameEn || w.titleAr || w.nameAr) : (w.titleAr || w.nameAr)}
+                    </div>
                     <div style={{ fontSize: '0.7rem', color: '#475569' }}>
-                      📅 {w.date} | المحاضر: {w.trainerName || w.facilitatorName || '-'} | المكان: {w.venue || w.location || '-'}
+                      📅 {w.date} | {tr('المحاضر:', 'Facilitator:')} {w.trainerName || w.facilitatorName || '-'} | {tr('المكان:', 'Venue:')} {w.venue || w.location || '-'}
                     </div>
                   </div>
                   <span
@@ -2573,7 +2811,7 @@ export default function TeacherProfilePage({
                       fontWeight: 700,
                     }}
                   >
-                    {w.targetAudience || 'ورشة جماعية'}
+                    {w.targetAudience || tr('ورشة جماعية', 'Group Workshop')}
                   </span>
                 </div>
               ))}
@@ -2609,7 +2847,7 @@ export default function TeacherProfilePage({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0F2044' }}>
-                💬 إبداء رأي وملاحظات المعلم على التقييم / الحصة
+                {tr('💬 إبداء رأي وملاحظات المعلم على التقييم / الحصة', '💬 Add Teacher Opinion & Reflection on Evaluation / Lesson')}
               </h3>
               <button
                 onClick={() => setFeedbackModal(null)}
@@ -2637,28 +2875,28 @@ export default function TeacherProfilePage({
             <form onSubmit={handleSaveFeedback}>
               <div style={{ marginBottom: '0.85rem' }}>
                 <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>
-                  رأي المعلم وملاحظاته وتأمله المهني *
+                  {tr('رأي المعلم وملاحظاته وتأمله المهني *', 'Teacher Opinion, Notes & Professional Reflection *')}
                 </label>
                 <textarea
                   className="form-input"
                   rows={4}
                   value={feedbackModal.opinionText}
                   onChange={e => setFeedbackModal({ ...feedbackModal, opinionText: e.target.value })}
-                  placeholder="اكتب رأيك وملاحظاتك حول التقييم أو الحصة..."
+                  placeholder={tr('اكتب رأيك وملاحظاتك حول التقييم أو الحصة...', 'Write your opinion and reflection on the evaluation or lesson...')}
                   required
                 />
               </div>
 
               <div style={{ marginBottom: '0.85rem' }}>
                 <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>
-                  الإجراءات التطويرية التي تم تنفيذها بناءً على التوصيات (اختياري)
+                  {tr('الإجراءات التطويرية التي تم تنفيذها بناءً على التوصيات (اختياري)', 'Improvement Actions Taken Based on Recommendations (Optional)')}
                 </label>
                 <textarea
                   className="form-input"
                   rows={2}
                   value={feedbackModal.actionTaken}
                   onChange={e => setFeedbackModal({ ...feedbackModal, actionTaken: e.target.value })}
-                  placeholder="مثال: تم إثراء المحتوى الرقمي على نظام قطر للتعليم وإضافة أنشطة تفاعلية..."
+                  placeholder={tr('مثال: تم إثراء المحتوى الرقمي على نظام قطر للتعليم وإضافة أنشطة تفاعلية...', 'e.g. Enriched digital content on QES LMS and added interactive activities...')}
                 />
               </div>
 
@@ -2683,7 +2921,7 @@ export default function TeacherProfilePage({
                   checked={feedbackModal.acknowledged}
                   onChange={e => setFeedbackModal({ ...feedbackModal, acknowledged: e.target.checked })}
                 />
-                <span>أقر بأنني اطلعت على تفاصيل التقييم والتوصيات الواردة فيه</span>
+                <span>{tr('أقر بأنني اطلعت على تفاصيل التقييم والتوصيات الواردة فيه', 'I acknowledge that I have reviewed the evaluation details and recommendations')}</span>
               </label>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -2693,7 +2931,7 @@ export default function TeacherProfilePage({
                   className="btn btn-ghost"
                   style={{ fontSize: '0.8rem' }}
                 >
-                  إلغاء
+                  {tr('إلغاء', 'Cancel')}
                 </button>
                 <button
                   type="submit"
@@ -2701,7 +2939,7 @@ export default function TeacherProfilePage({
                   className="btn btn-primary"
                   style={{ fontSize: '0.82rem', fontWeight: 800 }}
                 >
-                  {savingFeedback ? '⏳ جاري الحفظ...' : '💾 حفظ الرأي والملاحظات'}
+                  {savingFeedback ? tr('⏳ جاري الحفظ...', '⏳ Saving...') : tr('💾 حفظ الرأي والملاحظات', '💾 Save Opinion & Notes')}
                 </button>
               </div>
             </form>
