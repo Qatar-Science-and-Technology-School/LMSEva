@@ -656,15 +656,24 @@ export interface TeacherDistanceLesson {
   updatedAt: string;
 }
 
+export const DISTANCE_LEARNING_CLASSES = [
+  '7A', '7B', '7C',
+  '9A', '9B', '9C',
+  '10A', '10B', '10C', '10D',
+  '11A', '11B', '11C', '11D',
+  '12A', '12B', '12C', '12D', '12E',
+] as const;
+
+export const DISTANCE_LEARNING_PERIODS = ['1', '2', '3', '4', '5', '6', '7'] as const;
+
 export const SCHOOL_PERIOD_OPTIONS = [
-  { id: '1', label: 'الحصة الأولى', startTime: '07:15', endTime: '08:00' },
-  { id: '2', label: 'الحصة الثانية', startTime: '08:05', endTime: '08:50' },
-  { id: '3', label: 'الحصة الثالثة', startTime: '08:55', endTime: '09:40' },
-  { id: '4', label: 'الحصة الرابعة', startTime: '10:05', endTime: '10:50' },
-  { id: '5', label: 'الحصة الخامسة', startTime: '10:55', endTime: '11:40' },
-  { id: '6', label: 'الحصة السادسة', startTime: '11:45', endTime: '12:30' },
-  { id: '7', label: 'الحصة السابعة', startTime: '12:45', endTime: '13:30' },
-  { id: '8', label: 'حصة مسائية / إثرائية', startTime: '16:00', endTime: '17:00' },
+  { id: '1', label: '1', startTime: '07:15', endTime: '08:00' },
+  { id: '2', label: '2', startTime: '08:05', endTime: '08:50' },
+  { id: '3', label: '3', startTime: '08:55', endTime: '09:40' },
+  { id: '4', label: '4', startTime: '10:05', endTime: '10:50' },
+  { id: '5', label: '5', startTime: '10:55', endTime: '11:40' },
+  { id: '6', label: '6', startTime: '11:45', endTime: '12:30' },
+  { id: '7', label: '7', startTime: '12:45', endTime: '13:30' },
 ];
 
 export function getArabicDayName(dateStr: string): string {
@@ -701,6 +710,7 @@ if (typeof window !== 'undefined') {
 
 export function sortTeacherDistanceLessons(lessons: TeacherDistanceLesson[]): TeacherDistanceLesson[] {
   const periodOrder: Record<string, number> = {
+    '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7,
     'الحصة الأولى': 1,
     'الحصة الثانية': 2,
     'الحصة الثالثة': 3,
@@ -708,13 +718,12 @@ export function sortTeacherDistanceLessons(lessons: TeacherDistanceLesson[]): Te
     'الحصة الخامسة': 5,
     'الحصة السادسة': 6,
     'الحصة السابعة': 7,
-    'حصة مسائية / إثرائية': 8,
   };
   return [...lessons].sort((a, b) => {
     const dateDiff = (b.date || '').localeCompare(a.date || '');
     if (dateDiff !== 0) return dateDiff;
-    const pA = periodOrder[a.period] || 99;
-    const pB = periodOrder[b.period] || 99;
+    const pA = periodOrder[String(a.period)] || Number(a.period) || 99;
+    const pB = periodOrder[String(b.period)] || Number(b.period) || 99;
     if (pA !== pB) return pA - pB;
     return (a.gradeSection || '').localeCompare(b.gradeSection || '');
   });

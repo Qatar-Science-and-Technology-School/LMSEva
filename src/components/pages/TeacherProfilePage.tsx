@@ -29,10 +29,9 @@ import type {
 import type { IndividualPDRecord, Workshop } from '@/lib/pdData';
 import {
   TeacherDistanceLesson,
-  TeacherDistanceLessonStatus,
+  DISTANCE_LEARNING_CLASSES,
+  DISTANCE_LEARNING_PERIODS,
   SCHOOL_PERIOD_OPTIONS,
-  GRADE_OPTIONS,
-  getSectionsForGrade,
   getArabicDayName,
   loadTeacherDistanceLessons,
   fetchTeacherDistanceLessonsFromCloud,
@@ -129,20 +128,13 @@ export default function TeacherProfilePage({
   } | null>(null);
   const [savingFeedback, setSavingFeedback] = useState(false);
 
-  // Distance Learning (Teams) lesson form state
+  // Distance Learning (Teams) lesson form state (Only: Date, Class 7A..12E, Period 1..7, Link)
   const todayStr = new Date().toISOString().split('T')[0];
   const [editingDlLesson, setEditingDlLesson] = useState<TeacherDistanceLesson | null>(null);
-  const [dlLessonTitle, setDlLessonTitle] = useState('');
-  const [dlSubject, setDlSubject] = useState('');
-  const [dlGrade, setDlGrade] = useState('الصف 10');
-  const [dlSection, setDlSection] = useState('1');
   const [dlDate, setDlDate] = useState(todayStr);
-  const [dlPeriod, setDlPeriod] = useState('الحصة الأولى');
-  const [dlStartTime, setDlStartTime] = useState('07:15');
-  const [dlEndTime, setDlEndTime] = useState('08:00');
+  const [dlClassCode, setDlClassCode] = useState<string>('7A');
+  const [dlPeriod, setDlPeriod] = useState<string>('1');
   const [dlTeamsLink, setDlTeamsLink] = useState('');
-  const [dlStudentNotes, setDlStudentNotes] = useState('');
-  const [dlStatus, setDlStatus] = useState<TeacherDistanceLessonStatus>('مجدولة');
   const [savingDl, setSavingDl] = useState(false);
 
   const loadProfileData = useCallback(() => {
@@ -186,12 +178,6 @@ export default function TeacherProfilePage({
   }, [loadProfileData]);
 
   const teacher = useMemo(() => teachers.find(t => t.id === teacherId), [teachers, teacherId]);
-
-  useEffect(() => {
-    if (teacher && !dlSubject) {
-      setDlSubject(teacher.subject || '');
-    }
-  }, [teacher, dlSubject]);
 
   const recognitionHistory = useMemo(() => {
     return getTeacherRecognitionHistory(evaluations, teachers, departments, teacherId);
@@ -456,19 +442,20 @@ export default function TeacherProfilePage({
     setSavingFeedback(false);
   };
 
-  // Save Distance Learning Teams Lesson
+  // Save Distance Learning Teams Lesson (Only: Date, Class 7A..12E, Period 1..7, Link)
   const handleSaveDlLesson = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dlLessonTitle.trim() || !dlTeamsLink.trim()) {
-      alert('يرجى إدخال عنوان الحصة ورابط الحصة من Microsoft Teams');
+    if (!dlTeamsLink.trim()) {
+      alert('يرجى إدخال الرابط (Link From Teams)');
       return;
     }
     setSavingDl(true);
     try {
       const now = new Date().toISOString();
-      const gradeNumMatch = dlGrade.match(/\d+/);
-      const gradeNum = gradeNumMatch ? gradeNumMatch[0] : '10';
-      const gradeSection = dlSection === 'جميع الشعب' ? `${dlGrade} (جميع الشعب)` : `${gradeNum}/${dlSection}`;
+      const gradeNumMatch = dlClassCode.match(/\d+/);
+      const gradeNum = gradeNumMatch ? gradeNumMatch[0] : '7';
+      const secLetter = dlClassCode.replace(/\d+/g, '') || 'A';
+      const periodTiming = SCHOOL_PERIOD_OPTIONS.find(p => p.id === String(dlPeriod));
 
       const lesson: TeacherDistanceLesson = {
         id: editingDlLesson?.id || `TDL-${teacherId}-${Date.now().toString().slice(-6)}`,
@@ -477,20 +464,20 @@ export default function TeacherProfilePage({
         teacherNameEn: teacher.nameEn,
         departmentId: teacher.departmentId,
         departmentName: deptName,
-        subject: dlSubject.trim() || teacher.subject,
-        lessonTitle: dlLessonTitle.trim(),
-        grade: dlGrade,
-        section: dlSection,
-        gradeSection,
+        subject: teacher.subject,
+        lessonTitle: `حصة ${teacher.subject} (${dlClassCode})`,
+        grade: `الصف ${gradeNum}`,
+        section: secLetter,
+        gradeSection: dlClassCode,
         date: dlDate,
         dayName: getArabicDayName(dlDate),
-        period: dlPeriod,
-        startTime: dlStartTime,
-        endTime: dlEndTime,
+        period: String(dlPeriod),
+        startTime: periodTiming?.startTime || '',
+        endTime: periodTiming?.endTime || '',
         teamsLink: dlTeamsLink.trim(),
         platform: 'Microsoft Teams',
-        studentNotes: dlStudentNotes.trim(),
-        status: dlStatus,
+        studentNotes: '',
+        status: 'مجدولة',
         academicYear: activeYear,
         createdAt: editingDlLesson?.createdAt || now,
         updatedAt: now,
@@ -499,10 +486,8 @@ export default function TeacherProfilePage({
       const updatedAll = await saveSingleTeacherDistanceLesson(lesson);
       setDistanceLessons(updatedAll);
       setEditingDlLesson(null);
-      setDlLessonTitle('');
       setDlTeamsLink('');
-      setDlStudentNotes('');
-      showToast(editingDlLesson ? '✅ تم تحديث حصة التعلم عن بعد (Teams) بنجاح' : '✅ تمت إضافة حصة التعلم عن بعد (Link From Teams) بنجاح');
+      showToast(editingDlLesson ? '✅ تم تحديث حصة التعلم عن بعد بنجاح' : '✅ تمت إضافة حصة التعلم عن بعد (Link From Teams) بنجاح');
     } catch (err) {
       console.error('Error saving DL lesson:', err);
       showToast('حدث خطأ أثناء حفظ حصة التعلم عن بعد', 'error');
@@ -512,17 +497,13 @@ export default function TeacherProfilePage({
 
   const handleEditDlLesson = (lesson: TeacherDistanceLesson) => {
     setEditingDlLesson(lesson);
-    setDlLessonTitle(lesson.lessonTitle);
-    setDlSubject(lesson.subject);
-    setDlGrade(lesson.grade || 'الصف 10');
-    setDlSection(lesson.section || '1');
     setDlDate(lesson.date);
-    setDlPeriod(lesson.period);
-    setDlStartTime(lesson.startTime);
-    setDlEndTime(lesson.endTime);
+    setDlClassCode(
+      DISTANCE_LEARNING_CLASSES.includes(lesson.gradeSection as any) ? lesson.gradeSection : '7A'
+    );
+    const pDigits = String(lesson.period || '1').replace(/\D/g, '');
+    setDlPeriod(pDigits && ['1', '2', '3', '4', '5', '6', '7'].includes(pDigits) ? pDigits : '1');
     setDlTeamsLink(lesson.teamsLink);
-    setDlStudentNotes(lesson.studentNotes || '');
-    setDlStatus(lesson.status || 'مجدولة');
   };
 
   const handleDeleteDlLesson = async (id: string) => {
@@ -834,8 +815,6 @@ export default function TeacherProfilePage({
       {sub && <p style={{ fontSize: '0.65rem', color: '#94A3B8', margin: '0.15rem 0 0', fontWeight: 600 }}>{sub}</p>}
     </div>
   );
-
-  const availableSections = getSectionsForGrade(dlGrade);
 
   return (
     <div style={{ padding: '1.5rem', direction: 'rtl', maxWidth: '1180px', margin: '0 auto' }}>
@@ -1728,7 +1707,7 @@ export default function TeacherProfilePage({
       {/* ──── TAB 3: DISTANCE LEARNING (MICROSOFT TEAMS LINKS FOR STUDENTS) ──── */}
       {activeTab === 'distance_learning' && (
         <div>
-          {/* Form Card to Add/Edit Distance Learning Class (Link From Teams) */}
+          {/* Form Card to Add/Edit Distance Learning Class (Only: اليوم والتاريخ، الصف، الحصة، الرابط) */}
           {canTeacherAct && (
             <div
               className="no-print"
@@ -1750,10 +1729,10 @@ export default function TeacherProfilePage({
               >
                 <div>
                   <h3 style={{ fontSize: '1.02rem', fontWeight: 900, color: '#0F2044', margin: 0 }}>
-                    🌐 {editingDlLesson ? 'تعديل حصة التعلم عن بعد (Teams)' : 'إضافة حصة تعلم عن بعد جديدة — Distance Learning (Link From Teams)'}
+                    🌐 {editingDlLesson ? 'تعديل حصة Distance Learning' : 'إضافة حصة Distance Learning (Link From Teams)'}
                   </h3>
                   <p style={{ fontSize: '0.75rem', color: '#0369A1', margin: '0.2rem 0 0', fontWeight: 600 }}>
-                    أضف بيانات حصتك ورابط الاجتماع المباشر من <strong>Microsoft Teams</strong> ليظهر تلقائياً في جدول حصص التعلم عن بعد المعتمد الذي يرسله مدير النظام للطلاب.
+                    اختر اليوم والتاريخ، الصف، الحصة، وأضف الرابط من Microsoft Teams.
                   </p>
                 </div>
                 {editingDlLesson && (
@@ -1761,9 +1740,7 @@ export default function TeacherProfilePage({
                     type="button"
                     onClick={() => {
                       setEditingDlLesson(null);
-                      setDlLessonTitle('');
                       setDlTeamsLink('');
-                      setDlStudentNotes('');
                     }}
                     style={{
                       background: '#FEE2E2',
@@ -1785,154 +1762,72 @@ export default function TeacherProfilePage({
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-                    gap: '0.85rem',
-                    marginBottom: '0.85rem',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '0.9rem',
+                    marginBottom: '1rem',
                   }}
                 >
+                  {/* 1. اليوم والتاريخ */}
                   <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                      عنوان الدرس / الحصة *
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={dlLessonTitle}
-                      onChange={e => setDlLessonTitle(e.target.value)}
-                      placeholder="مثال: مراجعة الوحدة الثالثة - تطبيقات عملية"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                      المادة الدراسية *
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={dlSubject}
-                      onChange={e => setDlSubject(e.target.value)}
-                      placeholder={teacher.subject}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                      الصف الدراسي *
-                    </label>
-                    <select
-                      className="form-input"
-                      value={dlGrade}
-                      onChange={e => {
-                        setDlGrade(e.target.value);
-                        const secs = getSectionsForGrade(e.target.value);
-                        if (secs.length > 0) setDlSection(secs[0].sectionNum);
-                      }}
-                    >
-                      {GRADE_OPTIONS.map(g => (
-                        <option key={g} value={g}>
-                          {g}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                      الشعبة *
-                    </label>
-                    <select className="form-input" value={dlSection} onChange={e => setDlSection(e.target.value)}>
-                      {availableSections.map(s => (
-                        <option key={s.section} value={s.sectionNum}>
-                          شعبة {s.section} ({s.studentsCount} طالب)
-                        </option>
-                      ))}
-                      <option value="جميع الشعب">جميع شعب {dlGrade}</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                      تاريخ الحصة ({getArabicDayName(dlDate)}) *
+                    <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0F2044' }}>
+                      اليوم والتاريخ ({getArabicDayName(dlDate)}) *
                     </label>
                     <input
                       type="date"
                       className="form-input"
                       value={dlDate}
                       onChange={e => setDlDate(e.target.value)}
+                      style={{ fontWeight: 700 }}
                       required
                     />
                   </div>
 
+                  {/* 2. الصف (7A..12E) */}
                   <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                      الحصة الدراسية *
+                    <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0F2044' }}>
+                      الصف *
                     </label>
                     <select
                       className="form-input"
-                      value={dlPeriod}
-                      onChange={e => {
-                        const val = e.target.value;
-                        setDlPeriod(val);
-                        const found = SCHOOL_PERIOD_OPTIONS.find(p => p.label === val);
-                        if (found) {
-                          setDlStartTime(found.startTime);
-                          setDlEndTime(found.endTime);
-                        }
-                      }}
+                      value={dlClassCode}
+                      onChange={e => setDlClassCode(e.target.value)}
+                      style={{ fontWeight: 800, color: '#0F2044' }}
+                      required
                     >
-                      {SCHOOL_PERIOD_OPTIONS.map(p => (
-                        <option key={p.id} value={p.label}>
-                          {p.label} ({p.startTime} - {p.endTime})
+                      {DISTANCE_LEARNING_CLASSES.map(cls => (
+                        <option key={cls} value={cls}>
+                          {cls}
                         </option>
                       ))}
                     </select>
                   </div>
 
+                  {/* 3. الحصة (1..7) */}
                   <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                      من الساعة — إلى الساعة
-                    </label>
-                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                      <input
-                        type="time"
-                        className="form-input"
-                        value={dlStartTime}
-                        onChange={e => setDlStartTime(e.target.value)}
-                      />
-                      <span>-</span>
-                      <input
-                        type="time"
-                        className="form-input"
-                        value={dlEndTime}
-                        onChange={e => setDlEndTime(e.target.value)}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                      حالة الحصة
+                    <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 900, color: '#0F2044' }}>
+                      الحصة *
                     </label>
                     <select
                       className="form-input"
-                      value={dlStatus}
-                      onChange={e => setDlStatus(e.target.value as TeacherDistanceLessonStatus)}
+                      value={dlPeriod}
+                      onChange={e => setDlPeriod(e.target.value)}
+                      style={{ fontWeight: 800, color: '#0F2044' }}
+                      required
                     >
-                      <option value="مجدولة">مجدولة</option>
-                      <option value="جارية الآن">جارية الآن</option>
-                      <option value="تم التنفيذ">تم التنفيذ</option>
+                      {DISTANCE_LEARNING_PERIODS.map(p => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
 
-                {/* Microsoft Teams Link Field */}
-                <div style={{ marginBottom: '0.85rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                    <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 900, color: '#1E3A8A', margin: 0 }}>
-                      🎥 رابط الحصة المباشر من مايكروسوفت تيمز (Link From Microsoft Teams) *
+                {/* 4. الرابط */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <label className="form-label" style={{ fontSize: '0.8rem', fontWeight: 900, color: '#1E3A8A', margin: 0 }}>
+                      الرابط (Link From Teams) : *
                     </label>
                     <button
                       type="button"
@@ -1941,7 +1836,7 @@ export default function TeacherProfilePage({
                           const txt = await navigator.clipboard.readText();
                           if (txt) setDlTeamsLink(txt.trim());
                         } catch {
-                          // fallback if clipboard permission denied
+                          // fallback
                         }
                       }}
                       style={{
@@ -1955,7 +1850,7 @@ export default function TeacherProfilePage({
                         cursor: 'pointer',
                       }}
                     >
-                      📋 لصق الرابط من الحافظة
+                      📋 لصق الرابط
                     </button>
                   </div>
                   <input
@@ -1964,22 +1859,8 @@ export default function TeacherProfilePage({
                     value={dlTeamsLink}
                     onChange={e => setDlTeamsLink(e.target.value)}
                     placeholder="https://teams.microsoft.com/l/meetup-join/..."
-                    style={{ direction: 'ltr', textAlign: 'left', fontFamily: 'monospace', fontSize: '0.82rem', border: '1.5px solid #4F46E5' }}
+                    style={{ direction: 'ltr', textAlign: 'left', fontFamily: 'monospace', fontSize: '0.84rem', border: '1.5px solid #4F46E5' }}
                     required
-                  />
-                </div>
-
-                {/* Optional Notes for Students */}
-                <div style={{ marginBottom: '1rem' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                    📌 ملاحظات أو توجيهات للطلاب قبل الدخول للحصة (اختياري)
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={dlStudentNotes}
-                    onChange={e => setDlStudentNotes(e.target.value)}
-                    placeholder="مثال: يرجى الدخول للحصة قبل الموعد بـ 5 دقائق وتجهيز الدفتر المدرسي..."
                   />
                 </div>
 
@@ -2000,10 +1881,10 @@ export default function TeacherProfilePage({
                     }}
                   >
                     {savingDl
-                      ? '⏳ جاري الحفظ والمزامنة...'
+                      ? '⏳ جاري الحفظ...'
                       : editingDlLesson
-                      ? '💾 حفظ تعديلات الحصة والرابط'
-                      : '➕ إضافة الحصة ورابط Teams إلى الجدول المعتمد'}
+                      ? '💾 حفظ التعديل'
+                      : '➕ إضافة الحصة والرابط'}
                   </button>
                 </div>
               </form>
@@ -2024,11 +1905,8 @@ export default function TeacherProfilePage({
             >
               <div>
                 <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0F2044', margin: 0 }}>
-                  📅 جدول حصص التعلم عن بعد (Distance Learning - Teams) الخاصة بالمعلم ({teacherDistanceLessons.length})
+                  📅 جدول حصص Distance Learning الخاصة بالمعلم ({teacherDistanceLessons.length})
                 </h3>
-                <p style={{ fontSize: '0.73rem', color: '#64748B', margin: '2px 0 0' }}>
-                  جميع الحصص المضافة هنا تظهر مباشرة لمدير النظام ضمن التقرير الموحد لجدول حصص التعلم عن بعد المخصص للطلاب.
-                </p>
               </div>
               {teacherDistanceLessons.length > 0 && (
                 <button
@@ -2058,32 +1936,30 @@ export default function TeacherProfilePage({
               <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748B', background: '#F8FAFC', borderRadius: '12px' }}>
                 <div style={{ fontSize: '2.2rem', marginBottom: '0.5rem' }}>🎥</div>
                 <div style={{ fontWeight: 800, color: '#0F2044', marginBottom: '0.25rem' }}>
-                  لم تقم بإضافة حصص تعلم عن بعد (Microsoft Teams) حتى الآن
+                  لم تقم بإضافة حصص Distance Learning حتى الآن
                 </div>
                 <div style={{ fontSize: '0.76rem' }}>
-                  استخدم النموذج أعلاه لإضافة حصتك ووضع رابط الاجتماع من Microsoft Teams ليتم إدراجها في جدول الطلاب.
+                  اختر اليوم والتاريخ، الصف، الحصة، وأضف الرابط أعلاه ليتم إدراجها في جدول الطلاب.
                 </div>
               </div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                   <thead>
                     <tr style={{ background: '#0F2044', color: '#fff' }}>
-                      {['#', 'اليوم والتاريخ', 'الحصة والوقت', 'الصف والشعبة', 'المادة وعنوان الدرس', 'رابط Microsoft Teams', 'الحالة', 'الإجراءات'].map(
-                        h => (
-                          <th
-                            key={h}
-                            style={{
-                              padding: '0.6rem 0.7rem',
-                              textAlign: h === 'الإجراءات' || h === '#' ? 'center' : 'right',
-                              fontWeight: 800,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {h}
-                          </th>
-                        )
-                      )}
+                      {['#', 'اليوم والتاريخ', 'الصف', 'الحصة', 'الرابط (Link From Teams)', 'الإجراءات'].map(h => (
+                        <th
+                          key={h}
+                          style={{
+                            padding: '0.65rem 0.75rem',
+                            textAlign: h === 'الإجراءات' || h === '#' || h === 'الصف' || h === 'الحصة' ? 'center' : 'right',
+                            fontWeight: 800,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -2095,39 +1971,30 @@ export default function TeacherProfilePage({
                           borderBottom: '1px solid #E2E8F0',
                         }}
                       >
-                        <td style={{ padding: '0.6rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
-                        <td style={{ padding: '0.6rem' }}>
-                          <div style={{ fontWeight: 800, color: '#0F2044' }}>{l.dayName}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{l.date}</div>
+                        <td style={{ padding: '0.65rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
+                        <td style={{ padding: '0.65rem' }}>
+                          <span style={{ fontWeight: 800, color: '#0F2044' }}>{l.dayName}</span>
+                          <span style={{ fontSize: '0.76rem', color: '#64748B', marginRight: '0.4rem' }}>({l.date})</span>
                         </td>
-                        <td style={{ padding: '0.6rem' }}>
-                          <div style={{ fontWeight: 800, color: '#0369A1' }}>{l.period}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#475569' }} dir="ltr">
-                            {l.startTime} - {l.endTime}
-                          </div>
-                        </td>
-                        <td style={{ padding: '0.6rem' }}>
+                        <td style={{ padding: '0.65rem', textAlign: 'center' }}>
                           <span
                             style={{
                               background: '#EFF6FF',
                               color: '#1D4ED8',
                               border: '1px solid #BFDBFE',
-                              padding: '2px 8px',
+                              padding: '3px 10px',
                               borderRadius: '6px',
-                              fontWeight: 800,
-                              fontSize: '0.75rem',
+                              fontWeight: 900,
+                              fontSize: '0.8rem',
                             }}
                           >
                             {l.gradeSection}
                           </span>
                         </td>
-                        <td style={{ padding: '0.6rem' }}>
-                          <div style={{ fontWeight: 800, color: '#0F2044' }}>{l.lessonTitle}</div>
-                          <div style={{ fontSize: '0.7rem', color: '#64748B' }}>
-                            المادة: {l.subject} {l.studentNotes ? ` | 📌 ${l.studentNotes}` : ''}
-                          </div>
+                        <td style={{ padding: '0.65rem', textAlign: 'center', fontWeight: 900, color: '#0369A1', fontSize: '0.85rem' }}>
+                          {l.period}
                         </td>
-                        <td style={{ padding: '0.6rem' }}>
+                        <td style={{ padding: '0.65rem' }}>
                           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
                             <a
                               href={l.teamsLink}
@@ -2137,30 +2004,30 @@ export default function TeacherProfilePage({
                                 background: '#4F46E5',
                                 color: '#fff',
                                 textDecoration: 'none',
-                                padding: '0.3rem 0.65rem',
+                                padding: '0.32rem 0.75rem',
                                 borderRadius: '6px',
-                                fontSize: '0.72rem',
+                                fontSize: '0.74rem',
                                 fontWeight: 800,
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.3rem',
                               }}
                             >
-                              🎥 فتح رابط الحصة (Teams)
+                              🎥 فتح الرابط (Teams)
                             </a>
                             <button
                               type="button"
                               onClick={() => {
                                 navigator.clipboard.writeText(l.teamsLink);
-                                showToast('📋 تم نسخ رابط حصة Teams');
+                                showToast('📋 تم نسخ الرابط');
                               }}
                               style={{
                                 background: '#F1F5F9',
                                 color: '#334155',
                                 border: '1px solid #CBD5E1',
-                                padding: '0.28rem 0.5rem',
+                                padding: '0.3rem 0.55rem',
                                 borderRadius: '6px',
-                                fontSize: '0.7rem',
+                                fontSize: '0.72rem',
                                 fontWeight: 700,
                                 cursor: 'pointer',
                               }}
@@ -2169,21 +2036,7 @@ export default function TeacherProfilePage({
                             </button>
                           </div>
                         </td>
-                        <td style={{ padding: '0.6rem' }}>
-                          <span
-                            style={{
-                              background: l.status === 'تم التنفيذ' ? '#DBEAFE' : l.status === 'جارية الآن' ? '#DCFCE7' : '#FEF3C7',
-                              color: l.status === 'تم التنفيذ' ? '#1E40AF' : l.status === 'جارية الآن' ? '#166534' : '#92400E',
-                              padding: '2px 8px',
-                              borderRadius: '999px',
-                              fontSize: '0.7rem',
-                              fontWeight: 800,
-                            }}
-                          >
-                            {l.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <td style={{ padding: '0.65rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                           {canTeacherAct && (
                             <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
                               <button
@@ -2192,9 +2045,9 @@ export default function TeacherProfilePage({
                                   background: '#EFF6FF',
                                   color: '#1D4ED8',
                                   border: '1px solid #BFDBFE',
-                                  padding: '0.25rem 0.5rem',
+                                  padding: '0.28rem 0.55rem',
                                   borderRadius: '6px',
-                                  fontSize: '0.7rem',
+                                  fontSize: '0.72rem',
                                   fontWeight: 700,
                                   cursor: 'pointer',
                                 }}
@@ -2207,9 +2060,9 @@ export default function TeacherProfilePage({
                                   background: '#FEE2E2',
                                   color: '#991B1B',
                                   border: '1px solid #FECACA',
-                                  padding: '0.25rem 0.5rem',
+                                  padding: '0.28rem 0.55rem',
                                   borderRadius: '6px',
-                                  fontSize: '0.7rem',
+                                  fontSize: '0.72rem',
                                   fontWeight: 700,
                                   cursor: 'pointer',
                                 }}

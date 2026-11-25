@@ -7,7 +7,8 @@ import {
   DistanceLearningReason,
   DistanceLearningStatus,
   TeacherDistanceLesson,
-  TeacherDistanceLessonStatus,
+  DISTANCE_LEARNING_CLASSES,
+  DISTANCE_LEARNING_PERIODS,
   SCHOOL_PERIOD_OPTIONS,
   getArabicDayName,
   REASON_CONFIG,
@@ -95,8 +96,8 @@ export default function DistanceLearningPage({
   const [teacherLessons, setTeacherLessons] = useState<TeacherDistanceLesson[]>([]);
   const [teachersList, setTeachersList] = useState<Teacher[]>([]);
   const [departmentsList, setDepartmentsList] = useState<Department[]>([]);
-  const [schedGradeFilter, setSchedGradeFilter] = useState<string>('all');
-  const [schedSectionFilter, setSchedSectionFilter] = useState<string>('all');
+  const [schedClassFilter, setSchedClassFilter] = useState<string>('all');
+  const [schedPeriodFilter, setSchedPeriodFilter] = useState<string>('all');
   const [schedDateFilter, setSchedDateFilter] = useState<string>('');
   const [schedTeacherFilter, setSchedTeacherFilter] = useState<string>('all');
   const [schedSearch, setSchedSearch] = useState<string>('');
@@ -104,20 +105,13 @@ export default function DistanceLearningPage({
   const [editingTeacherLesson, setEditingTeacherLesson] = useState<TeacherDistanceLesson | null>(null);
   const [copySuccessMsg, setCopySuccessMsg] = useState<string>('');
 
-  // Admin Add/Edit Teacher Lesson Form State
+  // Admin Add/Edit Teacher Lesson Form State (Only: Teacher, Date, Class 7A..12E, Period 1..7, Link)
   const todayIso = new Date().toISOString().split('T')[0];
   const [tlTeacherId, setTlTeacherId] = useState<string>('');
-  const [tlLessonTitle, setTlLessonTitle] = useState<string>('');
-  const [tlSubject, setTlSubject] = useState<string>('');
-  const [tlGrade, setTlGrade] = useState<string>('الصف 10');
-  const [tlSection, setTlSection] = useState<string>('1');
   const [tlDate, setTlDate] = useState<string>(todayIso);
-  const [tlPeriod, setTlPeriod] = useState<string>('الحصة الأولى');
-  const [tlStartTime, setTlStartTime] = useState<string>('07:15');
-  const [tlEndTime, setTlEndTime] = useState<string>('08:00');
+  const [tlClassCode, setTlClassCode] = useState<string>('7A');
+  const [tlPeriod, setTlPeriod] = useState<string>('1');
   const [tlTeamsLink, setTlTeamsLink] = useState<string>('');
-  const [tlStudentNotes, setTlStudentNotes] = useState<string>('');
-  const [tlStatus, setTlStatus] = useState<TeacherDistanceLessonStatus>('مجدولة');
 
   // State
   const [records, setRecords] = useState<DistanceLearningRecord[]>([]);
@@ -197,8 +191,8 @@ export default function DistanceLearningPage({
   // Filtered Teacher Distance Learning Lessons (Teams links)
   const filteredTeacherLessons = useMemo(() => {
     return teacherLessons.filter(l => {
-      if (schedGradeFilter !== 'all' && l.grade !== schedGradeFilter) return false;
-      if (schedSectionFilter !== 'all' && l.gradeSection !== schedSectionFilter && l.section !== schedSectionFilter) return false;
+      if (schedClassFilter !== 'all' && l.gradeSection !== schedClassFilter) return false;
+      if (schedPeriodFilter !== 'all' && String(l.period) !== schedPeriodFilter) return false;
       if (schedDateFilter && l.date !== schedDateFilter) return false;
       if (schedTeacherFilter !== 'all' && l.teacherId !== schedTeacherFilter) return false;
       if (schedSearch.trim()) {
@@ -206,26 +200,26 @@ export default function DistanceLearningPage({
         return (
           (l.teacherNameAr || '').toLowerCase().includes(q) ||
           (l.subject || '').toLowerCase().includes(q) ||
-          (l.lessonTitle || '').toLowerCase().includes(q) ||
           (l.gradeSection || '').toLowerCase().includes(q)
         );
       }
       return true;
     });
-  }, [teacherLessons, schedGradeFilter, schedSectionFilter, schedDateFilter, schedTeacherFilter, schedSearch]);
+  }, [teacherLessons, schedClassFilter, schedPeriodFilter, schedDateFilter, schedTeacherFilter, schedSearch]);
 
   const handleSaveAdminTeacherLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     const chosenTeacher = teachersList.find(t => t.id === tlTeacherId);
-    if (!chosenTeacher || !tlLessonTitle.trim() || !tlTeamsLink.trim()) {
-      alert('يرجى اختيار المعلم وإدخال عنوان الحصة ورابط Microsoft Teams');
+    if (!chosenTeacher || !tlTeamsLink.trim()) {
+      alert('يرجى اختيار المعلم وإدخال الرابط (Link From Teams)');
       return;
     }
     const now = new Date().toISOString();
-    const gradeNumMatch = tlGrade.match(/\d+/);
-    const gradeNum = gradeNumMatch ? gradeNumMatch[0] : '10';
-    const gradeSection = tlSection === 'جميع الشعب' ? `${tlGrade} (جميع الشعب)` : `${gradeNum}/${tlSection}`;
+    const gradeNumMatch = tlClassCode.match(/\d+/);
+    const gradeNum = gradeNumMatch ? gradeNumMatch[0] : '7';
+    const secLetter = tlClassCode.replace(/\d+/g, '') || 'A';
     const deptName = getDeptName(chosenTeacher.departmentId, departmentsList);
+    const periodTiming = SCHOOL_PERIOD_OPTIONS.find(p => p.id === String(tlPeriod));
 
     const lesson: TeacherDistanceLesson = {
       id: editingTeacherLesson?.id || `TDL-${chosenTeacher.id}-${Date.now().toString().slice(-6)}`,
@@ -234,20 +228,20 @@ export default function DistanceLearningPage({
       teacherNameEn: chosenTeacher.nameEn,
       departmentId: chosenTeacher.departmentId,
       departmentName: deptName,
-      subject: tlSubject.trim() || chosenTeacher.subject,
-      lessonTitle: tlLessonTitle.trim(),
-      grade: tlGrade,
-      section: tlSection,
-      gradeSection,
+      subject: chosenTeacher.subject,
+      lessonTitle: `حصة ${chosenTeacher.subject} (${tlClassCode})`,
+      grade: `الصف ${gradeNum}`,
+      section: secLetter,
+      gradeSection: tlClassCode,
       date: tlDate,
       dayName: getArabicDayName(tlDate),
-      period: tlPeriod,
-      startTime: tlStartTime,
-      endTime: tlEndTime,
+      period: String(tlPeriod),
+      startTime: periodTiming?.startTime || '',
+      endTime: periodTiming?.endTime || '',
       teamsLink: tlTeamsLink.trim(),
       platform: 'Microsoft Teams',
-      studentNotes: tlStudentNotes.trim(),
-      status: tlStatus,
+      studentNotes: '',
+      status: 'مجدولة',
       academicYear: selectedYear,
       createdAt: editingTeacherLesson?.createdAt || now,
       updatedAt: now,
@@ -264,17 +258,11 @@ export default function DistanceLearningPage({
       '#': i + 1,
       'اليوم': l.dayName,
       'التاريخ': l.date,
+      'الصف': l.gradeSection,
       'الحصة': l.period,
-      'من الساعة': l.startTime,
-      'إلى الساعة': l.endTime,
-      'الصف والشعبة': l.gradeSection,
-      'المادة الدراسية': l.subject,
       'اسم المعلم': l.teacherNameAr,
-      'القسم': l.departmentName,
-      'عنوان الدرس': l.lessonTitle,
-      'رابط الحصة (Microsoft Teams Link)': l.teamsLink,
-      'ملاحظات للطلاب': l.studentNotes || '',
-      'الحالة': l.status,
+      'المادة الدراسية': l.subject,
+      'الرابط (Link From Teams)': l.teamsLink,
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
@@ -287,19 +275,17 @@ export default function DistanceLearningPage({
       alert('لا توجد حصص مضافة حالياً لنسخها.');
       return;
     }
-    const header = `🏫 *مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين*\n🌐 *جدول حصص التعلم عن بعد (Microsoft Teams)*\n📅 العام الأكاديمي: ${selectedYear}${schedGradeFilter !== 'all' ? ` | ${schedGradeFilter}` : ''}${schedSectionFilter !== 'all' ? ` (${schedSectionFilter})` : ''}\n────────────────────────\n`;
+    const header = `🏫 *مدرسة قطر للعلوم والتكنولوجيا الثانوية للبنين*\n🌐 *جدول حصص التعلم عن بعد (Microsoft Teams)*\n📅 العام الأكاديمي: ${selectedYear}${schedClassFilter !== 'all' ? ` | الصف: ${schedClassFilter}` : ''}\n────────────────────────\n`;
     const body = filteredTeacherLessons
       .map(
         (l, idx) =>
-          `${idx + 1}. *${l.subject}* — (${l.gradeSection})\n` +
-          `👨‍🏫 المعلم: أ. ${l.teacherNameAr}\n` +
-          `📖 الدرس: ${l.lessonTitle}\n` +
-          `🕒 الموعد: ${l.dayName} ${l.date} | ${l.period} (${l.startTime} - ${l.endTime})\n` +
-          `🎥 رابط الحصة في Teams:\n${l.teamsLink}` +
-          (l.studentNotes ? `\n📌 ملاحظة: ${l.studentNotes}` : '')
+          `${idx + 1}. 📅 اليوم والتاريخ: ${l.dayName} (${l.date})\n` +
+          `🏫 الصف: *${l.gradeSection}* | 🕒 الحصة: *${l.period}*\n` +
+          `👨‍🏫 المعلم: أ. ${l.teacherNameAr} (${l.subject})\n` +
+          `🎥 الرابط:\n${l.teamsLink}`
       )
       .join('\n────────────────────────\n');
-    const footer = `\n────────────────────────\n💡 يرجى من أبنائنا الطلاب الدخول إلى رابط الحصة قبل الموعد بـ 5 دقائق عبر الحساب المدرسي الرسمي.`;
+    const footer = `\n────────────────────────\n💡 يرجى من أبنائنا الطلاب الدخول إلى رابط الحصة في الموعد المحدد عبر الحساب المدرسي الرسمي.`;
     navigator.clipboard.writeText(header + body + footer);
     setCopySuccessMsg('✅ تم نسخ جدول حصص التعلم عن بعد بالروابط بنجاح! يمكنك الآن لصقه وإرساله للطلاب عبر Teams أو الرسائل.');
     setTimeout(() => setCopySuccessMsg(''), 5000);
@@ -984,12 +970,12 @@ export default function DistanceLearningPage({
                   type="button"
                   onClick={() => {
                     const filterParts: string[] = [];
-                    if (schedGradeFilter !== 'all') filterParts.push(schedGradeFilter);
-                    if (schedSectionFilter !== 'all') filterParts.push(`شعبة ${schedSectionFilter}`);
+                    if (schedClassFilter !== 'all') filterParts.push(`الصف ${schedClassFilter}`);
+                    if (schedPeriodFilter !== 'all') filterParts.push(`الحصة ${schedPeriodFilter}`);
                     if (schedDateFilter) filterParts.push(`بتاريخ ${schedDateFilter}`);
                     printTeacherDistanceLessonsScheduleReport(filteredTeacherLessons, {
                       academicYear: selectedYear,
-                      filterLabel: filterParts.join(' - ') || 'جميع الصفوف والشعب',
+                      filterLabel: filterParts.join(' - ') || 'جميع الصفوف',
                     });
                   }}
                   style={{
@@ -1058,10 +1044,9 @@ export default function DistanceLearningPage({
                     onClick={() => {
                       setEditingTeacherLesson(null);
                       setTlTeacherId(teachersList[0]?.id || '');
-                      setTlSubject(teachersList[0]?.subject || '');
-                      setTlLessonTitle('');
+                      setTlClassCode('7A');
+                      setTlPeriod('1');
                       setTlTeamsLink('');
-                      setTlStudentNotes('');
                       setShowAddTeacherLessonModal(true);
                     }}
                     style={{
@@ -1095,7 +1080,7 @@ export default function DistanceLearningPage({
             >
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
-                  بحث سريع (المعلم، المادة، الدرس)
+                  بحث سريع (المعلم، المادة، الصف)
                 </label>
                 <input
                   type="text"
@@ -1109,21 +1094,18 @@ export default function DistanceLearningPage({
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
-                  الصف الدراسي
+                  الصف (7A - 12E)
                 </label>
                 <select
                   className="form-input"
-                  value={schedGradeFilter}
-                  onChange={e => {
-                    setSchedGradeFilter(e.target.value);
-                    setSchedSectionFilter('all');
-                  }}
-                  style={{ padding: '0.45rem 0.65rem', fontSize: '0.78rem' }}
+                  value={schedClassFilter}
+                  onChange={e => setSchedClassFilter(e.target.value)}
+                  style={{ padding: '0.45rem 0.65rem', fontSize: '0.78rem', fontWeight: 800 }}
                 >
-                  <option value="all">جميع الصفوف</option>
-                  {GRADE_OPTIONS.map(g => (
-                    <option key={g} value={g}>
-                      {formatGradeLabel(g)}
+                  <option value="all">جميع الصفوف (7A - 12E)</option>
+                  {DISTANCE_LEARNING_CLASSES.map(cls => (
+                    <option key={cls} value={cls}>
+                      {cls}
                     </option>
                   ))}
                 </select>
@@ -1131,18 +1113,18 @@ export default function DistanceLearningPage({
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
-                  الشعبة
+                  الحصة (1 - 7)
                 </label>
                 <select
                   className="form-input"
-                  value={schedSectionFilter}
-                  onChange={e => setSchedSectionFilter(e.target.value)}
-                  style={{ padding: '0.45rem 0.65rem', fontSize: '0.78rem' }}
+                  value={schedPeriodFilter}
+                  onChange={e => setSchedPeriodFilter(e.target.value)}
+                  style={{ padding: '0.45rem 0.65rem', fontSize: '0.78rem', fontWeight: 800 }}
                 >
-                  <option value="all">جميع الشعب</option>
-                  {getSectionsForGrade(schedGradeFilter).map(s => (
-                    <option key={s.section} value={s.section}>
-                      شعبة {s.section}
+                  <option value="all">جميع الحصص (1 - 7)</option>
+                  {DISTANCE_LEARNING_PERIODS.map(p => (
+                    <option key={p} value={p}>
+                      الحصة {p}
                     </option>
                   ))}
                 </select>
@@ -1150,7 +1132,7 @@ export default function DistanceLearningPage({
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#475569', marginBottom: '0.25rem' }}>
-                  التاريخ / اليوم
+                  اليوم والتاريخ
                 </label>
                 <input
                   type="date"
@@ -1210,20 +1192,17 @@ export default function DistanceLearningPage({
                       {[
                         '#',
                         'اليوم والتاريخ',
-                        'الحصة والوقت',
-                        'الصف والشعبة',
-                        'المادة الدراسية',
-                        'اسم المعلم والقسم',
-                        'عنوان الدرس وملاحظات الطلاب',
-                        'رابط الحصة المباشر (Link From Teams)',
-                        'الحالة',
+                        'الصف',
+                        'الحصة',
+                        'اسم المعلم والمادة',
+                        'الرابط (Link From Teams)',
                         ...(isAdmin ? ['الإجراءات'] : []),
                       ].map(h => (
                         <th
                           key={h}
                           style={{
                             padding: '0.75rem 0.7rem',
-                            textAlign: h === '#' || h === 'الإجراءات' ? 'center' : 'right',
+                            textAlign: h === '#' || h === 'الإجراءات' || h === 'الصف' || h === 'الحصة' ? 'center' : 'right',
                             fontWeight: 800,
                             whiteSpace: 'nowrap',
                           }}
@@ -1244,42 +1223,32 @@ export default function DistanceLearningPage({
                       >
                         <td style={{ padding: '0.65rem', textAlign: 'center', fontWeight: 800 }}>{idx + 1}</td>
                         <td style={{ padding: '0.65rem' }}>
-                          <div style={{ fontWeight: 800, color: '#0F2044' }}>{l.dayName}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{l.date}</div>
+                          <span style={{ fontWeight: 800, color: '#0F2044' }}>{l.dayName}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#64748B', marginRight: '0.35rem' }}>({l.date})</span>
                         </td>
-                        <td style={{ padding: '0.65rem' }}>
-                          <div style={{ fontWeight: 800, color: '#0369A1' }}>{l.period}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#475569' }} dir="ltr">
-                            {l.startTime} - {l.endTime}
-                          </div>
-                        </td>
-                        <td style={{ padding: '0.65rem' }}>
+                        <td style={{ padding: '0.65rem', textAlign: 'center' }}>
                           <span
                             style={{
                               background: '#EFF6FF',
                               color: '#1D4ED8',
                               border: '1px solid #BFDBFE',
-                              padding: '3px 9px',
+                              padding: '3px 10px',
                               borderRadius: '6px',
                               fontWeight: 900,
-                              fontSize: '0.76rem',
+                              fontSize: '0.8rem',
                             }}
                           >
                             {l.gradeSection}
                           </span>
                         </td>
-                        <td style={{ padding: '0.65rem', fontWeight: 800, color: '#0F2044' }}>{l.subject}</td>
-                        <td style={{ padding: '0.65rem' }}>
-                          <div style={{ fontWeight: 800, color: '#0F2044' }}>{l.teacherNameAr}</div>
-                          <div style={{ fontSize: '0.7rem', color: '#64748B' }}>{l.departmentName}</div>
+                        <td style={{ padding: '0.65rem', textAlign: 'center', fontWeight: 900, color: '#0369A1', fontSize: '0.88rem' }}>
+                          {l.period}
                         </td>
                         <td style={{ padding: '0.65rem' }}>
-                          <div style={{ fontWeight: 800, color: '#1E293B' }}>{l.lessonTitle}</div>
-                          {l.studentNotes && (
-                            <div style={{ fontSize: '0.7rem', color: '#475569', marginTop: '2px' }}>
-                              📌 {l.studentNotes}
-                            </div>
-                          )}
+                          <div style={{ fontWeight: 800, color: '#0F2044' }}>{l.teacherNameAr}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                            {l.subject} · {l.departmentName}
+                          </div>
                         </td>
                         <td style={{ padding: '0.65rem' }}>
                           <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1291,9 +1260,9 @@ export default function DistanceLearningPage({
                                 background: '#4F46E5',
                                 color: '#fff',
                                 textDecoration: 'none',
-                                padding: '0.32rem 0.7rem',
+                                padding: '0.32rem 0.75rem',
                                 borderRadius: '6px',
-                                fontSize: '0.73rem',
+                                fontSize: '0.74rem',
                                 fontWeight: 800,
                               }}
                             >
@@ -1321,30 +1290,6 @@ export default function DistanceLearningPage({
                             </button>
                           </div>
                         </td>
-                        <td style={{ padding: '0.65rem' }}>
-                          <span
-                            style={{
-                              background:
-                                l.status === 'تم التنفيذ'
-                                  ? '#DBEAFE'
-                                  : l.status === 'جارية الآن'
-                                  ? '#DCFCE7'
-                                  : '#FEF3C7',
-                              color:
-                                l.status === 'تم التنفيذ'
-                                  ? '#1E40AF'
-                                  : l.status === 'جارية الآن'
-                                  ? '#166534'
-                                  : '#92400E',
-                              padding: '2px 8px',
-                              borderRadius: '999px',
-                              fontSize: '0.7rem',
-                              fontWeight: 800,
-                            }}
-                          >
-                            {l.status}
-                          </span>
-                        </td>
                         {isAdmin && (
                           <td style={{ padding: '0.65rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                             <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
@@ -1353,17 +1298,13 @@ export default function DistanceLearningPage({
                                 onClick={() => {
                                   setEditingTeacherLesson(l);
                                   setTlTeacherId(l.teacherId);
-                                  setTlLessonTitle(l.lessonTitle);
-                                  setTlSubject(l.subject);
-                                  setTlGrade(l.grade || 'الصف 10');
-                                  setTlSection(l.section || '1');
                                   setTlDate(l.date);
-                                  setTlPeriod(l.period);
-                                  setTlStartTime(l.startTime);
-                                  setTlEndTime(l.endTime);
+                                  setTlClassCode(
+                                    DISTANCE_LEARNING_CLASSES.includes(l.gradeSection as any) ? l.gradeSection : '7A'
+                                  );
+                                  const pDig = String(l.period || '1').replace(/\D/g, '');
+                                  setTlPeriod(pDig && ['1', '2', '3', '4', '5', '6', '7'].includes(pDig) ? pDig : '1');
                                   setTlTeamsLink(l.teamsLink);
-                                  setTlStudentNotes(l.studentNotes || '');
-                                  setTlStatus(l.status || 'مجدولة');
                                   setShowAddTeacherLessonModal(true);
                                 }}
                                 style={{
@@ -1412,7 +1353,7 @@ export default function DistanceLearningPage({
         </div>
       )}
 
-      {/* Admin Add/Edit Teacher Distance Learning Lesson Modal */}
+      {/* Admin Add/Edit Teacher Distance Learning Lesson Modal (Only: المعلم، اليوم والتاريخ، الصف، الحصة، الرابط) */}
       {showAddTeacherLessonModal && isAdmin && (
         <div
           className="no-print"
@@ -1431,7 +1372,7 @@ export default function DistanceLearningPage({
             style={{
               background: '#fff',
               borderRadius: '16px',
-              maxWidth: '640px',
+              maxWidth: '540px',
               width: '100%',
               padding: '1.5rem',
               maxHeight: '90vh',
@@ -1441,7 +1382,7 @@ export default function DistanceLearningPage({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0F2044' }}>
-                🎥 {editingTeacherLesson ? 'تعديل حصة التعلم عن بعد (Teams)' : 'إضافة حصة تعلم عن بعد (Link From Teams)'}
+                🎥 {editingTeacherLesson ? 'تعديل حصة Distance Learning' : 'إضافة حصة Distance Learning (Link From Teams)'}
               </h3>
               <button
                 type="button"
@@ -1453,19 +1394,15 @@ export default function DistanceLearningPage({
             </div>
 
             <form onSubmit={handleSaveAdminTeacherLesson}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '0.85rem' }}>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>
                     المعلم *
                   </label>
                   <select
                     className="form-input"
                     value={tlTeacherId}
-                    onChange={e => {
-                      setTlTeacherId(e.target.value);
-                      const found = teachersList.find(t => t.id === e.target.value);
-                      if (found) setTlSubject(found.subject);
-                    }}
+                    onChange={e => setTlTeacherId(e.target.value)}
                     required
                   >
                     <option value="">-- اختر المعلم --</option>
@@ -1477,63 +1414,9 @@ export default function DistanceLearningPage({
                   </select>
                 </div>
 
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                    المادة الدراسية *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={tlSubject}
-                    onChange={e => setTlSubject(e.target.value)}
-                    required
-                  />
-                </div>
-
                 <div style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                    عنوان الدرس / الحصة *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={tlLessonTitle}
-                    onChange={e => setTlLessonTitle(e.target.value)}
-                    placeholder="عنوان الدرس..."
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                    الصف *
-                  </label>
-                  <select className="form-input" value={tlGrade} onChange={e => setTlGrade(e.target.value)}>
-                    {GRADE_OPTIONS.map(g => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                    الشعبة *
-                  </label>
-                  <select className="form-input" value={tlSection} onChange={e => setTlSection(e.target.value)}>
-                    {getSectionsForGrade(tlGrade).map(s => (
-                      <option key={s.section} value={s.sectionNum}>
-                        شعبة {s.section}
-                      </option>
-                    ))}
-                    <option value="جميع الشعب">جميع شعب {tlGrade}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                    التاريخ ({getArabicDayName(tlDate)}) *
+                  <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>
+                    اليوم والتاريخ ({getArabicDayName(tlDate)}) *
                   </label>
                   <input
                     type="date"
@@ -1545,34 +1428,47 @@ export default function DistanceLearningPage({
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
+                  <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>
+                    الصف *
+                  </label>
+                  <select
+                    className="form-input"
+                    value={tlClassCode}
+                    onChange={e => setTlClassCode(e.target.value)}
+                    style={{ fontWeight: 800 }}
+                    required
+                  >
+                    {DISTANCE_LEARNING_CLASSES.map(cls => (
+                      <option key={cls} value={cls}>
+                        {cls}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>
                     الحصة *
                   </label>
                   <select
                     className="form-input"
                     value={tlPeriod}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setTlPeriod(val);
-                      const p = SCHOOL_PERIOD_OPTIONS.find(x => x.label === val);
-                      if (p) {
-                        setTlStartTime(p.startTime);
-                        setTlEndTime(p.endTime);
-                      }
-                    }}
+                    onChange={e => setTlPeriod(e.target.value)}
+                    style={{ fontWeight: 800 }}
+                    required
                   >
-                    {SCHOOL_PERIOD_OPTIONS.map(p => (
-                      <option key={p.id} value={p.label}>
-                        {p.label} ({p.startTime} - {p.endTime})
+                    {DISTANCE_LEARNING_PERIODS.map(p => (
+                      <option key={p} value={p}>
+                        {p}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              <div style={{ marginBottom: '0.75rem' }}>
-                <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                  رابط الحصة من مايكروسوفت تيمز (Link From Teams) *
+              <div style={{ marginBottom: '1.1rem' }}>
+                <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 800 }}>
+                  الرابط (Link From Teams) : *
                 </label>
                 <input
                   type="url"
@@ -1582,18 +1478,6 @@ export default function DistanceLearningPage({
                   placeholder="https://teams.microsoft.com/l/meetup-join/..."
                   style={{ direction: 'ltr', textAlign: 'left' }}
                   required
-                />
-              </div>
-
-              <div style={{ marginBottom: '1rem' }}>
-                <label className="form-label" style={{ fontSize: '0.75rem', fontWeight: 800 }}>
-                  ملاحظات للطلاب (اختياري)
-                </label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={tlStudentNotes}
-                  onChange={e => setTlStudentNotes(e.target.value)}
                 />
               </div>
 

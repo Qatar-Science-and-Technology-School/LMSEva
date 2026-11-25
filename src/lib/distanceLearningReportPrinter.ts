@@ -829,15 +829,6 @@ export function printTeacherDistanceLessonsScheduleReport(
   const rowsHtml = lessons
     .map((l, idx) => {
       const cleanLink = (l.teamsLink || '').trim();
-      const statusColor =
-        l.status === 'جارية الآن'
-          ? { bg: '#DCFCE7', text: '#166534', border: '#86EFAC' }
-          : l.status === 'تم التنفيذ'
-          ? { bg: '#DBEAFE', text: '#1E40AF', border: '#93C5FD' }
-          : l.status === 'ملغاة'
-          ? { bg: '#FEE2E2', text: '#991B1B', border: '#FCA5A5' }
-          : { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A' };
-
       return `
       <tr>
         <td class="text-center bold">${idx + 1}</td>
@@ -846,35 +837,24 @@ export function printTeacherDistanceLessonsScheduleReport(
           <div class="font-num" style="font-size:8pt; color:#64748B;">${l.date || ''}</div>
         </td>
         <td class="text-center">
-          <div class="bold" style="color:#0369A1;">${l.period || ''}</div>
-          <div class="font-num" style="font-size:8pt; color:#475569;" dir="ltr">${l.startTime || ''} - ${l.endTime || ''}</div>
+          <span class="grade-badge">${l.gradeSection || ''}</span>
         </td>
         <td class="text-center">
-          <span class="grade-badge">${l.gradeSection || `${l.grade} / ${l.section}`}</span>
+          <div class="bold" style="color:#0369A1; font-size:10pt;">${l.period || ''}</div>
         </td>
-        <td class="bold" style="color:#0F2044;">${l.subject || '-'}</td>
         <td>
           <div class="bold" style="color:#0F2044;">${l.teacherNameAr || '-'}</div>
-          <div style="font-size:7.5pt; color:#64748B;">${l.departmentName || ''}</div>
+          <div style="font-size:7.5pt; color:#64748B;">${l.subject || ''} ${l.departmentName ? `— ${l.departmentName}` : ''}</div>
         </td>
-        <td>
-          <div class="bold" style="color:#1E293B;">${l.lessonTitle || 'حصة تعلم عن بعد'}</div>
-          ${l.studentNotes ? `<div style="font-size:7.5pt; color:#475569; margin-top:2px;">📌 ${l.studentNotes}</div>` : ''}
-        </td>
-        <td class="text-center" style="min-width:190px;">
+        <td class="text-center" style="min-width:230px;">
           ${
             cleanLink
               ? `<a href="${cleanLink}" target="_blank" rel="noopener noreferrer" class="teams-btn">
                    🎥 انقر هنا للدخول إلى الحصة (Teams)
                  </a>
-                 <div class="link-url" dir="ltr">${cleanLink.length > 52 ? cleanLink.slice(0, 52) + '...' : cleanLink}</div>`
+                 <div class="link-url" dir="ltr">${cleanLink}</div>`
               : `<span style="color:#94A3B8; font-size:8pt;">لم يتم إرفاق الرابط</span>`
           }
-        </td>
-        <td class="text-center">
-          <span class="status-pill" style="background:${statusColor.bg}; color:${statusColor.text}; border:1px solid ${statusColor.border};">
-            ${l.status || 'مجدولة'}
-          </span>
         </td>
       </tr>
     `;
@@ -1090,21 +1070,18 @@ export function printTeacherDistanceLessonsScheduleReport(
         <table>
           <thead>
             <tr>
-              <th style="width:32px;">#</th>
-              <th style="width:95px;">اليوم والتاريخ</th>
-              <th style="width:105px;">الحصة والوقت</th>
-              <th style="width:85px;">الصف والشعبة</th>
-              <th style="width:110px;">المادة الدراسية</th>
-              <th style="width:140px;">اسم المعلم</th>
-              <th>عنوان الدرس وملاحظات الطلاب</th>
-              <th style="width:210px;">رابط الحصة المباشر (Link From Teams)</th>
-              <th style="width:75px;">الحالة</th>
+              <th style="width:36px;">#</th>
+              <th style="width:120px;">اليوم والتاريخ</th>
+              <th style="width:95px;">الصف</th>
+              <th style="width:85px;">الحصة</th>
+              <th style="width:180px;">اسم المعلم والمادة</th>
+              <th>الرابط (Link From Teams)</th>
             </tr>
           </thead>
           <tbody>
             ${
               rowsHtml ||
-              `<tr><td colspan="9" class="text-center" style="padding:20px; color:#64748B; font-weight:700;">لا توجد حصص تعلم عن بعد مسجلة حالياً ضمن هذا الفلتر.</td></tr>`
+              `<tr><td colspan="6" class="text-center" style="padding:20px; color:#64748B; font-weight:700;">لا توجد حصص تعلم عن بعد مسجلة حالياً ضمن هذا الفلتر.</td></tr>`
             }
           </tbody>
         </table>
